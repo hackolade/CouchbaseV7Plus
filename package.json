@@ -1,0 +1,37 @@
+{
+	"name": "CouchbaseV7Plus",
+	"version": "0.0.1",
+	"versionDate": "2023-01-22",
+	"author": "hackolade",
+	"engines": {
+		"hackolade": "5.3.0",
+		"hackoladePlugin": "1.0.1"
+	},
+	"contributes": {
+		"target": {
+			"applicationTarget": "CouchbaseV7Plus",
+			"title": "Couchbase v7 and above",
+			"versions": [
+				"7.x"
+			]
+		},
+		"features": {
+			"nestedCollections": false,
+			"forwardEngineering": {
+				"jsonSchema": {
+					"keepParentType": {
+						"binary": {
+						}
+					}
+				}
+			},
+			"enableReverseEngineering": true,
+			"enableForwardEngineering": true,
+			"enableReverseEngineeringDetectionSchemaByContent": false,
+			"enableReversingDateTypeAsISODate": true,
+			"supportInferRelationships": true,
+			"enableREQueryAndSortCriteria": true
+		}
+	},
+	"description": "Hackolade plugin for Couchbase v7+ with scopes and collections"
+}

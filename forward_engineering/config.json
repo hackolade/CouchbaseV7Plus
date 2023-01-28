@@ -1,0 +1,35 @@
+{
+	"extension": "js",
+	"filterName": "MongoDB script",
+	"namePrefix": "DocumentDB",
+	"hasUpdateScript": false,
+	"mode": "javascript",
+	"applyToInstanceSettings": {
+		"generateSamplesInBulk": true
+	},
+	"level": {
+		"entity": true,
+		"container": true,
+		"view": false
+	},
+	"additionalOptions": [{
+		"id": "INCLUDE_SAMPLES",
+		"value": true,
+		"name": "Include sample data",
+		"align": "right",
+		"level": {
+			"entity": false
+		}
+	}],
+	"splitView": {
+		"byAdditionalOptions": ["INCLUDE_SAMPLES"]
+	},
+	"numberOfDocumentsOptions": {
+		"id": "numberOfDocuments",
+		"value": 1,
+		"minValue": 1,
+		"maxValue": 10000000
+	},
+	"applyScriptToInstance": true,
+	"refresh": true
+}
