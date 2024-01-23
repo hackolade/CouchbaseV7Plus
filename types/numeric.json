@@ -22,20 +22,24 @@
 		"enum": [],
 		"sample": ""
 	},
-	"descriptor": [{
-		"schema": {
-			"mode": "int32"
+	"descriptor": [
+		{
+			"schema": {
+				"mode": "int32"
+			},
+			"capacity": 4
 		},
-		"capacity": 4
-	}, {
-		"schema": {
-			"mode": "int64"
+		{
+			"schema": {
+				"mode": "int64"
+			},
+			"capacity": 8
 		},
-		"capacity": 8
-	}, {
-		"schema": {
-			"mode": "double"
-		},
-		"capacity": 8
-	}]
+		{
+			"schema": {
+				"mode": "double"
+			},
+			"capacity": 8
+		}
+	]
 }

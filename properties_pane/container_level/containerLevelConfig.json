@@ -162,7 +162,7 @@ making sure that you maintain a proper JSON format.
 				"propertyTooltip": "This optional clause enables the statement to complete successfully when the specified scope already exists.",
 				"defaultValue": true,
 				"propertyType": "checkbox"
-				},
+			},
 			{
 				"propertyName": "Comments",
 				"propertyKeyword": "comments",
