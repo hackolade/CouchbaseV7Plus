@@ -1,37 +1,58 @@
 {
-	"name": "CouchbaseV7Plus",
-	"version": "0.0.1",
-	"versionDate": "2023-01-22",
-	"author": "hackolade",
-	"engines": {
-		"hackolade": "5.3.0",
-		"hackoladePlugin": "1.0.1"
-	},
-	"contributes": {
-		"target": {
-			"applicationTarget": "CouchbaseV7Plus",
-			"title": "Couchbase v7 and above",
-			"versions": [
-				"7.x"
-			]
-		},
-		"features": {
-			"nestedCollections": false,
-			"forwardEngineering": {
-				"jsonSchema": {
-					"keepParentType": {
-						"binary": {
-						}
-					}
-				}
-			},
-			"enableReverseEngineering": true,
-			"enableForwardEngineering": true,
-			"enableReverseEngineeringDetectionSchemaByContent": false,
-			"enableReversingDateTypeAsISODate": true,
-			"supportInferRelationships": true,
-			"enableREQueryAndSortCriteria": true
-		}
-	},
-	"description": "Hackolade plugin for Couchbase v7+ with scopes and collections"
+    "name": "CouchbaseV7Plus",
+    "version": "0.0.3",
+    "versionDate": "2023-01-22",
+    "author": "hackolade",
+    "engines": {
+        "hackolade": "5.3.0",
+        "hackoladePlugin": "1.0.1"
+    },
+    "contributes": {
+        "target": {
+            "applicationTarget": "CouchbaseV7Plus",
+            "title": "Couchbase v7 and above",
+            "versions": [
+                "7.x"
+            ]
+        },
+        "features": {
+            "nestedCollections": false,
+            "forwardEngineering": {
+                "jsonSchema": {
+                    "keepParentType": {
+                        "binary": {}
+                    }
+                }
+            },
+            "enableReverseEngineering": true,
+            "enableForwardEngineering": true,
+            "enableReverseEngineeringDetectionSchemaByContent": false,
+            "enableReversingDateTypeAsISODate": true,
+            "supportInferRelationships": true,
+            "enableREQueryAndSortCriteria": true
+        }
+    },
+    "description": "Hackolade plugin for Couchbase v7+ with scopes and collections",
+    "lint-staged": {
+        "*.{js,json}": "prettier --write"
+    },
+    "simple-git-hooks": {
+        "pre-commit": "npx lint-staged",
+        "pre-push": "npx eslint ."
+    },
+    "scripts": {
+        "lint": "eslint . --max-warnings=0",
+        "package": "node esbuild.package.js"
+    },
+    "devDependencies": {
+        "@hackolade/hck-esbuild-plugins-pack": "0.0.1",
+        "esbuild": "0.19.11",
+        "esbuild-plugin-clean": "1.0.1",
+        "eslint": "8.56.0",
+        "eslint-config-prettier": "9.1.0",
+        "eslint-plugin-prettier": "5.1.3",
+        "lint-staged": "14.0.1",
+        "prettier": "3.2.4",
+        "simple-git-hooks": "2.9.0"
+    }
 }

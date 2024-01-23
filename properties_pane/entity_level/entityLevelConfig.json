@@ -144,7 +144,7 @@ making sure that you maintain a proper JSON format.
 				"propertyTooltip": "This optional clause enables the statement to complete successfully when the specified collection already exists.",
 				"defaultValue": true,
 				"propertyType": "checkbox"
-				},
+			},
 			{
 				"propertyName": "Comments",
 				"propertyKeyword": "comments",
@@ -157,184 +157,178 @@ making sure that you maintain a proper JSON format.
 	},
 	{
 		"lowerTab": "Indexes",
-		"structure": [{
-			"propertyName": "Index",
-			"propertyType": "group",
-			"propertyKeyword": "Indxs",
-			"propertyTooltip": "Click + to add an index",
-			"erdIndexAbbr": "I",
-			"structure": [
-				{
-					"propertyName": "Name",
-					"propertyKeyword": "name",
-					"propertyTooltip": "",
-					"propertyType": "text"
-				},
-				{
-					"propertyName": "Activated",
-					"propertyKeyword": "isActivated",
-					"propertyTooltip": "Deactivated item will be not included in forward-engineering script",
-					"propertyType": "checkbox",
-					"defaultValue": true
-				},
-				{
-					"propertyName": "Keys",
-					"propertyKeyword": "key",
-					"propertyType": "fieldList",
-					"template": "orderedList",
-					"attributeList": [
-						"ascending",
-						"descending",
-						"2DSphere"
-					]
-				},
-				{
-					"propertyName": "Unique",
-					"propertyKeyword": "unique",
-					"propertyType": "checkbox"
-				},
-				{
-					"propertyName": "Sparse",
-					"propertyKeyword": "sparse",
-					"propertyType": "checkbox"
-				},
-				{
-					"propertyName": "Background indexing",
-					"propertyKeyword": "background",
-					"propertyType": "checkbox"
-				},
-				{
-					"propertyName": "Expire after (seconds)",
-					"propertyKeyword": "expireAfterSeconds",
-					"propertyType": "numeric",
-					"valueType": "number",
-					"allowNegative": false
-				},
-				{
-					"propertyName": "2D Sphere",
-					"propertyKeyword": "2dsphere",
-					"propertyType": "block",
-					"propertyTooltip": "",
-					"dependency": {
-						"key": "key.*.type",
-						"value": "2DSphere"
+		"structure": [
+			{
+				"propertyName": "Index",
+				"propertyType": "group",
+				"propertyKeyword": "Indxs",
+				"propertyTooltip": "Click + to add an index",
+				"erdIndexAbbr": "I",
+				"structure": [
+					{
+						"propertyName": "Name",
+						"propertyKeyword": "name",
+						"propertyTooltip": "",
+						"propertyType": "text"
 					},
-					"structure": [
-						{
-							"propertyName": "Index version",
-							"propertyKeyword": "2dsphereIndexVersion",
-							"propertyTooltip": "Select from list of options",
-							"propertyType": "select",
-							"options": [
-								"default",
-								"Version 2",
-								"Version 1"
-							]
-						}
-					]
-				},
-				{
-					"propertyName": "Comments",
-					"propertyKeyword": "indexComments",
-					"propertyTooltip": "comments",
-					"addTimestampButton": false,
-					"propertyType": "details",
-					"template": "textarea"
-				}
-			]
-		}]
+					{
+						"propertyName": "Activated",
+						"propertyKeyword": "isActivated",
+						"propertyTooltip": "Deactivated item will be not included in forward-engineering script",
+						"propertyType": "checkbox",
+						"defaultValue": true
+					},
+					{
+						"propertyName": "Keys",
+						"propertyKeyword": "key",
+						"propertyType": "fieldList",
+						"template": "orderedList",
+						"attributeList": ["ascending", "descending", "2DSphere"]
+					},
+					{
+						"propertyName": "Unique",
+						"propertyKeyword": "unique",
+						"propertyType": "checkbox"
+					},
+					{
+						"propertyName": "Sparse",
+						"propertyKeyword": "sparse",
+						"propertyType": "checkbox"
+					},
+					{
+						"propertyName": "Background indexing",
+						"propertyKeyword": "background",
+						"propertyType": "checkbox"
+					},
+					{
+						"propertyName": "Expire after (seconds)",
+						"propertyKeyword": "expireAfterSeconds",
+						"propertyType": "numeric",
+						"valueType": "number",
+						"allowNegative": false
+					},
+					{
+						"propertyName": "2D Sphere",
+						"propertyKeyword": "2dsphere",
+						"propertyType": "block",
+						"propertyTooltip": "",
+						"dependency": {
+							"key": "key.*.type",
+							"value": "2DSphere"
+						},
+						"structure": [
+							{
+								"propertyName": "Index version",
+								"propertyKeyword": "2dsphereIndexVersion",
+								"propertyTooltip": "Select from list of options",
+								"propertyType": "select",
+								"options": ["default", "Version 2", "Version 1"]
+							}
+						]
+					},
+					{
+						"propertyName": "Comments",
+						"propertyKeyword": "indexComments",
+						"propertyTooltip": "comments",
+						"addTimestampButton": false,
+						"propertyType": "details",
+						"template": "textarea"
+					}
+				]
+			}
+		]
 	},
 	{
 		"lowerTab": "Functions",
-		"structure": [{
-			"propertyName": "Function",
-			"propertyType": "group",
-			"propertyKeyword": "function",
-			"propertyTooltip": "Click + to add a function",
-			"erdIndexAbbr": "I",
-			"structure": [
-				{
-					"propertyName": "Name",
-					"propertyKeyword": "name",
-					"propertyTooltip": "",
-					"propertyType": "text"
-				},
-				{
-					"propertyName": "Activated",
-					"propertyKeyword": "isActivated",
-					"propertyTooltip": "Deactivated item will be not included in forward-engineering script",
-					"propertyType": "checkbox",
-					"defaultValue": true
-				},
-				{
-					"propertyName": "Or replace",
-					"propertyKeyword": "orReplace",
-					"propertyTooltip": "This optional clause enables you to redefine a user-defined function if it already exists.",
-					"defaultValue": true,
-					"propertyType": "checkbox"
-				},
-				{
-					"propertyName": "Function body",
-					"propertyKeyword": "functionBody",
-					"propertyTooltip": "A string constant defining the function; the meaning depends on the language. It can be an internal function name, the path to an object file, an SQL command, or text in a procedural language.",
-					"propertyType": "details",
-					"template": "textarea",
-					"markdown": false
-				},
-				{
-					"propertyName": "Parameters",
-					"propertyKeyword": "parameters",
-					"propertyTooltip": "Optional listing of parameters for the function.",
-					"propertyType": "details",
-					"template": "textarea",
-					"markdown": false
-				},
-				{
-					"propertyName": "If not exist",
-					"propertyKeyword": "ifNotExist",
-					"propertyTooltip": "This optional clause enables the statement to complete successfully when the specified function already exists.",
-					"defaultValue": true,
-					"propertyType": "checkbox",
-					"dependency": {
-						"key": "orReplace",
-						"value": false
+		"structure": [
+			{
+				"propertyName": "Function",
+				"propertyType": "group",
+				"propertyKeyword": "function",
+				"propertyTooltip": "Click + to add a function",
+				"erdIndexAbbr": "I",
+				"structure": [
+					{
+						"propertyName": "Name",
+						"propertyKeyword": "name",
+						"propertyTooltip": "",
+						"propertyType": "text"
+					},
+					{
+						"propertyName": "Activated",
+						"propertyKeyword": "isActivated",
+						"propertyTooltip": "Deactivated item will be not included in forward-engineering script",
+						"propertyType": "checkbox",
+						"defaultValue": true
+					},
+					{
+						"propertyName": "Or replace",
+						"propertyKeyword": "orReplace",
+						"propertyTooltip": "This optional clause enables you to redefine a user-defined function if it already exists.",
+						"defaultValue": true,
+						"propertyType": "checkbox"
+					},
+					{
+						"propertyName": "Function body",
+						"propertyKeyword": "functionBody",
+						"propertyTooltip": "A string constant defining the function; the meaning depends on the language. It can be an internal function name, the path to an object file, an SQL command, or text in a procedural language.",
+						"propertyType": "details",
+						"template": "textarea",
+						"markdown": false
+					},
+					{
+						"propertyName": "Parameters",
+						"propertyKeyword": "parameters",
+						"propertyTooltip": "Optional listing of parameters for the function.",
+						"propertyType": "details",
+						"template": "textarea",
+						"markdown": false
+					},
+					{
+						"propertyName": "If not exist",
+						"propertyKeyword": "ifNotExist",
+						"propertyTooltip": "This optional clause enables the statement to complete successfully when the specified function already exists.",
+						"defaultValue": true,
+						"propertyType": "checkbox",
+						"dependency": {
+							"key": "orReplace",
+							"value": false
+						}
+					},
+					{
+						"propertyName": "Language",
+						"propertyKeyword": "functionLanguage",
+						"propertyTooltip": "The name of the language that the procedure is implemented in.",
+						"propertyType": "select",
+						"defaultValue": "JavaScript",
+						"options": ["JavaScript"]
+					},
+					{
+						"propertyName": "AS object",
+						"propertyKeyword": "ASobject",
+						"propertyTooltip": "The name of the JavaScript function that you want to use for the user-defined function. This parameter is a string and must be wrapped in quotes.",
+						"propertyType": "details",
+						"template": "textarea",
+						"markdown": false
+					},
+					{
+						"propertyName": "AT library",
+						"propertyKeyword": "ATlibrary",
+						"propertyTooltip": "The name of the JavaScript library that contains the function you want to use.",
+						"propertyType": "details",
+						"template": "textarea",
+						"markdown": false
+					},
+					{
+						"propertyName": "Comments",
+						"propertyKeyword": "functionComments",
+						"propertyTooltip": "comments",
+						"addTimestampButton": false,
+						"propertyType": "details",
+						"template": "textarea"
 					}
-				},
-				{
-					"propertyName": "Language",
-					"propertyKeyword": "functionLanguage",
-					"propertyTooltip": "The name of the language that the procedure is implemented in.",
-					"propertyType": "select",
-					"defaultValue": "JavaScript",
-					"options": [
-						"JavaScript"
-					]
-				},
-				{
-					"propertyName": "AS object",
-					"propertyKeyword": "ASobject",
-					"propertyTooltip": "The name of the JavaScript function that you want to use for the user-defined function. This parameter is a string and must be wrapped in quotes.",
-					"propertyType": "details",
-					"template": "textarea",
-					"markdown": false
-				},
-				{
-					"propertyName": "AT library",
-					"propertyKeyword": "ATlibrary",
-					"propertyTooltip": "The name of the JavaScript library that contains the function you want to use.",
-					"propertyType": "details",
-					"template": "textarea",
-					"markdown": false
-				},
-				{
-					"propertyName": "Comments",
-					"propertyKeyword": "functionComments",
-					"propertyTooltip": "comments",
-					"addTimestampButton": false,
-					"propertyType": "details",
-					"template": "textarea"
-				}
-			]
-		}]
+				]
+			}
+		]
 	}
 ]

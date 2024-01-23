@@ -122,9 +122,7 @@ making sure that you maintain a proper JSON format.
 				"propertyKeyword": "dbVendor",
 				"propertyTooltip": "db vendor",
 				"propertyType": "select",
-				"options": [
-					"CouchbaseV7Plus"
-				],
+				"options": ["CouchbaseV7Plus"],
 				"disabledOption": true
 			},
 			{
@@ -132,9 +130,7 @@ making sure that you maintain a proper JSON format.
 				"propertyKeyword": "dbVersion",
 				"propertyTooltip": "Database version",
 				"propertyType": "select",
-				"options": [
-					"7.x"
-				]
+				"options": ["7.x"]
 			},
 			{
 				"propertyName": "Hosting",
@@ -142,10 +138,7 @@ making sure that you maintain a proper JSON format.
 				"propertyTooltip": "Select from list of options",
 				"propertyType": "select",
 				"defaultValue": "Self-hosted",
-				"options": [
-					"Self-hosted",
-					"Capella"
-				]
+				"options": ["Self-hosted", "Capella"]
 			},
 			{
 				"propertyName": "Database name",
@@ -162,10 +155,7 @@ making sure that you maintain a proper JSON format.
 				"propertyTooltip": "Select from list of options",
 				"propertyType": "select",
 				"defaultValue": "Amazon Web Services",
-				"options": [
-					"Amazon Web Services",
-					"Google Cloud"
-				],
+				"options": ["Amazon Web Services", "Google Cloud"],
 				"dependency": {
 					"key": "hosting",
 					"value": "Capella"
@@ -178,31 +168,34 @@ making sure that you maintain a proper JSON format.
 				"propertyType": "select",
 				"defaultValue": "US East (N. Virginia)",
 				"options": [
-					{"name": "US East (N. Virginia)", "value": "us-east-1"},
-					{"name": "US East (Ohio)", "value": "us-east-2"},
-					{"name": "US West (Oregon)", "value": "us-west-2"},
-					{"name": "Canada (Central)", "value": "ca-central-1"},
-					{"name": "South America (São Paulo)", "value": "sa-east-1"},
-					{"name": "Europe (Frankfurt)", "value": "eu-central-1"},
-					{"name": "Europe (Ireland)", "value": "eu-west-1"},
-					{"name": "Europe (London)", "value": "eu-west-2"},
-					{"name": "Europe (Paris)", "value": "eu-west-3"},
-					{"name": "Europe (Stockholm)", "value": "eu-north-1"},
-					{"name": "Asia Pacific (Singapore)", "value": "ap-southeast-1"},
-					{"name": "Asia Pacific (Sydney)", "value": "ap-southeast-2"},
-					{"name": "Asia Pacific (Tokyo)", "value": "ap-northeast-1"},
-					{"name": "Asia Pacific (Seoul)", "value": "ap-northeast-2"},
-					{"name": "Asia Pacific (Mumbai)", "value": "ap-south-1"}
+					{ "name": "US East (N. Virginia)", "value": "us-east-1" },
+					{ "name": "US East (Ohio)", "value": "us-east-2" },
+					{ "name": "US West (Oregon)", "value": "us-west-2" },
+					{ "name": "Canada (Central)", "value": "ca-central-1" },
+					{ "name": "South America (São Paulo)", "value": "sa-east-1" },
+					{ "name": "Europe (Frankfurt)", "value": "eu-central-1" },
+					{ "name": "Europe (Ireland)", "value": "eu-west-1" },
+					{ "name": "Europe (London)", "value": "eu-west-2" },
+					{ "name": "Europe (Paris)", "value": "eu-west-3" },
+					{ "name": "Europe (Stockholm)", "value": "eu-north-1" },
+					{ "name": "Asia Pacific (Singapore)", "value": "ap-southeast-1" },
+					{ "name": "Asia Pacific (Sydney)", "value": "ap-southeast-2" },
+					{ "name": "Asia Pacific (Tokyo)", "value": "ap-northeast-1" },
+					{ "name": "Asia Pacific (Seoul)", "value": "ap-northeast-2" },
+					{ "name": "Asia Pacific (Mumbai)", "value": "ap-south-1" }
 				],
 				"dependency": {
 					"type": "and",
-					"values": [{
-						"key": "hosting",
-						"value": "Capella"
-					}, {
-						"key": "cloudProvider",
-						"value": "Amazon Web Services"
-					}]
+					"values": [
+						{
+							"key": "hosting",
+							"value": "Capella"
+						},
+						{
+							"key": "cloudProvider",
+							"value": "Amazon Web Services"
+						}
+					]
 				}
 			},
 			{
@@ -212,45 +205,48 @@ making sure that you maintain a proper JSON format.
 				"propertyType": "select",
 				"defaultValue": "US East (South Carolina)",
 				"options": [
-					{"name": "US East (South Carolina)", "value": "us-east1"},
-					{"name": "US East (N. Virginia)", "value": "us-east4"},
-					{"name": "US West (Oregon)", "value": "us-west1"},
-					{"name": "US West (Utah)", "value": "us-west3"},
-					{"name": "US West (Nevada)", "value": "us-west4"},
-					{"name": "US Central (Iowa)", "value": "us-central1"},
-					{"name": "Canada (Montréal)", "value": "northamerica-northeast1"},
-					{"name": "Canada (Toronto)", "value": "northamerica-northeast2"},
-					{"name": "Brazil (São Paulo)", "value": "southamerica-east1"},
-					{"name": "Chile (Santiago)", "value": "southamerica-west1"},
-					{"name": "Belgium", "value": "europe-west1"},
-					{"name": "London", "value": "europe-west2"},
-					{"name": "Frankfurt", "value": "europe-west3"},
-					{"name": "Netherlands", "value": "europe-west4"},
-					{"name": "Zurich", "value": "europe-west6"},
-					{"name": "Milan", "value": "europe-west8"},
-					{"name": "Warsaw", "value": "europe-central2"},
-					{"name": "Finland", "value": "europe-north1"},
-					{"name": "Taiwan", "value": "asia-east1"},
-					{"name": "Hong Kong", "value": "asia-east2"},
-					{"name": "Tokyo", "value": "asia-northeast1"},
-					{"name": "Osaka", "value": "asia-northeast2"},
-					{"name": "Seoul", "value": "asia-northeast3"},
-					{"name": "Mumbai", "value": "asia-south1"},
-					{"name": "Delhi", "value": "asia-south2"},
-					{"name": "Singapore", "value": "asia-southeast1"},
-					{"name": "Jakarta", "value": "asia-southeast2"},
-					{"name": "Sydney", "value": "australia-southeast1"},
-					{"name": "Melbourne", "value": "australia-southeast2"}
+					{ "name": "US East (South Carolina)", "value": "us-east1" },
+					{ "name": "US East (N. Virginia)", "value": "us-east4" },
+					{ "name": "US West (Oregon)", "value": "us-west1" },
+					{ "name": "US West (Utah)", "value": "us-west3" },
+					{ "name": "US West (Nevada)", "value": "us-west4" },
+					{ "name": "US Central (Iowa)", "value": "us-central1" },
+					{ "name": "Canada (Montréal)", "value": "northamerica-northeast1" },
+					{ "name": "Canada (Toronto)", "value": "northamerica-northeast2" },
+					{ "name": "Brazil (São Paulo)", "value": "southamerica-east1" },
+					{ "name": "Chile (Santiago)", "value": "southamerica-west1" },
+					{ "name": "Belgium", "value": "europe-west1" },
+					{ "name": "London", "value": "europe-west2" },
+					{ "name": "Frankfurt", "value": "europe-west3" },
+					{ "name": "Netherlands", "value": "europe-west4" },
+					{ "name": "Zurich", "value": "europe-west6" },
+					{ "name": "Milan", "value": "europe-west8" },
+					{ "name": "Warsaw", "value": "europe-central2" },
+					{ "name": "Finland", "value": "europe-north1" },
+					{ "name": "Taiwan", "value": "asia-east1" },
+					{ "name": "Hong Kong", "value": "asia-east2" },
+					{ "name": "Tokyo", "value": "asia-northeast1" },
+					{ "name": "Osaka", "value": "asia-northeast2" },
+					{ "name": "Seoul", "value": "asia-northeast3" },
+					{ "name": "Mumbai", "value": "asia-south1" },
+					{ "name": "Delhi", "value": "asia-south2" },
+					{ "name": "Singapore", "value": "asia-southeast1" },
+					{ "name": "Jakarta", "value": "asia-southeast2" },
+					{ "name": "Sydney", "value": "australia-southeast1" },
+					{ "name": "Melbourne", "value": "australia-southeast2" }
 				],
 				"dependency": {
 					"type": "and",
-					"values": [{
-						"key": "hosting",
-						"value": "Capella"
-					}, {
-						"key": "cloudProvider",
-						"value": "Google Cloud"
-					}]
+					"values": [
+						{
+							"key": "hosting",
+							"value": "Capella"
+						},
+						{
+							"key": "cloudProvider",
+							"value": "Google Cloud"
+						}
+					]
 				}
 			},
 			{
