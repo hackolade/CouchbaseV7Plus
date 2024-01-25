@@ -15,10 +15,19 @@
 	},
 	"container": {
 		"name": "New scope",
-		"indexes": []
+		"bucketType": "Couchbase",
+		"ramQuota": 100,
+		"cacheMetadata": "Value ejection",
+		"accessControl": "Standart port",
+		"password": "",
+		"conflictResolution": "Sequence number",
+		"replicasNumber": 1,
+		"bucketIOPriority": "Low (Default)",
+		"storageEngine": "Couchstore"
 	},
 	"collection": {
-		"collectionName": "New collection"
+		"collectionName": "New collection",
+		"indexes": []
 	},
 	"field": {
 		"name": "New field"

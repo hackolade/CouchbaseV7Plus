@@ -1,5 +1,5 @@
 /*
-* Copyright © 2016-2019 by IntegrIT S.A. dba Hackolade.  All rights reserved.
+* Copyright © 2016-2024 by IntegrIT S.A. dba Hackolade.  All rights reserved.
 *
 * The copyright to the computer software herein is the property of IntegrIT S.A.
 * The software may be used and/or copied only with the written permission of 
@@ -113,7 +113,6 @@ making sure that you maintain a proper JSON format.
 			}
 
 */
-
 [
 	{
 		"lowerTab": "Details",
@@ -122,14 +121,14 @@ making sure that you maintain a proper JSON format.
 			{
 				"propertyKeyword": "name",
 				"validation": {
-					"regex": "^[\\s\\S]{1,63}$",
+					"regex": "^(^\\b_default\\b$|(?!(_|%))[a-zA-Z0-9%_\\-]{1,251})$",
 					"required": true
 				}
 			},
 			{
 				"propertyKeyword": "code",
 				"validation": {
-					"regex": "^[\\s\\S]{1,63}$"
+					"regex": "^(^\\b_default\\b$|(?!(_|%))[a-zA-Z0-9%_\\-]{1,251})$"
 				}
 			},
 			{
@@ -157,8 +156,8 @@ making sure that you maintain a proper JSON format.
 				}
 			},
 			{
-				"propertyName": "If not exist",
-				"propertyKeyword": "ifNotExist",
+				"propertyName": "If not exists",
+				"propertyKeyword": "ifNotExists",
 				"propertyTooltip": "This optional clause enables the statement to complete successfully when the specified scope already exists.",
 				"defaultValue": true,
 				"propertyType": "checkbox"
@@ -169,6 +168,179 @@ making sure that you maintain a proper JSON format.
 				"propertyTooltip": "comments",
 				"propertyType": "details",
 				"template": "textarea"
+			},
+			{
+				"propertyName": "Bucket type",
+				"propertyKeyword": "bucketType",
+				"shouldValidate": false,
+				"propertyTooltip": "bucket type",
+				"propertyType": "select",
+				"options": ["Couchbase", "Memcached"]
+			},
+			{
+				"propertyName": "Storage Engine",
+				"propertyKeyword": "storageEngine",
+				"shouldValidate": false,
+				"propertyTooltip": "Storage Engine",
+				"propertyType": "select",
+				"options": ["Couchstore", "Magma"]
+			},
+			{
+				"propertyName": "Memory size",
+				"propertyKeyword": "type",
+				"shouldValidate": false,
+				"propertyType": "empty"
+			},
+			{
+				"propertyName": "Per node RAM quota",
+				"propertyKeyword": "ramQuota",
+				"shouldValidate": true,
+				"propertyTooltip": "Per node RAM quota",
+				"propertyType": "text",
+				"labelOffset": 50,
+				"number": true
+			},
+			{
+				"propertyName": "Cache Metadata",
+				"propertyKeyword": "cacheMetadata",
+				"shouldValidate": false,
+				"propertyTooltip": "cache metadata",
+				"propertyType": "select",
+				"options": ["Value ejection", "Full ejection"],
+				"labelOffset": 50,
+				"dependency": {
+					"key": "bucketType",
+					"value": "Couchbase"
+				}
+			},
+			{
+				"propertyName": "Access Control",
+				"propertyKeyword": "accessControl",
+				"shouldValidate": false,
+				"propertyTooltip": "cache metadata",
+				"propertyType": "select",
+				"options": ["Standart port", "Dedicated port"]
+			},
+			{
+				"propertyName": "Protocol Port",
+				"propertyKeyword": "protocolPort",
+				"shouldValidate": false,
+				"propertyTooltip": "cache metadata",
+				"propertyType": "text",
+				"labelOffset": 50,
+				"dependency": {
+					"key": "accessControl",
+					"value": "Dedicated port"
+				}
+			},
+			{
+				"propertyName": "Conflict resolution",
+				"propertyKeyword": "conflictResolution",
+				"shouldValidate": false,
+				"propertyTooltip": "cache metadata",
+				"propertyType": "select",
+				"options": ["Sequence number", "Timestamp"],
+				"dependency": {
+					"key": "bucketType",
+					"value": "Couchbase"
+				}
+			},
+			{
+				"propertyName": "Replicas",
+				"propertyKeyword": "replicas",
+				"shouldValidate": false,
+				"propertyType": "empty",
+				"dependency": {
+					"key": "bucketType",
+					"value": "Couchbase"
+				}
+			},
+			{
+				"propertyName": "Enable",
+				"propertyKeyword": "replicasEnable",
+				"shouldValidate": false,
+				"propertyType": "checkbox",
+				"dependency": {
+					"key": "bucketType",
+					"value": "Couchbase"
+				}
+			},
+			{
+				"propertyName": "Number",
+				"propertyKeyword": "replicasNumber",
+				"shouldValidate": false,
+				"propertyType": "text",
+				"dependency": {
+					"key": "bucketType",
+					"value": "Couchbase"
+				},
+				"number": true
+			},
+			{
+				"propertyName": "View index replicas",
+				"propertyKeyword": "replicasViewIndex",
+				"shouldValidate": false,
+				"propertyType": "checkbox",
+				"dependency": {
+					"key": "bucketType",
+					"value": "Couchbase"
+				}
+			},
+			{
+				"propertyName": "Disk I/O optimisation",
+				"propertyKeyword": "diskOptimisation",
+				"shouldValidate": false,
+				"propertyType": "empty",
+				"dependency": {
+					"key": "bucketType",
+					"value": "Couchbase"
+				}
+			},
+			{
+				"propertyName": "Disk I/O priority",
+				"propertyKeyword": "bucketIOPriority",
+				"shouldValidate": false,
+				"propertyTooltip": "bucket I/P priority",
+				"propertyType": "select",
+				"options": ["Low (Default)", "High"],
+				"labelOffset": 50,
+				"dependency": {
+					"key": "bucketType",
+					"value": "Couchbase"
+				}
+			},
+			{
+				"propertyName": "Auto-Compaction",
+				"propertyKeyword": "autoCompaction",
+				"shouldValidate": false,
+				"propertyType": "empty",
+				"dependency": {
+					"key": "bucketType",
+					"value": "Couchbase"
+				}
+			},
+			{
+				"propertyName": "Override default",
+				"propertyKeyword": "overrideDefault",
+				"shouldValidate": false,
+				"propertyType": "checkbox",
+				"dependency": {
+					"key": "bucketType",
+					"value": "Couchbase"
+				}
+			},
+			{
+				"propertyName": "FLUSH",
+				"propertyKeyword": "flush",
+				"shouldValidate": false,
+				"propertyTooltip": "memory size",
+				"propertyType": "empty"
+			},
+			{
+				"propertyName": "Enable",
+				"propertyKeyword": "flushEnable",
+				"shouldValidate": false,
+				"propertyType": "checkbox"
 			}
 		]
 	}
