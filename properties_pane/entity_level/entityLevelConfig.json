@@ -163,7 +163,7 @@ making sure that you maintain a proper JSON format.
 				"propertyType": "group",
 				"propertyKeyword": "indexes",
 				"shouldValidate": false,
-				"propertyTooltip": "indexes",
+				"propertyTooltip": "Click + to add an index",
 				"erdIndexAbbr": "I",
 				"structure": [
 					{
@@ -182,7 +182,7 @@ making sure that you maintain a proper JSON format.
 						"parentType": "indexes",
 						"propertyType": "checkbox",
 						"shouldValidate": false,
-						"propertyTooltip": "Activated"
+						"propertyTooltip": "Deactivated item will be not included in forward-engineering script"
 					},
 					{
 						"template": "textarea",
