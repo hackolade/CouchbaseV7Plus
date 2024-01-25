@@ -148,7 +148,7 @@ making sure that you maintain a proper JSON format.
 			"sample",
 			"comments"
 		],
-		"numeric": [
+		"number": [
 			{
 				"fieldKeyword": "name",
 				"validation": {
