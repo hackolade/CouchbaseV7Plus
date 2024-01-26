@@ -1,7 +1,7 @@
 {
     "name": "CouchbaseV7Plus",
     "version": "0.0.3",
-    "versionDate": "2023-01-22",
+    "versionDate": "2023-01-26",
     "author": "hackolade",
     "engines": {
         "hackolade": "5.3.0",
