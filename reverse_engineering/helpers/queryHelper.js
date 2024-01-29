@@ -7,11 +7,11 @@ const getSelectBucketDocumentKindQuery = ({ bucketName, documentKind }) => {
 };
 
 /**
- * @param {{ bucketName: string }} param0
+ * @param {{ bucketName: string; limit: number; }} param0
  * @returns {string}
  */
-const getInferBucketDocumentsQuery = ({ bucketName }) => {
-	return `INFER \`${bucketName}\` WITH {"sample_size": 1000,"num_sample_values":3};`;
+const getInferBucketDocumentsQuery = ({ bucketName, limit }) => {
+	return `INFER \`${bucketName}\` WITH {"sample_size": ${limit},"num_sample_values":3};`;
 };
 
 /**

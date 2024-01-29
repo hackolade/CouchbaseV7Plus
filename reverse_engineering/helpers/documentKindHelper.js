@@ -1,4 +1,5 @@
 /**
+ * @typedef {import('../../shared/types').App} App
  * @typedef {import('../../shared/types').DocumentKindData} DocumentKindData
  * @typedef {import('../../shared/types').Cluster} Cluster
  * @typedef {import('../../shared/types').ConnectionInfo} ConnectionInfo
@@ -7,7 +8,8 @@
  */
 const _ = require('lodash');
 const clusterHelper = require('./clusterHelper');
-const { COUCHBASE_ERROR_CODE, DEFAULT_NAME, FLAVOR_REGEX, STATUS } = require('../../shared/constants');
+const restApiHelper = require('./restApiHelper');
+const { COUCHBASE_ERROR_CODE, DEFAULT_NAME, FLAVOR_REGEX, STATUS, DEFAULT_LIMIT } = require('../../shared/constants');
 
 /**
  * @param {{ bucketName: string; status?: STATUS; }} param0
@@ -18,10 +20,10 @@ const getDefaultDocumentKindData = ({ bucketName, status }) => {
 };
 
 /**
- * @param {{ cluster: Cluster; connectionInfo: ConnectionInfo; logger: Logger; }} param0
+ * @param {{ cluster: Cluster; connectionInfo: ConnectionInfo; logger: Logger; app: App }} param0
  * @returns {Promise<DocumentKindData[]>}
  */
-const getBucketsDocumentKindList = async ({ cluster, connectionInfo, logger }) => {
+const getBucketsDocumentKindList = async ({ cluster, connectionInfo, logger, app }) => {
 	const documentKindList = [];
 	const selectedBucket = connectionInfo.couchbase_bucket;
 	const bucketScopeNameMap = await clusterHelper.getBucketScopeNameMap({ cluster, selectedBucket });
@@ -31,7 +33,13 @@ const getBucketsDocumentKindList = async ({ cluster, connectionInfo, logger }) =
 		const hasDefaultCollection = clusterHelper.isBucketHasDefaultCollection({ scopes });
 
 		if (hasDefaultCollection) {
-			const documentKindData = await getBucketDocumentKindData({ cluster, connectionInfo, bucketName, logger });
+			const documentKindData = await getBucketDocumentKindData({
+				cluster,
+				connectionInfo,
+				bucketName,
+				logger,
+				app,
+			});
 			documentKindList.push(documentKindData);
 		}
 	}
@@ -40,17 +48,17 @@ const getBucketsDocumentKindList = async ({ cluster, connectionInfo, logger }) =
 };
 
 /**
- * @param {{ cluster: Cluster; connectionInfo: ConnectionInfo; bucketName: string; logger: Logger; }} param0
+ * @param {{ cluster: Cluster; connectionInfo: ConnectionInfo; bucketName: string; logger: Logger; app: App }} param0
  * @returns {Promise<DocumentKindData>}
  */
-const getBucketDocumentKindData = async ({ cluster, connectionInfo, bucketName, logger }) => {
+const getBucketDocumentKindData = async ({ cluster, connectionInfo, bucketName, logger, app }) => {
 	const keySpaceName = `${bucketName}.${DEFAULT_NAME}.${DEFAULT_NAME}: `;
 
 	return getDocumentKindDataByInference({ cluster, bucketName })
 		.catch(error => {
 			const errorMessage = clusterHelper.getErrorMessage({ error });
 			logger.info(keySpaceName + errorMessage);
-			return getDocumentKindDataByErrorHandling({ cluster, connectionInfo, bucketName, error });
+			return getDocumentKindDataByErrorHandling({ cluster, connectionInfo, bucketName, error, app });
 		})
 		.catch(error => {
 			const errorMessage = clusterHelper.getErrorMessage({ error });
@@ -213,38 +221,12 @@ const manualInfer = ({ bucketName, documents }) => {
 };
 
 /**
- * @param {{ bucketName: string; connectionInfo: ConnectionInfo; }} param0
- * @returns {Promise<Document[]>}
- */
-const getDocumentsUsingRestApi = async ({ bucketName, connectionInfo }) => {
-	return new Promise((resolve, reject) => {
-		this.getFetchedDocuments(
-			{
-				connectionInfo,
-				bucketName,
-				recordSamplingSettings: connectionInfo.recordSamplingSettings,
-			},
-			(err, documents) => {
-				if (err) {
-					return reject(err);
-				}
-
-				documents = documents.filter(item => !this.isBinaryFile(item));
-				documents = documents.map(item => ({ [bucketName]: item.json }));
-
-				resolve(documents);
-			},
-		);
-	});
-};
-
-/**
- * @param {{ bucketName: string; connectionInfo: ConnectionInfo; logger: Logger }} param0
+ * @param {{ bucketName: string; connectionInfo: ConnectionInfo; logger: Logger; app: App }} param0
  * @returns {Promise<DocumentKindData>}
  */
-const getDocumentKindDataUsingRestApi = async ({ bucketName, connectionInfo, logger }) => {
+const getDocumentKindDataUsingRestApi = async ({ bucketName, connectionInfo, logger, app }) => {
 	try {
-		const documents = await getDocumentsUsingRestApi({ bucketName, connectionInfo });
+		const documents = await restApiHelper.getDocuments({ bucketName, connectionInfo, logger, app });
 		return manualInfer({ bucketName, documents });
 	} catch (error) {
 		logger.error(error);
@@ -293,11 +275,11 @@ const getDocumentKindDataByInference = async ({ cluster, bucketName }) => {
 };
 
 /**
- * @param {{ cluster: Cluster; connectionInfo: ConnectionInfo;  bucketName: string; error: Error; logger: Logger; }} param0
+ * @param {{ cluster: Cluster; connectionInfo: ConnectionInfo;  bucketName: string; error: Error; logger: Logger; app: App }} param0
  * @throws {Error}
  * @returns {Promise<DocumentKindData>}
  */
-const getDocumentKindDataByErrorHandling = async ({ cluster, connectionInfo, bucketName, error, logger }) => {
+const getDocumentKindDataByErrorHandling = async ({ cluster, connectionInfo, bucketName, error, logger, app }) => {
 	const errorCode = clusterHelper.getErrorCode({ error });
 	switch (errorCode) {
 		case COUCHBASE_ERROR_CODE.bucketIsEmpty:
@@ -305,7 +287,7 @@ const getDocumentKindDataByErrorHandling = async ({ cluster, connectionInfo, buc
 		case COUCHBASE_ERROR_CODE.primaryIndexDoesNotExist:
 		case COUCHBASE_ERROR_CODE.n1qlMethodsAreNotSupported:
 		case COUCHBASE_ERROR_CODE.userDoesNotHaveAccessToPrivilegeCluster:
-			return getDocumentKindDataUsingRestApi({ bucketName, connectionInfo, logger });
+			return getDocumentKindDataUsingRestApi({ bucketName, connectionInfo, logger, app });
 		case COUCHBASE_ERROR_CODE.parseSyntaxError:
 		case COUCHBASE_ERROR_CODE.inferMethodIsNotSupport:
 			return getDocumentKindDataUsingN1ql({ cluster, bucketName });

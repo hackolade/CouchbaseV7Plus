@@ -38,6 +38,7 @@ const COUCHBASE_DEFAULT_KV_CONNECTION_PORT = 11210;
 const DISABLED_TOOLTIP = 'Something went wrong. Please, check logs for more details';
 const DEFAULT_NAME = '_default';
 const FLAVOR_REGEX = /([\s\S]*?) \= "?([\s\S]*?)"?$/;
+const DEFAULT_LIMIT = 1000;
 
 module.exports = {
 	AUTH_TYPE,
@@ -45,6 +46,7 @@ module.exports = {
 	COUCHBASE_HOST_PREFIX,
 	COUCHBASE_DEFAULT_KV_CONNECTION_PORT,
 	DEFAULT_DOCUMENT_KIND,
+	DEFAULT_LIMIT,
 	DEFAULT_NAME,
 	DISABLED_TOOLTIP,
 	FLAVOR_REGEX,

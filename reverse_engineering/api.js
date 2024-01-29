@@ -58,6 +58,7 @@ const getDocumentKinds = async (connectionInfo, appLogger, callback, app) => {
 			cluster,
 			connectionInfo,
 			logger,
+			app,
 		});
 		callback(null, bucketsDocumentKindList);
 	} catch (error) {

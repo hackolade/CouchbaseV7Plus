@@ -15,6 +15,7 @@ const {
 	DEFAULT_NAME,
 	DISABLED_TOOLTIP,
 	STATUS,
+	DEFAULT_LIMIT,
 } = require('../../shared/constants');
 const queryHelper = require('./queryHelper');
 
@@ -141,7 +142,7 @@ const getDocumentKindCollectionNames = async ({ cluster, bucketName, documentKin
  * @returns {Promise<Document[]>}
  */
 const getDocumentsByInfer = async ({ cluster, bucketName }) => {
-	const inferBucketDocumentsQuery = queryHelper.getInferBucketDocumentsQuery({ bucketName });
+	const inferBucketDocumentsQuery = queryHelper.getInferBucketDocumentsQuery({ bucketName, limit: DEFAULT_LIMIT });
 	const { rows: documents, meta } = await cluster.query(inferBucketDocumentsQuery);
 	const metaError = _.get(meta, 'errors.[0].[0]');
 	const isDocumentEmpty = _.get(documents, '[0].properties');
@@ -162,7 +163,7 @@ const getDocumentsByInfer = async ({ cluster, bucketName }) => {
  * @returns {Promise<Document[]>}
  */
 const getDocumentsBySelectStatement = async ({ cluster, bucketName }) => {
-	const selectBucketDocumentsQuery = queryHelper.getSelectBucketDocumentsQuery({ bucketName });
+	const selectBucketDocumentsQuery = queryHelper.getSelectBucketDocumentsQuery({ bucketName, limit: DEFAULT_LIMIT });
 	const { rows: documents } = await cluster.query(selectBucketDocumentsQuery);
 
 	return documents;
