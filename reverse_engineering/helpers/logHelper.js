@@ -1,3 +1,8 @@
+/**
+ * @typedef {import('../../shared/types').AppLogger} AppLogger
+ * @typedef {import('../../shared/types').Logger} Logger
+ */
+
 const os = require('os');
 const packageFile = require('../../package.json');
 
@@ -43,6 +48,10 @@ const toTime = number => {
 	return Math.floor(number / 3600) + ':' + prefixZero(parseInt((number / 3600 - Math.floor(number / 3600)) * 60));
 };
 
+/**
+ * @param {{ title: string; logger: AppLogger; hiddenKeys: string[] }} param0
+ * @returns {Logger}
+ */
 const createLogger = ({ title, logger, hiddenKeys }) => {
 	return {
 		info(message) {
@@ -59,7 +68,11 @@ const createLogger = ({ title, logger, hiddenKeys }) => {
 	};
 };
 
-const createError = error => {};
+const createError = error => {
+	return {
+		message: error.cause?.message || error.message,
+	};
+};
 
 const logHelper = {
 	getSystemInfo,
