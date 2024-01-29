@@ -58,8 +58,8 @@ const createLogger = ({ title, logger, hiddenKeys }) => {
 			logger.log('info', { message }, title, hiddenKeys);
 		},
 
-		progress(message, dbName = '', tableName = '') {
-			logger.progress({ message, containerName: dbName, entityName: tableName });
+		progress(message, containerName = '', entityName = '') {
+			logger.progress({ message, containerName, entityName });
 		},
 
 		error(error) {

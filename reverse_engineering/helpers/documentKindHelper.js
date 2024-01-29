@@ -1,8 +1,9 @@
 /**
- * @typedef {import("../../shared/types").Cluster} Cluster
- * @typedef {import("../../shared/types").ConnectionInfo} ConnectionInfo
- * @typedef {import("../../shared/types").ConnectionDataItem} ConnectionDataItem
- * @typedef {import("../../shared/types").Logger} Logger
+ * @typedef {import('../../shared/types').DocumentKindData} DocumentKindData
+ * @typedef {import('../../shared/types').Cluster} Cluster
+ * @typedef {import('../../shared/types').ConnectionInfo} ConnectionInfo
+ * @typedef {import('../../shared/types').BucketCollectionNamesData} BucketCollectionNamesData
+ * @typedef {import('../../shared/types').Logger} Logger
  */
 const _ = require('lodash');
 const clusterHelper = require('./clusterHelper');
@@ -12,15 +13,15 @@ const { COUCHBASE_ERROR_CODE, DEFAULT_NAME, FLAVOR_REGEX, STATUS } = require('..
  * @param {{ bucketName: string; status?: STATUS; }} param0
  * @returns {DocumentKindData}
  */
-const getDefaultDocumentKindDataByBucket = ({ bucketName, status }) => {
+const getDefaultDocumentKindData = ({ bucketName, status }) => {
 	return { bucketName, documentList: [], documentKind: '', status };
 };
 
 /**
- * @param {{ cluster: Cluster; connectionInfo: ConnectionInfo; log: Logger; }} param0
+ * @param {{ cluster: Cluster; connectionInfo: ConnectionInfo; logger: Logger; }} param0
  * @returns {Promise<DocumentKindData[]>}
  */
-const getBucketsDocumentKindList = async ({ cluster, connectionInfo, log }) => {
+const getBucketsDocumentKindList = async ({ cluster, connectionInfo, logger }) => {
 	const documentKindList = [];
 	const selectedBucket = connectionInfo.couchbase_bucket;
 	const bucketScopeNameMap = await clusterHelper.getBucketScopeNameMap({ cluster, selectedBucket });
@@ -30,7 +31,7 @@ const getBucketsDocumentKindList = async ({ cluster, connectionInfo, log }) => {
 		const hasDefaultCollection = clusterHelper.isBucketHasDefaultCollection({ scopes });
 
 		if (hasDefaultCollection) {
-			const documentKindData = await getBucketDocumentKindData({ cluster, connectionInfo, bucketName, log });
+			const documentKindData = await getBucketDocumentKindData({ cluster, connectionInfo, bucketName, logger });
 			documentKindList.push(documentKindData);
 		}
 	}
@@ -39,27 +40,22 @@ const getBucketsDocumentKindList = async ({ cluster, connectionInfo, log }) => {
 };
 
 /**
- * @param {{ cluster: Cluster; connectionInfo: ConnectionInfo; bucketName: string; log: Logger; }} param0
+ * @param {{ cluster: Cluster; connectionInfo: ConnectionInfo; bucketName: string; logger: Logger; }} param0
  * @returns {Promise<DocumentKindData>}
  */
-const getBucketDocumentKindData = async ({ cluster, connectionInfo, bucketName, log }) => {
+const getBucketDocumentKindData = async ({ cluster, connectionInfo, bucketName, logger }) => {
 	const keySpaceName = `${bucketName}.${DEFAULT_NAME}.${DEFAULT_NAME}: `;
 
-	return clusterHelper
-		.getDocumentsByInfer({ cluster, bucketName })
-		.then(documents => {
-			log.info(keySpaceName + 'Inference schema retrieved successfully.');
-			return getDocumentKindDataByBucket({ cluster, connectionInfo, bucketName, documents });
+	return getDocumentKindDataByInference({ cluster, bucketName })
+		.catch(error => {
+			const errorMessage = clusterHelper.getErrorMessage({ error });
+			logger.info(keySpaceName + errorMessage);
+			return getDocumentKindDataByErrorHandling({ cluster, connectionInfo, bucketName, error });
 		})
 		.catch(error => {
 			const errorMessage = clusterHelper.getErrorMessage({ error });
-			log.info(keySpaceName + errorMessage);
-			return getDocumentKindDataByBucket({ cluster, connectionInfo, bucketName, error });
-		})
-		.catch(error => {
-			const errorMessage = clusterHelper.getErrorMessage({ error });
-			log.error(keySpaceName + errorMessage);
-			return getDefaultDocumentKindDataByBucket({ bucketName, status: STATUS.hasError });
+			logger.info(keySpaceName + errorMessage);
+			return getDefaultDocumentKindData({ bucketName, status: STATUS.hasError });
 		});
 };
 
@@ -243,17 +239,16 @@ const getDocumentsUsingRestApi = async ({ bucketName, connectionInfo }) => {
 };
 
 /**
- * @param {{ bucketName: string; connectionInfo: ConnectionInfo; log: Logger }} param0
+ * @param {{ bucketName: string; connectionInfo: ConnectionInfo; logger: Logger }} param0
  * @returns {Promise<DocumentKindData>}
  */
-const getDocumentKindUsingRestApi = async ({ bucketName, connectionInfo, log }) => {
+const getDocumentKindDataUsingRestApi = async ({ bucketName, connectionInfo, logger }) => {
 	try {
 		const documents = await getDocumentsUsingRestApi({ bucketName, connectionInfo });
 		return manualInfer({ bucketName, documents });
 	} catch (error) {
-		const errorMessage = clusterHelper.getErrorMessage({ error });
-		log.error(errorMessage);
-		return getDefaultDocumentKindDataByBucket({ bucketName, status: STATUS.hasError });
+		logger.error(error);
+		return getDefaultDocumentKindData({ bucketName, status: STATUS.hasError });
 	}
 };
 
@@ -261,7 +256,7 @@ const getDocumentKindUsingRestApi = async ({ bucketName, connectionInfo, log }) 
  * @param {{ cluster: Cluster; bucketName: string; }} param0
  * @returns {Promise<DocumentKindData>}
  */
-const getDocumentKindUsingN1ql = async ({ cluster, bucketName }) => {
+const getDocumentKindDataUsingN1ql = async ({ cluster, bucketName }) => {
 	const documents = await clusterHelper.getDocumentsBySelectStatement({ cluster, bucketName });
 	return manualInfer({ bucketName, documents });
 };
@@ -275,11 +270,12 @@ const getNonEmptyFlavorValue = data => {
 };
 
 /**
- * @param {{ bucketName: string; documents: Document[]; }} param0
+ * @param {{cluster: Cluster; bucketName: string; }} param0
  * @throws {Error}
- * @returns {DocumentKindData}
+ * @returns {Promise<DocumentKindData>}
  */
-const getDocumentKindData = ({ bucketName, documents }) => {
+const getDocumentKindDataByInference = async ({ cluster, bucketName }) => {
+	const documents = await clusterHelper.getDocumentsByInfer({ cluster, bucketName });
 	const [inference] = documents;
 	const flavorValue = getNonEmptyFlavorValue(inference);
 	const isFlavourString = _.isString(flavorValue);
@@ -290,33 +286,29 @@ const getDocumentKindData = ({ bucketName, documents }) => {
 	const shouldCreateManually = !isFlavourString || isMultipleFlavours || !documentKindName;
 
 	if (shouldCreateManually) {
-		const error = new Error();
-		error.code = COUCHBASE_ERROR_CODE.inferMethodIsNotSupport;
-		throw error;
+		throw _.set(new Error(), 'code', COUCHBASE_ERROR_CODE.inferMethodIsNotSupport);
 	}
 
 	return getDocumentKindDataFromInfer({ bucketName, inference, flavorValue });
 };
 
 /**
- * @param {{ cluster: Cluster; connectionInfo: ConnectionInfo; error: Error; bucketName: string; documents: Document[]; log: Logger; }} param0
+ * @param {{ cluster: Cluster; connectionInfo: ConnectionInfo;  bucketName: string; error: Error; logger: Logger; }} param0
  * @throws {Error}
- * @returns {Promise<any>}
+ * @returns {Promise<DocumentKindData>}
  */
-const getDocumentKindDataByBucket = async ({ cluster, connectionInfo, error, bucketName, documents, log }) => {
+const getDocumentKindDataByErrorHandling = async ({ cluster, connectionInfo, bucketName, error, logger }) => {
 	const errorCode = clusterHelper.getErrorCode({ error });
 	switch (errorCode) {
-		case undefined:
-			return getDocumentKindData({ bucketName, connectionInfo, documents });
 		case COUCHBASE_ERROR_CODE.bucketIsEmpty:
-			return getDefaultDocumentKindDataByBucket({ bucketName });
+			return getDefaultDocumentKindData({ bucketName });
 		case COUCHBASE_ERROR_CODE.primaryIndexDoesNotExist:
 		case COUCHBASE_ERROR_CODE.n1qlMethodsAreNotSupported:
 		case COUCHBASE_ERROR_CODE.userDoesNotHaveAccessToPrivilegeCluster:
-			return getDocumentKindUsingRestApi({ bucketName, connectionInfo, log });
+			return getDocumentKindDataUsingRestApi({ bucketName, connectionInfo, logger });
 		case COUCHBASE_ERROR_CODE.parseSyntaxError:
 		case COUCHBASE_ERROR_CODE.inferMethodIsNotSupport:
-			return getDocumentKindUsingN1ql({ cluster, bucketName });
+			return getDocumentKindDataUsingN1ql({ cluster, bucketName });
 		default:
 			throw error;
 	}

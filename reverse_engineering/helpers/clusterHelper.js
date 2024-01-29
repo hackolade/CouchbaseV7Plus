@@ -1,9 +1,10 @@
 /**
+ * @typedef {import('../../shared/types').Document} Document
  * @typedef {import('../../shared/types').Cluster} Cluster
  * @typedef {import('../../shared/types').Bucket} Bucket
  * @typedef {import('../../shared/types').Scope} Scope
  * @typedef {import('../../shared/types').NameMap} NameMap
- * @typedef {import('../../shared/types').ConnectionDataItem} ConnectionDataItem
+ * @typedef {import('../../shared/types').BucketCollectionNamesData} BucketCollectionNamesData
  * @typedef {import('../../shared/types').ConnectionInfo} ConnectionInfo
  * @typedef {import('../../shared/types').Logger} Logger
  */
@@ -75,11 +76,11 @@ const isBucketHasDefaultCollection = ({ scopes }) => {
 };
 
 /**
- * @param {{ cluster: Cluster;connectionInfo: ConnectionInfo;log: Logger; }} param0
- * @returns {Promise<any>}
+ * @param {{ cluster: Cluster;connectionInfo: ConnectionInfo; logger: Logger; }} param0
+ * @returns {Promise<BucketCollectionNamesData[]>}
  */
-const getDbCollectionsNames = async ({ cluster, connectionInfo, log }) => {
-	const connectionDataItems = [];
+const getDbCollectionsNames = async ({ cluster, connectionInfo, logger }) => {
+	const dbCollectionNames = [];
 	const bucketScopeMap = await getBucketScopeNameMap({ cluster, selectedBucket: connectionInfo.couchbase_bucket });
 
 	for (const bucketName in bucketScopeMap) {
@@ -89,26 +90,27 @@ const getDbCollectionsNames = async ({ cluster, connectionInfo, log }) => {
 		for (const scope of scopes) {
 			const scopeName = scope.name;
 			const scopeCollectionNames = scope.collections.map(collection => collection.name);
+			const notDefaultScopeCollectionNames = scopeCollectionNames.filter(name => name !== DEFAULT_NAME);
 			const hasDefaultCollection = isBucketHasDefaultCollection({ scopes: [scope] });
 			const documentKindCollectionNames = hasDefaultCollection
-				? await getDocumentKindCollectionNames({ cluster, bucketName, documentKind, log })
+				? await getDocumentKindCollectionNames({ cluster, bucketName, documentKind, logger })
 				: [];
-			const collectionNames = [...documentKindCollectionNames, ...scopeCollectionNames];
-			const dataItem = prepareConnectionDataItem({ bucketName, scopeName, collectionNames });
+			const collectionNames = [...documentKindCollectionNames, ...notDefaultScopeCollectionNames];
+			const dbCollectionNameData = prepareBucketCollectionNamesData({ bucketName, scopeName, collectionNames });
 
-			connectionDataItems.push(dataItem);
+			dbCollectionNames.push(dbCollectionNameData);
 		}
 	}
 
-	return connectionDataItems;
+	return dbCollectionNames;
 };
 
 /**
  *
- * @param {{ cluster: Cluster;bucketName: string;scopeName: string;documentKind: string; log: Logger }} param0
+ * @param {{ cluster: Cluster;bucketName: string;scopeName: string;documentKind: string; logger: Logger }} param0
  * @returns {Promise<string[]>}
  */
-const getDocumentKindCollectionNames = async ({ cluster, bucketName, documentKind, log }) => {
+const getDocumentKindCollectionNames = async ({ cluster, bucketName, documentKind, logger }) => {
 	try {
 		if (documentKind === DEFAULT_DOCUMENT_KIND) {
 			return [];
@@ -121,7 +123,6 @@ const getDocumentKindCollectionNames = async ({ cluster, bucketName, documentKin
 		return collectionNames;
 	} catch (error) {
 		const errorCode = getErrorCode({ error });
-		const errorMessage = getErrorMessage({ error });
 		if (
 			errorCode === COUCHBASE_ERROR_CODE.primaryIndexDoesNotExist ||
 			errorCode === COUCHBASE_ERROR_CODE.n1qlMethodsAreNotSupported
@@ -130,14 +131,14 @@ const getDocumentKindCollectionNames = async ({ cluster, bucketName, documentKin
 			return [];
 		}
 
-		log.error(errorMessage);
+		logger.error(error);
 		return [];
 	}
 };
 /**
  * @param {{ cluster: Cluster; bucketName: string; }} param0
  * @throws {Error}
- * @returns {Promise<any[]>}
+ * @returns {Promise<Document[]>}
  */
 const getDocumentsByInfer = async ({ cluster, bucketName }) => {
 	const inferBucketDocumentsQuery = queryHelper.getInferBucketDocumentsQuery({ bucketName });
@@ -150,9 +151,7 @@ const getDocumentsByInfer = async ({ cluster, bucketName }) => {
 	}
 
 	if (isDocumentEmpty) {
-		const error = new Error();
-		error.code = COUCHBASE_ERROR_CODE.bucketIsEmpty;
-		throw error;
+		throw _.set(new Error(), 'code', COUCHBASE_ERROR_CODE.bucketIsEmpty);
 	}
 
 	return documents;
@@ -160,7 +159,7 @@ const getDocumentsByInfer = async ({ cluster, bucketName }) => {
 
 /**
  * @param {{ cluster: Cluster; bucketName: string; }} param0
- * @returns {Promise<any[]>}
+ * @returns {Promise<Document[]>}
  */
 const getDocumentsBySelectStatement = async ({ cluster, bucketName }) => {
 	const selectBucketDocumentsQuery = queryHelper.getSelectBucketDocumentsQuery({ bucketName });
@@ -194,15 +193,15 @@ const getErrorMessage = ({ error }) => {
 		case COUCHBASE_ERROR_CODE.userDoesNotHaveAccessToPrivilegeCluster:
 			return 'User doesn`t have credentials for privileged cluster.';
 		default:
-			return error?.message || '';
+			return error?.cause?.message || error?.message || '';
 	}
 };
 
 /**
  * @param {{ bucketName: string; scopeName: string; collectionNames?: string[]; status?: STATUS; }} param0
- * @returns {ConnectionDataItem}
+ * @returns {BucketCollectionNamesData}
  */
-const prepareConnectionDataItem = ({ bucketName, scopeName, collectionNames, status }) => {
+const prepareBucketCollectionNamesData = ({ bucketName, scopeName, collectionNames, status }) => {
 	const hasError = status === STATUS.hasError;
 	const dbCollections = hasError ? [] : _.uniq(collectionNames);
 	return {

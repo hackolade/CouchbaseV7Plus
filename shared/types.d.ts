@@ -1,4 +1,5 @@
 import { Cluster, Scope, Bucket } from '@types/couchbase';
+import { STATUS } from './constants';
 
 type UUID = string;
 
@@ -7,7 +8,11 @@ type FilePath = string;
 type AppTarget = 'COUCHBASEV7PLUS';
 
 type App = {
-  require: (packageName: string) => any;
+	require: (packageName: string) => any;
+};
+
+type AppLogger = {
+	log: (logType: string, logData: { message: string }, title: string, hiddenKeys: string[]) => void;
 };
 
 type Pagination = {
@@ -63,12 +68,10 @@ type ConnectionParams = {
 	options: CouchbaseTypes.ClassicAuthenticator;
 };
 
-type LoggerMethod = (message: string) => void;
-
 type Logger = {
-	log?: LoggerMethod;
-	info?: LoggerMethod;
-	error?: LoggerMethod;
+	error: (error: Error) => void;
+	info: (message: string) => void;
+	progress: (message: string, containerName: string, entityName: string) => void;
 };
 
 type Callback = (error: Error, result: any[], info?: { version?: string }, relationships?: any[]) => void;
@@ -77,7 +80,7 @@ type NameMap = {
 	[key: string]: NameMap | string[];
 };
 
-type ConnectionDataItem = {
+type BucketCollectionNamesData = {
 	dbName: string;
 	scopeName?: string;
 	dbCollections?: string[];
@@ -85,20 +88,35 @@ type ConnectionDataItem = {
 	disabledTooltip?: string;
 };
 
+type Document = {
+	[key: string]: any;
+};
+
+type DocumentKindData = {
+	bucketName: string;
+	documentList: string[];
+	otherDocKinds: string[];
+	documentKind: string;
+	status?: STATUS;
+};
+
 export {
-  App,
+	App,
+	AppLogger,
 	AppTarget,
-  Bucket,
+	Bucket,
+	BucketCollectionNamesData,
 	Callback,
-  Cluster,
-	ConnectionDataItem,
+	Cluster,
 	ConnectionInfo,
 	ConnectionParams,
+	Document,
+	DocumentKindData,
 	FilePath,
-  NameMap,
-  Logger,
+	NameMap,
+	Logger,
 	Pagination,
 	RecordSamplingSettings,
-  Scope,
+	Scope,
 	UUID,
 };
