@@ -26,17 +26,18 @@ class CouchbaseRestApiService {
 					...(options.headers || {}),
 					Authorization: `Basic ${encodedCredentials}`,
 				},
+				useElectronNet: false,
 			};
 		}
 
 		try {
 			return await this.httpService.get(uri, options);
 		} catch (error) {
-			throw new Error({
+			throw {
 				message: error.statusText || error.message,
 				code: error.status || error.code,
 				description: await error?.text?.(),
-			});
+			};
 		}
 	}
 
@@ -112,6 +113,7 @@ const createRestApiService = ({ connectionInfo, app }) => {
 
 const getDocuments = async ({ connectionInfo, bucketName, logger, app }) => {
 	logger.info(`${bucketName}: Start getting documents using REST API`);
+
 	const apiService = createRestApiService({ connectionInfo, app });
 	const count = await apiService.count(bucketName);
 	const body = await apiService.getRandomKey(bucketName);

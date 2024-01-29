@@ -9,6 +9,7 @@
  * @typedef {import('../../shared/types').Logger} Logger
  */
 const _ = require('lodash');
+const restApiHelper = require('./restApiHelper');
 const {
 	COUCHBASE_ERROR_CODE,
 	DEFAULT_DOCUMENT_KIND,
@@ -77,10 +78,10 @@ const isBucketHasDefaultCollection = ({ scopes }) => {
 };
 
 /**
- * @param {{ cluster: Cluster;connectionInfo: ConnectionInfo; logger: Logger; }} param0
+ * @param {{ cluster: Cluster;connectionInfo: ConnectionInfo; logger: Logger; app: App }} param0
  * @returns {Promise<BucketCollectionNamesData[]>}
  */
-const getDbCollectionsNames = async ({ cluster, connectionInfo, logger }) => {
+const getDbCollectionsNames = async ({ cluster, connectionInfo, logger, app }) => {
 	const dbCollectionNames = [];
 	const bucketScopeMap = await getBucketScopeNameMap({ cluster, selectedBucket: connectionInfo.couchbase_bucket });
 
@@ -94,7 +95,14 @@ const getDbCollectionsNames = async ({ cluster, connectionInfo, logger }) => {
 			const notDefaultScopeCollectionNames = scopeCollectionNames.filter(name => name !== DEFAULT_NAME);
 			const hasDefaultCollection = isBucketHasDefaultCollection({ scopes: [scope] });
 			const documentKindCollectionNames = hasDefaultCollection
-				? await getDocumentKindCollectionNames({ cluster, bucketName, documentKind, logger })
+				? await getDocumentKindCollectionNames({
+						cluster,
+						connectionInfo,
+						bucketName,
+						documentKind,
+						logger,
+						app,
+					})
 				: [];
 			const collectionNames = [...documentKindCollectionNames, ...notDefaultScopeCollectionNames];
 			const dbCollectionNameData = prepareBucketCollectionNamesData({ bucketName, scopeName, collectionNames });
@@ -108,10 +116,10 @@ const getDbCollectionsNames = async ({ cluster, connectionInfo, logger }) => {
 
 /**
  *
- * @param {{ cluster: Cluster;bucketName: string;scopeName: string;documentKind: string; logger: Logger }} param0
+ * @param {{ cluster: Cluster; connectionInfo: ConnectionInfo; bucketName: string; documentKind: string; logger: Logger; app: App }} param0
  * @returns {Promise<string[]>}
  */
-const getDocumentKindCollectionNames = async ({ cluster, bucketName, documentKind, logger }) => {
+const getDocumentKindCollectionNames = async ({ cluster, connectionInfo, bucketName, documentKind, logger, app }) => {
 	try {
 		if (documentKind === DEFAULT_DOCUMENT_KIND) {
 			return [];
@@ -128,8 +136,18 @@ const getDocumentKindCollectionNames = async ({ cluster, bucketName, documentKin
 			errorCode === COUCHBASE_ERROR_CODE.primaryIndexDoesNotExist ||
 			errorCode === COUCHBASE_ERROR_CODE.n1qlMethodsAreNotSupported
 		) {
-			//TODO get Fetched documents
-			return [];
+			const documents = await restApiHelper.getDocuments({ connectionInfo, bucketName, logger, app });
+			const collectionNames = documents.reduce((result, doc) => {
+				const collectionName = doc[bucketName]?.[documentKind];
+
+				if (!collectionName || result.includes(collectionName)) {
+					return result;
+				}
+
+				return [...result, collectionName];
+			}, []);
+
+			return collectionNames;
 		}
 
 		logger.error(error);
@@ -138,7 +156,7 @@ const getDocumentKindCollectionNames = async ({ cluster, bucketName, documentKin
 };
 /**
  * @param {{ cluster: Cluster; bucketName: string; }} param0
- * @throws {Error}
+ * @throws
  * @returns {Promise<Document[]>}
  */
 const getDocumentsByInfer = async ({ cluster, bucketName }) => {
@@ -152,7 +170,7 @@ const getDocumentsByInfer = async ({ cluster, bucketName }) => {
 	}
 
 	if (isDocumentEmpty) {
-		throw _.set(new Error(), 'code', COUCHBASE_ERROR_CODE.bucketIsEmpty);
+		throw { code: COUCHBASE_ERROR_CODE.bucketIsEmpty };
 	}
 
 	return documents;
@@ -174,7 +192,7 @@ const getDocumentsBySelectStatement = async ({ cluster, bucketName }) => {
  * @returns {number | undefined}
  */
 const getErrorCode = ({ error }) => {
-	return error?.cause?.first_error_code || error?.code;
+	return error?.cause?.first_error_code ?? error?.code;
 };
 
 /**

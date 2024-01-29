@@ -83,7 +83,7 @@ const getDbCollectionsNames = async (connectionInfo, appLogger, callback, app) =
 
 	try {
 		const cluster = await connectionHelper.connect({ connectionInfo, app });
-		const documents = await clusterHelper.getDbCollectionsNames({ connectionInfo, cluster, logger });
+		const documents = await clusterHelper.getDbCollectionsNames({ connectionInfo, cluster, logger, app });
 
 		callback(null, documents);
 	} catch (error) {

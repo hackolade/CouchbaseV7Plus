@@ -58,7 +58,7 @@ const getBucketDocumentKindData = async ({ cluster, connectionInfo, bucketName, 
 		.catch(error => {
 			const errorMessage = clusterHelper.getErrorMessage({ error });
 			logger.info(keySpaceName + errorMessage);
-			return getDocumentKindDataByErrorHandling({ cluster, connectionInfo, bucketName, error, app });
+			return getDocumentKindDataByErrorHandling({ cluster, connectionInfo, bucketName, error, logger, app });
 		})
 		.catch(error => {
 			const errorMessage = clusterHelper.getErrorMessage({ error });
@@ -253,7 +253,7 @@ const getNonEmptyFlavorValue = data => {
 
 /**
  * @param {{cluster: Cluster; bucketName: string; }} param0
- * @throws {Error}
+ * @throws
  * @returns {Promise<DocumentKindData>}
  */
 const getDocumentKindDataByInference = async ({ cluster, bucketName }) => {
@@ -263,12 +263,12 @@ const getDocumentKindDataByInference = async ({ cluster, bucketName }) => {
 	const isFlavourString = _.isString(flavorValue);
 	const flavours = isFlavourString ? flavorValue.split(',') : [];
 	const isMultipleFlavours = flavours.length > 1;
-	const flavor = flavorValue.match(new RegExp(FLAVOR_REGEX));
-	const [, , documentKindName] = flavor;
+	const flavor = flavorValue?.match(new RegExp(FLAVOR_REGEX));
+	const documentKindName = flavor?.[2];
 	const shouldCreateManually = !isFlavourString || isMultipleFlavours || !documentKindName;
 
 	if (shouldCreateManually) {
-		throw _.set(new Error(), 'code', COUCHBASE_ERROR_CODE.inferMethodIsNotSupport);
+		throw { code: COUCHBASE_ERROR_CODE.inferMethodIsNotSupport };
 	}
 
 	return getDocumentKindDataFromInfer({ bucketName, inference, flavorValue });
