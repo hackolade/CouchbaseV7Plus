@@ -257,7 +257,7 @@ const getNonEmptyFlavorValue = data => {
  * @returns {Promise<DocumentKindData>}
  */
 const getDocumentKindDataByInference = async ({ cluster, bucketName }) => {
-	const documents = await clusterHelper.getDocumentsByInfer({ cluster, bucketName });
+	const documents = await clusterHelper.getBucketDocumentsByInfer({ cluster, bucketName });
 	const [inference] = documents;
 	const flavorValue = getNonEmptyFlavorValue(inference);
 	const isFlavourString = _.isString(flavorValue);

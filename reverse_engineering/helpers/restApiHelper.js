@@ -2,6 +2,14 @@ const _ = require('lodash');
 const async = require('async');
 const { DEFAULT_LIMIT } = require('../../shared/constants');
 
+class CustomError extends Error {
+	constructor({ code, message }) {
+		super();
+		this.code = code;
+		this.message = message;
+	}
+}
+
 class CouchbaseRestApiService {
 	constructor(connectionInfo, httpService) {
 		this.host = connectionInfo.host;
@@ -33,11 +41,10 @@ class CouchbaseRestApiService {
 		try {
 			return await this.httpService.get(uri, options);
 		} catch (error) {
-			throw {
+			throw new CustomError({
 				message: error.statusText || error.message,
 				code: error.status || error.code,
-				description: await error?.text?.(),
-			};
+			});
 		}
 	}
 
@@ -111,7 +118,7 @@ const createRestApiService = ({ connectionInfo, app }) => {
 	return apiService;
 };
 
-const getDocuments = async ({ connectionInfo, bucketName, logger, app }) => {
+const getBucketDocuments = async ({ connectionInfo, bucketName, logger, app }) => {
 	logger.info(`${bucketName}: Start getting documents using REST API`);
 
 	const apiService = createRestApiService({ connectionInfo, app });
@@ -176,5 +183,5 @@ const getDocuments = async ({ connectionInfo, bucketName, logger, app }) => {
 };
 
 module.exports = {
-	getDocuments,
+	getBucketDocuments,
 };

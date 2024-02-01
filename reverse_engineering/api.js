@@ -12,6 +12,7 @@ const connectionHelper = require('./helpers/connectionHelper');
 const clusterHelper = require('./helpers/clusterHelper');
 const documentKindHelper = require('./helpers/documentKindHelper');
 const logHelper = require('./helpers/logHelper');
+const { DEFAULT_LIMIT } = require('../shared/constants');
 
 /**
  * @param {ConnectionInfo} connectionInfo
@@ -88,7 +89,7 @@ const getDbCollectionsNames = async (connectionInfo, appLogger, callback, app) =
 		callback(null, documents);
 	} catch (error) {
 		logger.error(error);
-		connectionHelper.disconnect();
+		await connectionHelper.disconnect();
 		callback(error);
 	}
 };
@@ -106,7 +107,36 @@ const getDbCollectionsData = async (data, appLogger, callback, app) => {
 		logger: appLogger,
 	});
 
-	callback(null, []);
+	try {
+		const cluster = await connectionHelper.connect({ connectionInfo: data.connectionInfo, app });
+		const collectionVersion = data.collectionData.collectionVersion;
+
+		const dbCollectionsData = [];
+
+		for (const bucketName in collectionVersion) {
+			for (const scopeName in collectionVersion[bucketName]) {
+				for (const collectionName of collectionVersion[bucketName][scopeName]) {
+					const dbCollectionData = await clusterHelper.getDbCollectionData({
+						cluster,
+						data,
+						bucketName,
+						scopeName,
+						collectionName,
+						logger,
+						app,
+					});
+
+					dbCollectionsData.push(dbCollectionData);
+				}
+			}
+		}
+
+		callback(null, dbCollectionsData);
+	} catch (error) {
+		callback(error);
+	} finally {
+		await connectionHelper.disconnect();
+	}
 };
 
 module.exports = {
