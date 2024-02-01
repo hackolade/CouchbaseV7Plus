@@ -318,7 +318,7 @@ const getCollectionSamplingSize = async ({
  * @returns {Promise<Document[]>}
  */
 const getCollectionDocumentsByInfer = async ({ cluster, bucketName, scopeName, collectionName, limit }) => {
-	query = queryHelper.getInferCollectionDocumentsQuery({ bucketName, scopeName, collectionName, limit });
+	const query = queryHelper.getInferCollectionDocumentsQuery({ bucketName, scopeName, collectionName, limit });
 	const { rows, meta } = await cluster.query(query);
 	const metaError = _.get(meta, 'errors.[0]');
 
