@@ -24,6 +24,7 @@ const COUCHBASE_ERROR_CODE = {
 	userDoesNotHaveAccessToPrivilegeCluster: 13014,
 	parseSyntaxError: 3000,
 	inferMethodIsNotSupport: 16003,
+	collectionDoesNotExist: 12003,
 };
 
 /**

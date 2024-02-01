@@ -100,6 +100,17 @@ type DocumentKindData = {
 	status?: STATUS;
 };
 
+type DbCollectionData = {
+	dbName: string;
+	collectionName: string;
+	documentKind: string;
+	collectionDocs: object;
+	bucketInfo: object;
+	emptyBucket: boolean;
+	indexes: object[];
+	documents: Document[];
+}
+
 export {
 	App,
 	AppLogger,
@@ -110,6 +121,7 @@ export {
 	Cluster,
 	ConnectionInfo,
 	ConnectionParams,
+	DbCollectionData,
 	Document,
 	DocumentKindData,
 	FilePath,

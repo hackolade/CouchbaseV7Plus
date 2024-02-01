@@ -1,4 +1,5 @@
 /**
+ * @typedef {import('../../shared/types').DbCollectionData} DbCollectionData
  * @typedef {import('../../shared/types').Document} Document
  * @typedef {import('../../shared/types').Cluster} Cluster
  * @typedef {import('../../shared/types').Bucket} Bucket
@@ -7,9 +8,11 @@
  * @typedef {import('../../shared/types').BucketCollectionNamesData} BucketCollectionNamesData
  * @typedef {import('../../shared/types').ConnectionInfo} ConnectionInfo
  * @typedef {import('../../shared/types').Logger} Logger
+ * @typedef {import('../../shared/types').RecordSamplingSettings} RecordSamplingSettings
  */
 const _ = require('lodash');
 const restApiHelper = require('./restApiHelper');
+const schemaHelper = require('./schemaHelper');
 const {
 	COUCHBASE_ERROR_CODE,
 	DEFAULT_DOCUMENT_KIND,
@@ -136,7 +139,7 @@ const getDocumentKindCollectionNames = async ({ cluster, connectionInfo, bucketN
 			errorCode === COUCHBASE_ERROR_CODE.primaryIndexDoesNotExist ||
 			errorCode === COUCHBASE_ERROR_CODE.n1qlMethodsAreNotSupported
 		) {
-			const documents = await restApiHelper.getDocuments({ connectionInfo, bucketName, logger, app });
+			const documents = await restApiHelper.getBucketDocuments({ connectionInfo, bucketName, logger, app });
 			const collectionNames = documents.reduce((result, doc) => {
 				const collectionName = doc[bucketName]?.[documentKind];
 
@@ -159,10 +162,10 @@ const getDocumentKindCollectionNames = async ({ cluster, connectionInfo, bucketN
  * @throws
  * @returns {Promise<Document[]>}
  */
-const getDocumentsByInfer = async ({ cluster, bucketName }) => {
+const getBucketDocumentsByInfer = async ({ cluster, bucketName }) => {
 	const inferBucketDocumentsQuery = queryHelper.getInferBucketDocumentsQuery({ bucketName, limit: DEFAULT_LIMIT });
 	const { rows: documents, meta } = await cluster.query(inferBucketDocumentsQuery);
-	const metaError = _.get(meta, 'errors.[0].[0]');
+	const metaError = _.get(meta, 'errors.[0]');
 	const isDocumentEmpty = _.get(documents, '[0].properties');
 
 	if (metaError) {
@@ -177,11 +180,11 @@ const getDocumentsByInfer = async ({ cluster, bucketName }) => {
 };
 
 /**
- * @param {{ cluster: Cluster; bucketName: string; }} param0
+ * @param {{ cluster: Cluster; bucketName: string; limit: number }} param0
  * @returns {Promise<Document[]>}
  */
-const getDocumentsBySelectStatement = async ({ cluster, bucketName }) => {
-	const selectBucketDocumentsQuery = queryHelper.getSelectBucketDocumentsQuery({ bucketName, limit: DEFAULT_LIMIT });
+const getDocumentsBySelectStatement = async ({ cluster, bucketName, limit = DEFAULT_LIMIT }) => {
+	const selectBucketDocumentsQuery = queryHelper.getSelectBucketDocumentsQuery({ bucketName, limit });
 	const { rows: documents } = await cluster.query(selectBucketDocumentsQuery);
 
 	return documents;
@@ -232,13 +235,214 @@ const prepareBucketCollectionNamesData = ({ bucketName, scopeName, collectionNam
 	};
 };
 
+/**
+ * @typedef {(args: object) => string} getQuery
+ * @param {{ cluster: Cluster; options: object; getQuery: getQuery; logger: Logger }} param0
+ * @returns {Promise<Document[]>}
+ */
+const getPaginatedQuery = async ({ cluster, options, query, logger }) => {
+	const { bucketName, scopeName, collectionName, pagination, limit } = options;
+	logger.progress('Get data from database', bucketName + '.' + scopeName, collectionName);
+
+	if (!pagination?.enabled) {
+		const queryWithOptions = queryHelper.getQueryOptions({ query, limit });
+		const { rows } = await cluster.query(queryWithOptions);
+		return rows;
+	}
+
+	const pageSize = Number(options.pagination.value) || DEFAULT_LIMIT;
+	const pages = Math.ceil(options.limit / pageSize);
+	const rowsByPages = [];
+
+	let counter = 0;
+
+	for (const page of pages) {
+		const offset = pageSize * page;
+		const limit = options.limit - offset < pageSize ? options.limit - offset : pageSize;
+		const queryWithOptions = queryHelper.getQueryOptions({ query, limit, offset });
+		const { rows } = await cluster.query(queryWithOptions);
+
+		counter += rows.length;
+		rowsByPages.push(...rows);
+
+		logger.progress(
+			`Collection sampling: ${counter} / ${options.limit}`,
+			bucketName + '.' + scopeName,
+			collectionName,
+		);
+	}
+
+	return rowsByPages;
+};
+
+/**
+ * @param {{size: number; recordSamplingSettings: RecordSamplingSettings }} param0
+ * @returns {number}
+ */
+const getDocSamplingSize = ({ size, recordSamplingSettings }) => {
+	if (recordSamplingSettings.active === 'absolute') {
+		return Number(recordSamplingSettings.absolute.value);
+	}
+
+	const limit = Math.ceil((size * recordSamplingSettings.relative.value) / 100);
+
+	return Math.min(limit, recordSamplingSettings.maxValue);
+};
+
+/**
+ * @param {{ cluster: Cluster; bucketName: string; scopeName: string; collectionName: string; recordSamplingSettings: RecordSamplingSettings; logger: Logger }} param0
+ * @returns {Promise<number>}
+ */
+const getCollectionSamplingSize = async ({
+	cluster,
+	bucketName,
+	scopeName,
+	collectionName,
+	recordSamplingSettings,
+	logger,
+}) => {
+	try {
+		const query = queryHelper.getCountCollectionDocumentsQuery({ bucketName, scopeName, collectionName });
+		const { rows } = await cluster.query(query);
+		const size = rows?.[0]?.size;
+
+		return getDocSamplingSize({ size, recordSamplingSettings }) || DEFAULT_LIMIT;
+	} catch (error) {
+		logger.error(error);
+		return DEFAULT_LIMIT;
+	}
+};
+
+/**
+ * @param {{ cluster: Cluster; bucketName: string; scopeName: string; collectionName: string; limit: number }} param0
+ * @returns {Promise<Document[]>}
+ */
+const getCollectionDocumentsByInfer = async ({ cluster, bucketName, scopeName, collectionName, limit }) => {
+	query = queryHelper.getInferCollectionDocumentsQuery({ bucketName, scopeName, collectionName, limit });
+	const { rows, meta } = await cluster.query(query);
+	const metaError = _.get(meta, 'errors.[0]');
+
+	if (metaError) {
+		throw metaError;
+	}
+
+	const [[inference]] = rows;
+
+	return schemaHelper.convertInferSchemaToDocuments({ inference, bucketName });
+};
+
+/**
+ * @param {{
+ * cluster: Cluster;
+ * data: object;
+ * bucketName: string;
+ * scopeName: string;
+ * collectionName: string;
+ * collectionIndexes: object[];
+ * logger: Logger;
+ * app: App;
+ *  }} param0
+ * @returns {Promise<DbCollectionData>}
+ */
+const getDbCollectionData = async ({
+	cluster,
+	data,
+	bucketName,
+	scopeName,
+	collectionName,
+	collectionIndexes,
+	logger,
+	app,
+}) => {
+	const limit = await getCollectionSamplingSize({
+		cluster,
+		bucketName,
+		scopeName,
+		collectionName,
+		recordSamplingSettings: data.recordSamplingSettings,
+		logger,
+	});
+	const documentKind = data.documentKinds?.[bucketName]?.documentKindName || '';
+	const options = { limit, pagination: data.pagination, bucketName, scopeName, collectionName };
+
+	let documents = [];
+	let query = queryHelper.getSelectCollectionDocumentsQuery({ bucketName, scopeName, collectionName });
+
+	try {
+		documents = await getPaginatedQuery({ cluster, options, query, logger });
+
+		return schemaHelper.getDbCollectionData({
+			bucketName,
+			scopeName,
+			collectionName,
+			documents,
+			collectionIndexes,
+		});
+	} catch (error) {
+		try {
+			const errorCode = getErrorCode({ error });
+			switch (errorCode) {
+				case COUCHBASE_ERROR_CODE.collectionDoesNotExist:
+					query = queryHelper.getSelectBucketDocumentsByDocumentKindQuery({
+						bucketName,
+						documentKind,
+						collectionName,
+					});
+					documents = await getPaginatedQuery({ cluster, options, query, logger });
+					break;
+				case COUCHBASE_ERROR_CODE.primaryIndexDoesNotExist:
+					documents = await getCollectionDocumentsByInfer({
+						cluster,
+						bucketName,
+						scopeName,
+						collectionName,
+						limit,
+					});
+					break;
+				case COUCHBASE_ERROR_CODE.inferMethodIsNotSupport:
+				case COUCHBASE_ERROR_CODE.n1qlMethodsAreNotSupported:
+					documents = await restApiHelper.getBucketDocuments({
+						connectionInfo: data.connectionInfo,
+						bucketName,
+						logger,
+						app,
+					});
+					break;
+			}
+		} catch (error) {
+			const errorCode = getErrorCode({ error });
+			if (errorCode === COUCHBASE_ERROR_CODE.n1qlMethodsAreNotSupported) {
+				documents = await restApiHelper.getBucketDocuments({
+					connectionInfo: data.connectionInfo,
+					bucketName,
+					logger,
+					app,
+				});
+			}
+			logger.error(error);
+		}
+
+		logger.error(error);
+
+		return schemaHelper.getDbCollectionData({
+			bucketName,
+			scopeName,
+			collectionName,
+			documents,
+			collectionIndexes,
+		});
+	}
+};
+
 module.exports = {
 	isBucketHasDefaultCollection,
 	getAllBuckets,
 	getBucketScopeNameMap,
 	getDbCollectionsNames,
+	getDbCollectionData,
 	getDocumentsBySelectStatement,
-	getDocumentsByInfer,
+	getBucketDocumentsByInfer,
 	getErrorCode,
 	getErrorMessage,
+	getPaginatedQuery,
 };
