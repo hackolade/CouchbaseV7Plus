@@ -50,13 +50,19 @@ const disconnect = async (__connectionInfo, __appLogger, callback) => {
  * @param {Callback} callback
  * @param {App} app
  */
-const testConnection = async (connectionInfo, __appLogger, callback, app) => {
+const testConnection = async (connectionInfo, appLogger, callback, app) => {
+	const logger = logHelper.createLogger({
+		title: 'Test database connection',
+		hiddenKeys: connectionInfo.hiddenKeys,
+		logger: appLogger,
+	});
 	try {
 		await connectionHelper.disconnect();
 		await connectionHelper.connect({ connectionInfo, app });
 		await connectionHelper.disconnect();
 		callback();
 	} catch (error) {
+		logger.error(error);
 		callback(error);
 	}
 };
