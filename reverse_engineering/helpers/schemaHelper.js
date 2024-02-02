@@ -7,8 +7,14 @@ const _ = require('lodash');
 const { DEFAULT_KEY_NAME, DEFAULT_NAME } = require('../../shared/constants');
 
 /**
- *
- * @param {{ documents: Document[]; bucketName: string; scopeName: string; collectionName: string; collectionIndexes: object[]; includeEmptyCollection: boolean }} param0
+ * @param {{
+ * documents: Document[];
+ * bucketName: string;
+ * scopeName: string;
+ * collectionName: string;
+ * documentKind: string;
+ * collectionIndexes: object[];
+ * includeEmptyCollection: boolean }} param0
  * @returns {DbCollectionData}
  */
 const getDbCollectionData = ({
@@ -16,6 +22,7 @@ const getDbCollectionData = ({
 	bucketName,
 	scopeName,
 	collectionName,
+	documentKind,
 	collectionIndexes,
 	includeEmptyCollection,
 }) => {
@@ -26,24 +33,24 @@ const getDbCollectionData = ({
 			...item[bucketName],
 		}));
 	const standardDoc = _.first(jsonDocuments);
-	const keyType = standardDoc ? typeOf(standardDoc[DEFAULT_KEY_NAME]) : '';
 	const emptyBucket = !includeEmptyCollection && _.isEmpty(jsonDocuments);
 
 	return {
 		dbName: scopeName,
-		collectionName: collectionName,
-		documentKind: '',
+		collectionName,
+		documentKind,
 		collectionDocs: {},
-		standardDoc: standardDoc,
+		standardDoc,
 		bucketInfo: {
 			bucket: bucketName,
 		},
-		emptyBucket: emptyBucket,
+		emptyBucket,
 		documents: jsonDocuments,
+		containerLevelKeys: {
+			key: DEFAULT_KEY_NAME,
+		},
 		entityLevel: {
 			indexes: collectionIndexes,
-			keyName: DEFAULT_KEY_NAME,
-			keyType: keyType,
 		},
 	};
 };
