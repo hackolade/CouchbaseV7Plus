@@ -215,7 +215,7 @@ const getErrorMessage = ({ error }) => {
 		case COUCHBASE_ERROR_CODE.userDoesNotHaveAccessToPrivilegeCluster:
 			return 'User doesn`t have credentials for privileged cluster.';
 		default:
-			return error?.cause?.message || error?.message || '';
+			return error?.cause?.first_error_message || error?.message || '';
 	}
 };
 
