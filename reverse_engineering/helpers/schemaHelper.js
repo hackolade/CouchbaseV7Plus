@@ -1,9 +1,10 @@
 /**
  * @typedef {import('../../shared/types').DbCollectionData} DbCollectionData
  * @typedef {import('../../shared/types').Document} Document
+ * @typedef {import('../../shared/types').NameMap} NameMap
  */
 const _ = require('lodash');
-const { DEFAULT_KEY_NAME } = require('../../shared/constants');
+const { DEFAULT_KEY_NAME, DEFAULT_NAME } = require('../../shared/constants');
 
 /**
  *
@@ -25,10 +26,8 @@ const getDbCollectionData = ({
 			...item[bucketName],
 		}));
 	const standardDoc = _.first(jsonDocuments);
-
-	if (!includeEmptyCollection && _.isEmpty(jsonDocuments)) {
-		return null;
-	}
+	const keyType = standardDoc ? typeOf(standardDoc[DEFAULT_KEY_NAME]) : '';
+	const emptyBucket = !includeEmptyCollection && _.isEmpty(jsonDocuments);
 
 	return {
 		dbName: scopeName,
@@ -39,12 +38,12 @@ const getDbCollectionData = ({
 		bucketInfo: {
 			bucket: bucketName,
 		},
-		emptyBucket: false,
+		emptyBucket: emptyBucket,
 		documents: jsonDocuments,
 		entityLevel: {
 			indexes: collectionIndexes,
 			keyName: DEFAULT_KEY_NAME,
-			keyType: typeOf(standardDoc[DEFAULT_KEY_NAME]),
+			keyType: keyType,
 		},
 	};
 };
@@ -75,6 +74,70 @@ const convertInferSchemaToDocuments = ({ inference, bucketName }) => {
 };
 
 /**
+ * @param {{ entitiesData: object[]; indexesByCollectionMap: NameMap; scopeBucketNameMap: NameMap }} param0
+ * @returns {DbCollectionData[]}
+ */
+const mapParsedResultToMultipleSchema = ({ entitiesData, indexesByCollectionMap, scopeBucketNameMap }) => {
+	return entitiesData.map(({ bucketName, scopeName, collectionName, ifNotExists }) => {
+		return {
+			doc: {
+				bucketInfo: {
+					bucket: bucketName,
+					ifNotExists: scopeBucketNameMap[scopeName]?.ifNotExists,
+				},
+				emptyBucket: !collectionName,
+				dbName: scopeName,
+				collectionName: collectionName,
+				entityLevel: {
+					ifNotExists,
+					indexes: indexesByCollectionMap?.[bucketName]?.[scopeName]?.[collectionName],
+				},
+			},
+			objectNames: {
+				collectionName,
+			},
+			collectionDocs: {},
+			jsonSchema: {
+				type: 'object',
+			},
+		};
+	});
+};
+
+/**
+ * @param {{ dbCollectionsData: DbCollectionData[] }} param0
+ * @returns {DbCollectionData[]}
+ */
+const updateDefaultDbNames = ({ dbCollectionsData }) => {
+	const bucketNames = dbCollectionsData
+		.filter(data => data.dbName === DEFAULT_NAME)
+		.map(data => data.bucketInfo.bucket);
+	const uniqueBucketNames = _.uniq(bucketNames);
+	const shouldUpdateDefaultNames = _.uniq(bucketNames).length > 1;
+
+	if (!shouldUpdateDefaultNames) {
+		return dbCollectionsData;
+	}
+
+	return dbCollectionsData.map(data => {
+		if (data.dbName !== DEFAULT_NAME) {
+			return data;
+		}
+
+		const bucketIndex = uniqueBucketNames.indexOf(data.bucketInfo.bucket);
+
+		if (bucketIndex < 1) {
+			return data;
+		}
+
+		return {
+			...data,
+			dbName: data.dbName + `(${bucketIndex})`,
+		};
+	});
+};
+
+/**
  * @param {any} obj
  * @returns {string}
  */
@@ -85,4 +148,7 @@ const typeOf = obj => {
 module.exports = {
 	getDbCollectionData,
 	convertInferSchemaToDocuments,
+	mapParsedResultToMultipleSchema,
+	typeOf,
+	updateDefaultDbNames,
 };

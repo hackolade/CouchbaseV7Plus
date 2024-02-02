@@ -10,6 +10,7 @@
 const _ = require('lodash');
 const clusterHelper = require('./clusterHelper');
 const restApiHelper = require('./restApiHelper');
+const schemaHelper = require('./schemaHelper');
 const { COUCHBASE_ERROR_CODE, DEFAULT_NAME, FLAVOR_REGEX, STATUS } = require('../../shared/constants');
 
 /**
@@ -73,10 +74,6 @@ const getBucketDocumentKindData = async ({ cluster, connectionInfo, bucketName, 
  * @returns {object}
  */
 const generateCustomInferSchema = ({ bucketName, documents }) => {
-	const typeOf = obj => {
-		return {}.toString.call(obj).split(' ')[1].slice(0, -1).toLowerCase();
-	};
-
 	documents = documents.map(item => {
 		if (typeof item[bucketName] === 'object') {
 			return item[bucketName];
@@ -107,13 +104,13 @@ const generateCustomInferSchema = ({ bucketName, documents }) => {
 					inferSchema.properties[prop]['samples'].push(item[prop]);
 				}
 
-				inferSchema.properties[prop]['type'] = typeOf(item[prop]);
+				inferSchema.properties[prop]['type'] = schemaHelper.typeOf(item[prop]);
 			} else {
 				inferSchema.properties[prop] = {
 					'#docs': 1,
 					'%docs': 100,
 					'samples': [item[prop]],
-					'type': typeOf(item[prop]),
+					'type': schemaHelper.typeOf(item[prop]),
 				};
 			}
 		}
