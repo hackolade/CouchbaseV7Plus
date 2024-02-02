@@ -6,10 +6,17 @@ const _ = require('lodash');
 
 /**
  *
- * @param {{ documents: Document[]; bucketName: string; scopeName: string; collectionName: string; collectionIndexes: object[] }} param0
+ * @param {{ documents: Document[]; bucketName: string; scopeName: string; collectionName: string; collectionIndexes: object[]; includeEmptyCollection: boolean }} param0
  * @returns {DbCollectionData}
  */
-const getDbCollectionData = ({ documents, bucketName, scopeName, collectionName, collectionIndexes }) => {
+const getDbCollectionData = ({
+	documents,
+	bucketName,
+	scopeName,
+	collectionName,
+	collectionIndexes,
+	includeEmptyCollection,
+}) => {
 	const jsonDocuments = documents
 		.filter(item => _.isPlainObject(item[bucketName]))
 		.map(item => ({
@@ -17,17 +24,24 @@ const getDbCollectionData = ({ documents, bucketName, scopeName, collectionName,
 			...item[bucketName],
 		}));
 
+	if (!includeEmptyCollection && _.isEmpty(jsonDocuments)) {
+		return null;
+	}
+
 	return {
 		dbName: scopeName,
 		collectionName: collectionName,
 		documentKind: '',
 		collectionDocs: {},
+		standardDoc: _.first(jsonDocuments),
 		bucketInfo: {
 			bucket: bucketName,
 		},
-		emptyBucket: !jsonDocuments.length,
-		indexes: collectionIndexes,
+		emptyBucket: false,
 		documents: jsonDocuments,
+		entityLevel: {
+			indexes: collectionIndexes,
+		},
 	};
 };
 

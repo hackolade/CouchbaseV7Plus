@@ -100,7 +100,7 @@
 	"MODAL_WINDOW___SUBDOCUMENT_IN_CHILD": "Sub-document in child",
 	"MODAL_WINDOW___ARRAY_IN_PARENT": "Array in parent",
 	"MODAL_WINDOW___CREATE_COLLECTION": "Create Couchbase Collection",
-	"MODAL_WINDOW___INCLUDE_EMPTY_COLLECTION": "Include empty documents",
+	"MODAL_WINDOW___INCLUDE_EMPTY_COLLECTION": "Include empty collections",
 	"MODAL_WINDOW___CREATE_BUCKET": "Create Couchbase Scope",
 	"MODAL_WINDOW___ALL_COLLECTIONS": "and all nested collections",
 	"MODAL_WINDOW___COLLECTION_NAME_ERROR": "Collection name is empty or is a reserved word",

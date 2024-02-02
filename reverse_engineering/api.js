@@ -11,8 +11,8 @@
 const connectionHelper = require('./helpers/connectionHelper');
 const clusterHelper = require('./helpers/clusterHelper');
 const documentKindHelper = require('./helpers/documentKindHelper');
+const indexHelper = require('./helpers/indexHelper');
 const logHelper = require('./helpers/logHelper');
-const { DEFAULT_LIMIT } = require('../shared/constants');
 
 /**
  * @param {ConnectionInfo} connectionInfo
@@ -108,20 +108,30 @@ const getDbCollectionsData = async (data, appLogger, callback, app) => {
 	});
 
 	try {
-		const cluster = await connectionHelper.connect({ connectionInfo: data.connectionInfo, app });
+		const connectionInfo = data.connectionInfo;
 		const collectionVersion = data.collectionData.collectionVersion;
-
+		const includeEmptyCollection = data.includeEmptyCollection;
+		const cluster = await connectionHelper.connect({ connectionInfo, app });
+		const indexesByCollectionMap = await indexHelper.getIndexesByCollectionMap({
+			cluster,
+			connectionInfo,
+			logger,
+			app,
+		});
 		const dbCollectionsData = [];
 
 		for (const bucketName in collectionVersion) {
 			for (const scopeName in collectionVersion[bucketName]) {
 				for (const collectionName of collectionVersion[bucketName][scopeName]) {
+					const collectionIndexes = indexesByCollectionMap[bucketName]?.[scopeName]?.[collectionName];
 					const dbCollectionData = await clusterHelper.getDbCollectionData({
 						cluster,
 						data,
 						bucketName,
 						scopeName,
 						collectionName,
+						collectionIndexes,
+						includeEmptyCollection,
 						logger,
 						app,
 					});

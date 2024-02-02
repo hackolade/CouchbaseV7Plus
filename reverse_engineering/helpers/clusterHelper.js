@@ -339,6 +339,7 @@ const getCollectionDocumentsByInfer = async ({ cluster, bucketName, scopeName, c
  * scopeName: string;
  * collectionName: string;
  * collectionIndexes: object[];
+ * includeEmptyCollection: boolean;
  * logger: Logger;
  * app: App;
  *  }} param0
@@ -351,6 +352,7 @@ const getDbCollectionData = async ({
 	scopeName,
 	collectionName,
 	collectionIndexes,
+	includeEmptyCollection,
 	logger,
 	app,
 }) => {
@@ -377,6 +379,7 @@ const getDbCollectionData = async ({
 			collectionName,
 			documents,
 			collectionIndexes,
+			includeEmptyCollection,
 		});
 	} catch (error) {
 		try {
@@ -430,7 +433,20 @@ const getDbCollectionData = async ({
 			collectionName,
 			documents,
 			collectionIndexes,
+			includeEmptyCollection,
 		});
+	}
+};
+
+const getIndexes = async ({ cluster, logger }) => {
+	try {
+		const query = queryHelper.getSelectIndexesQuery();
+		const { rows } = await cluster.query(query);
+
+		return rows.map(row => row.indexes);
+	} catch (error) {
+		logger.error(error);
+		return [];
 	}
 };
 
@@ -444,5 +460,6 @@ module.exports = {
 	getBucketDocumentsByInfer,
 	getErrorCode,
 	getErrorMessage,
+	getIndexes,
 	getPaginatedQuery,
 };

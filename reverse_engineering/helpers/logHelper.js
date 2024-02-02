@@ -70,7 +70,7 @@ const createLogger = ({ title, logger, hiddenKeys }) => {
 
 const createError = error => {
 	return {
-		message: error.cause?.message || error.message,
+		message: error.cause?.first_error_message || error.message,
 	};
 };
 

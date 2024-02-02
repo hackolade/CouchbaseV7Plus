@@ -35,11 +35,17 @@ const STATUS = {
 };
 
 const DEFAULT_DOCUMENT_KIND = '*';
-const COUCHBASE_DEFAULT_KV_CONNECTION_PORT = 11210;
-const DISABLED_TOOLTIP = 'Something went wrong. Please, check logs for more details';
-const DEFAULT_NAME = '_default';
-const FLAVOR_REGEX = /([\s\S]*?) \= "?([\s\S]*?)"?$/;
 const DEFAULT_LIMIT = 1000;
+const DEFAULT_NAME = '_default';
+
+const COUCHBASE_DEFAULT_KV_CONNECTION_PORT = 11210;
+
+const DISABLED_TOOLTIP = 'Something went wrong. Please, check logs for more details';
+
+const FLAVOR_REGEX = /([\s\S]*?) = "?([\s\S]*?)"?$/;
+const GET_META_REGEXP = /\(meta\(\)\.(.*?)\)/;
+const GET_NODES_REGEXP = /"nodes":(\[.*?\])/;
+const GET_PARTITION_HASH_REGEXP = /(HASH|hash)\((.*?)\)$/;
 
 module.exports = {
 	AUTH_TYPE,
@@ -51,5 +57,8 @@ module.exports = {
 	DEFAULT_NAME,
 	DISABLED_TOOLTIP,
 	FLAVOR_REGEX,
+	GET_META_REGEXP,
+	GET_NODES_REGEXP,
+	GET_PARTITION_HASH_REGEXP,
 	STATUS,
 };

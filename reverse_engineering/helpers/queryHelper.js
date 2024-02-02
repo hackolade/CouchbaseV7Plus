@@ -54,6 +54,13 @@ const getSelectBucketDocumentsByDocumentKindQuery = ({ bucketName, documentKind,
 };
 
 /**
+ * @returns {string}
+ */
+const getSelectIndexesQuery = () => {
+	return `SELECT * FROM system:indexes`;
+};
+
+/**
  * @param {{ query: string; limit: number; offset: number; }} param0
  * @returns {string}
  */
@@ -69,5 +76,6 @@ module.exports = {
 	getSelectBucketDocumentsByDocumentKindQuery,
 	getSelectBucketDocumentsQuery,
 	getSelectCollectionDocumentsQuery,
+	getSelectIndexesQuery,
 	getQueryOptions,
 };

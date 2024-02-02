@@ -182,6 +182,15 @@ const getBucketDocuments = async ({ connectionInfo, bucketName, logger, app }) =
 	});
 };
 
+const getIndexes = async ({ connectionInfo, logger, app }) => {
+	logger.info(`Start getting indexes using REST API`);
+
+	const apiService = createRestApiService({ connectionInfo, app });
+
+	return await apiService.getIndexes();
+};
+
 module.exports = {
 	getBucketDocuments,
+	getIndexes,
 };
