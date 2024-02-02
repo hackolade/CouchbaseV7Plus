@@ -104,11 +104,13 @@ type DbCollectionData = {
 	dbName: string;
 	collectionName: string;
 	documentKind: string;
+	standardDoc: object;
 	collectionDocs: object;
 	bucketInfo: object;
 	emptyBucket: boolean;
 	indexes: object[];
 	documents: Document[];
+	entityLevel: object;
 }
 
 export {

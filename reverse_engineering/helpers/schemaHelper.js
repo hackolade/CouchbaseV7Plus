@@ -3,6 +3,7 @@
  * @typedef {import('../../shared/types').Document} Document
  */
 const _ = require('lodash');
+const { DEFAULT_KEY_NAME } = require('../../shared/constants');
 
 /**
  *
@@ -20,9 +21,10 @@ const getDbCollectionData = ({
 	const jsonDocuments = documents
 		.filter(item => _.isPlainObject(item[bucketName]))
 		.map(item => ({
-			KEY: item.docid,
+			[DEFAULT_KEY_NAME]: item.docid,
 			...item[bucketName],
 		}));
+	const standardDoc = _.first(jsonDocuments);
 
 	if (!includeEmptyCollection && _.isEmpty(jsonDocuments)) {
 		return null;
@@ -33,7 +35,7 @@ const getDbCollectionData = ({
 		collectionName: collectionName,
 		documentKind: '',
 		collectionDocs: {},
-		standardDoc: _.first(jsonDocuments),
+		standardDoc: standardDoc,
 		bucketInfo: {
 			bucket: bucketName,
 		},
@@ -41,6 +43,8 @@ const getDbCollectionData = ({
 		documents: jsonDocuments,
 		entityLevel: {
 			indexes: collectionIndexes,
+			keyName: DEFAULT_KEY_NAME,
+			keyType: typeOf(standardDoc[DEFAULT_KEY_NAME]),
 		},
 	};
 };
@@ -68,6 +72,14 @@ const convertInferSchemaToDocuments = ({ inference, bucketName }) => {
 		docid: '',
 		[bucketName]: document,
 	}));
+};
+
+/**
+ * @param {any} obj
+ * @returns {string}
+ */
+const typeOf = obj => {
+	return {}.toString.call(obj).split(' ')[1].slice(0, -1).toLowerCase();
 };
 
 module.exports = {

@@ -1,5 +1,6 @@
 /**
  * @typedef {import('../../shared/types').App} App
+ * @typedef {import('../../shared/types').Document} Document
  * @typedef {import('../../shared/types').DocumentKindData} DocumentKindData
  * @typedef {import('../../shared/types').Cluster} Cluster
  * @typedef {import('../../shared/types').ConnectionInfo} ConnectionInfo
@@ -9,7 +10,7 @@
 const _ = require('lodash');
 const clusterHelper = require('./clusterHelper');
 const restApiHelper = require('./restApiHelper');
-const { COUCHBASE_ERROR_CODE, DEFAULT_NAME, FLAVOR_REGEX, STATUS, DEFAULT_LIMIT } = require('../../shared/constants');
+const { COUCHBASE_ERROR_CODE, DEFAULT_NAME, FLAVOR_REGEX, STATUS } = require('../../shared/constants');
 
 /**
  * @param {{ bucketName: string; status?: STATUS; }} param0
@@ -69,7 +70,7 @@ const getBucketDocumentKindData = async ({ cluster, connectionInfo, bucketName, 
 
 /**
  * @param {{ bucketName: string; documents: Document[]; }} param0
- * @returns {any}
+ * @returns {object}
  */
 const generateCustomInferSchema = ({ bucketName, documents }) => {
 	const typeOf = obj => {
