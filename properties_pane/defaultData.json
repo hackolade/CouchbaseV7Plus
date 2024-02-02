@@ -14,7 +14,7 @@
 		"dbVendor": "CouchbaseV7Plus"
 	},
 	"container": {
-		"name": "New scope",
+		"name": "New_scope",
 		"bucketType": "Couchbase",
 		"ramQuota": 100,
 		"cacheMetadata": "Value ejection",
@@ -26,7 +26,7 @@
 		"storageEngine": "Couchstore"
 	},
 	"collection": {
-		"collectionName": "New collection",
+		"collectionName": "New_collection",
 		"indexes": []
 	},
 	"field": {
