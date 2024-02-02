@@ -149,8 +149,7 @@ const getIndexes = async ({ cluster, connectionInfo, logger, app }) => {
 	}
 };
 
-const getIndexesByCollectionMap = async ({ cluster, connectionInfo, logger, app }) => {
-	const indexes = await getIndexes({ cluster, connectionInfo, logger, app });
+const getIndexesByCollectionMap = ({ indexes }) => {
 	return indexes.reduce((result, indexData) => {
 		const { bucketName, scopeName, collectionName, index } = indexData;
 		const namePath = [bucketName, scopeName, collectionName];

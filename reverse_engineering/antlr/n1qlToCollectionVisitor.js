@@ -7,6 +7,7 @@
  * the agreement/contract under which the software has been supplied.
  */
 const n1qlVisitor = require('./parser/n1qlVisitor');
+const { DEFAULT_NAME } = require('../../shared/constants');
 
 class Visitor extends n1qlVisitor {
 	visitCreate_index(ctx) {
@@ -160,8 +161,8 @@ class Visitor extends n1qlVisitor {
 	visitNamed_keyspace_ref(ctx) {
 		const defaultBucketName = this.visitIfExists(ctx, 'simple_named_keyspace_ref', '');
 		const bucketName = this.visitIfExists(ctx, 'bucket_name', '');
-		const scopeName = this.visitIfExists(ctx, 'scope_name', '');
-		const collectionName = this.visitIfExists(ctx, 'keyspace_name', '');
+		const scopeName = this.visitIfExists(ctx, 'scope_name', DEFAULT_NAME);
+		const collectionName = this.visitIfExists(ctx, 'keyspace_name', DEFAULT_NAME);
 
 		return {
 			bucketName: defaultBucketName || bucketName,

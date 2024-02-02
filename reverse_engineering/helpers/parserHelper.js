@@ -28,18 +28,22 @@ const parseN1qlStatements = ({ statements }) => {
 	const n1qlToCollectionsGenerator = new n1qlToCollectionVisitor();
 	const result = tree.accept(n1qlToCollectionsGenerator);
 
-	return mapParsedResult(result);
+	return mapParsedResult({ result, statements });
 };
 
 /**
  * @param {ParsedResult[]} result
  * @returns {ParsedResult}
  */
-const mapParsedResult = result => {
+const mapParsedResult = ({ result, statements }) => {
+	const scopes = result.flatMap(({ scopes }) => scopes);
+	const collections = result.flatMap(({ collections }) => collections);
+	const indexes = result.flatMap(({ indexes }) => indexes);
+
 	return {
-		scopes: result.flatMap(({ scopes }) => scopes),
-		collections: result.flatMap(({ collections }) => collections),
-		indexes: result.flatMap(({ indexes }) => indexes.map(mapIndexes)),
+		scopes,
+		collections,
+		indexes: mapIndexes({ indexes, statements }),
 	};
 };
 

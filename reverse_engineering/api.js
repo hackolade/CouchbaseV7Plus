@@ -8,11 +8,31 @@
  * @typedef {import('../shared/types').Callback} Callback
  */
 
+const fs = require('fs');
+const _ = require('lodash');
 const connectionHelper = require('./helpers/connectionHelper');
 const clusterHelper = require('./helpers/clusterHelper');
 const documentKindHelper = require('./helpers/documentKindHelper');
 const indexHelper = require('./helpers/indexHelper');
 const logHelper = require('./helpers/logHelper');
+const parserHelper = require('./helpers/parserHelper');
+const schemaHelper = require('./helpers/schemaHelper');
+
+/**
+ * @param {string} filePath
+ * @returns {Promise<string>}
+ */
+const handleFileData = filePath => {
+	return new Promise((resolve, reject) => {
+		fs.readFile(filePath, 'utf-8', (err, content) => {
+			if (err) {
+				reject(err);
+			} else {
+				resolve(content);
+			}
+		});
+	});
+};
 
 /**
  * @param {ConnectionInfo} connectionInfo
@@ -95,14 +115,14 @@ const getDbCollectionsNames = async (connectionInfo, appLogger, callback, app) =
 };
 
 /**
- * @param {any} data
+ * @param {object} data
  * @param {AppLogger} appLogger
  * @param {Callback} callback
  * @param {App} app
  */
 const getDbCollectionsData = async (data, appLogger, callback, app) => {
 	const logger = logHelper.createLogger({
-		title: 'Retrieving data for inferring schema',
+		title: 'Retrieving databases and collections',
 		hiddenKeys: data.hiddenKeys,
 		logger: appLogger,
 	});
@@ -112,12 +132,8 @@ const getDbCollectionsData = async (data, appLogger, callback, app) => {
 		const collectionVersion = data.collectionData.collectionVersion;
 		const includeEmptyCollection = data.includeEmptyCollection;
 		const cluster = await connectionHelper.connect({ connectionInfo, app });
-		const indexesByCollectionMap = await indexHelper.getIndexesByCollectionMap({
-			cluster,
-			connectionInfo,
-			logger,
-			app,
-		});
+		const indexes = await indexHelper.getIndexes({ cluster, connectionInfo, logger, app });
+		const indexesByCollectionMap = indexHelper.getIndexesByCollectionMap({ indexes });
 		const dbCollectionsData = [];
 
 		for (const bucketName in collectionVersion) {
@@ -141,11 +157,67 @@ const getDbCollectionsData = async (data, appLogger, callback, app) => {
 			}
 		}
 
-		callback(null, dbCollectionsData);
-	} catch (error) {
-		callback(error);
-	} finally {
+		const updatedDbCollectionsData = schemaHelper.updateDefaultDbNames({ dbCollectionsData });
 		await connectionHelper.disconnect();
+		callback(null, updatedDbCollectionsData);
+	} catch (error) {
+		await connectionHelper.disconnect();
+		callback(error);
+	}
+};
+
+/**
+ * @param {object} data
+ * @param {AppLogger} appLogger
+ * @param {Callback} callback
+ */
+const reFromFile = async (data, appLogger, callback) => {
+	const logger = logHelper.createLogger({
+		title: 'Retrieving data from file',
+		hiddenKeys: data.hiddenKeys,
+		logger: appLogger,
+	});
+	try {
+		const statements = await handleFileData(data.filePath);
+		const { scopes, collections, indexes } = parserHelper.parseN1qlStatements({ statements });
+		const indexesByCollectionMap = indexHelper.getIndexesByCollectionMap({ indexes });
+		const scopeBucketNameMap = scopes.reduce(
+			(result, scope) => _.set(result, [scope.bucketName, scope.scopeName], scope),
+			{},
+		);
+		const emptyScopes = scopes.filter(scope =>
+			collections.every(
+				collection => collection.bucketName !== scope.bucketName && collection.scopeName !== scope.scopeName,
+			),
+		);
+		const bucketIndexes = indexes.filter(index =>
+			collections.every(
+				collection =>
+					collection.bucketName !== index.bucketName &&
+					collection.scopeName !== index.scopeName &&
+					collection.collectionName !== index.collectionName,
+			),
+		);
+		const schemas = schemaHelper.mapParsedResultToMultipleSchema({
+			entitiesData: collections,
+			indexesByCollectionMap,
+			scopeBucketNameMap,
+		});
+		const emptySchemas = schemaHelper.mapParsedResultToMultipleSchema({
+			entitiesData: emptyScopes,
+			indexesByCollectionMap,
+			scopeBucketNameMap,
+		});
+		const defaultSchemas = schemaHelper.mapParsedResultToMultipleSchema({
+			entitiesData: _.uniqBy(bucketIndexes, 'bucketName'),
+			indexesByCollectionMap,
+			scopeBucketNameMap,
+		});
+
+		return callback(null, [...schemas, ...emptySchemas, ...defaultSchemas], {}, [], 'multipleSchema');
+	} catch (error) {
+		logger.error(error);
+		return callback(error);
 	}
 };
 
@@ -155,4 +227,5 @@ module.exports = {
 	getDbCollectionsData,
 	getDocumentKinds,
 	testConnection,
+	reFromFile,
 };
