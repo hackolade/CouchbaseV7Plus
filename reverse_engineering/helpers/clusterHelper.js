@@ -63,12 +63,21 @@ const getBucketScopeNameMap = async ({ cluster, selectedBucket }) => {
 	const buckets = await getBucketsForReverse({ cluster, selectedBucket });
 	const bucketScopeMap = {};
 
-	for (const bucket of buckets) {
-		const scopes = await getBucketScopes({ cluster, bucketName: bucket.name });
-		bucketScopeMap[bucket.name] = scopes;
-	}
+	try {
+		for (const bucket of buckets) {
+			const scopes = await getBucketScopes({ cluster, bucketName: bucket.name });
+			bucketScopeMap[bucket.name] = scopes;
+		}
 
-	return bucketScopeMap;
+		return bucketScopeMap;
+	} catch (error) {
+		for (const bucket of buckets) {
+			const defaultScope = { name: DEFAULT_NAME, collections: [{ name: DEFAULT_NAME }] };
+			bucketScopeMap[bucket.name] = [defaultScope];
+		}
+
+		return bucketScopeMap;
+	}
 };
 
 /**
@@ -386,6 +395,7 @@ const getDbCollectionData = async ({
 		try {
 			const errorCode = getErrorCode({ error });
 			switch (errorCode) {
+				case COUCHBASE_ERROR_CODE.parseSyntaxError:
 				case COUCHBASE_ERROR_CODE.collectionDoesNotExist:
 					query = queryHelper.getSelectBucketDocumentsByDocumentKindQuery({
 						bucketName,
@@ -455,6 +465,7 @@ const getIndexes = async ({ cluster, logger }) => {
 module.exports = {
 	isBucketHasDefaultCollection,
 	getAllBuckets,
+	getBucketsForReverse,
 	getBucketScopeNameMap,
 	getDbCollectionsNames,
 	getDbCollectionData,
