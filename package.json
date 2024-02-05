@@ -44,6 +44,10 @@
         "lint": "eslint . --max-warnings=0",
         "package": "node esbuild.package.js"
     },
+    "dependencies": {
+		"lodash": "^4.17.21",
+		"uuid": "^9.0.1"
+	},
     "devDependencies": {
         "@hackolade/hck-esbuild-plugins-pack": "0.0.1",
         "esbuild": "0.19.12",

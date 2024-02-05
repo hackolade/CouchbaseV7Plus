@@ -341,6 +341,23 @@ making sure that you maintain a proper JSON format.
 				"propertyKeyword": "flushEnable",
 				"shouldValidate": false,
 				"propertyType": "checkbox"
+			},
+			{
+				"propertyName": "Key",
+				"propertyType": "fieldList",
+				"propertyKeyword": "documentKey",
+				"template": "orderedList",
+				"propertyTooltip": "key",
+				"attribute": [
+					"",
+					"keys",
+					"values",
+					"entries",
+					"full"
+				],
+				"templateOptions": {
+					"maxFields": 1
+				}
 			}
 		]
 	}
