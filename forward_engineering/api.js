@@ -2,8 +2,8 @@ const { getValidBucketName } = require('./helpers/objectConformance');
 const { getIndexesScript } = require('./helpers/getIndexesScripts');
 const { getInsertScripts, getInsertScriptForCollection } = require('./helpers/getInsertScripts')
 
-const applyToInstanceHelper = require("./helpers/applyToInstanceHelper");
-const scriptHelper = require("./helpers/scriptHelper");
+//const applyToInstanceHelper = require("./helpers/applyToInstanceHelper");
+//const scriptHelper = require("./helpers/scriptHelper");
 
 module.exports = {
 	async generateContainerScript(data, logger, callback, app) {
@@ -15,7 +15,7 @@ module.exports = {
 			const { origin, fakerLocalization, additionalOptions } = options;
 			const [bucket] = data.containerData
 		
-			const indexes = Object.values(data.entityData).reduce((indexes, entityData) => [...indexes, ...entityData[1].Indxs], [])
+			const indexes = Object.values(data.entityData).reduce((indexes, entityData) => [...indexes, ...(entityData[1]?.indexes ?? [])], [])
 			const indexesScript = getIndexesScript({bucket, model, indexes});
 			const finalScript = `${wrapWithCommentAboutNotExistingBucket(getValidBucketName(bucket))}${indexesScript}`;
 			const includeSamples = (additionalOptions || []).find(option => option.id === 'INCLUDE_SAMPLES' && option.value);
