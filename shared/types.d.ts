@@ -46,12 +46,12 @@ type ConnectionInfo = {
 	couchbase_password: string;
 	security_certificate: FilePath;
 	security_certificate_key: FilePath;
-	kv_port: number | undefined;
+	kv_port?: number;
 	target: AppTarget;
 	id: UUID;
 	appVersion: string;
 	tempFolder: FilePath;
-	pluginVersion: string | undefined;
+	pluginVersion?: string;
 	includeSystemCollection: boolean;
 	includeEmptyCollection: boolean;
 	pagination: Pagination;

@@ -32,7 +32,7 @@ const parseN1qlStatements = ({ statements }) => {
 };
 
 /**
- * @param {ParsedResult[]} result
+ * @param {{ result: ParsedResult[]; statements: string; }} param0
  * @returns {ParsedResult}
  */
 const mapParsedResult = ({ result, statements }) => {
