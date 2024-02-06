@@ -1,4 +1,4 @@
-import { Cluster, Scope, Bucket } from '@types/couchbase';
+import { Cluster, Scope, Bucket } from 'couchbase';
 import { STATUS } from './constants';
 
 type UUID = string;
