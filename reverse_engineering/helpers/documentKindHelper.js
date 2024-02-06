@@ -134,15 +134,14 @@ const isSuggestedDocKind = property => {
 };
 
 /**
- * @param {string[]} array
- * @returns {string[]}
+ * @param {string} string
+ * @returns {string}
  */
-const replaceQuotes = array =>
-	array.map(item => {
-		const inQuotes = _.first(item) === '`' && _.last(item) === '`';
+const replaceQuotes = string => {
+	const inQuotes = _.first(string) === '`' && _.last(string) === '`';
 
-		return inQuotes ? item.slice(1, -1) : item;
-	});
+	return inQuotes ? string.slice(1, -1) : string;
+};
 
 const rejectPropertiesWithLowAppearancePercentage = properties => {
 	return _.chain(properties)
@@ -163,59 +162,94 @@ const getSuggestedDocKindsFromInference = inferences => {
 };
 
 /**
- * @param {{ bucketName: string; inference: Document; isCustomInfer: boolean; flavorValue: string; }} param0
+ * @param {{ bucketName: string; inference: Document; flavorValue: string; }} param0
  * @returns {DocumentKindData}
  */
-const getDocumentKindDataFromInfer = ({ bucketName, inference, isCustomInfer, flavorValue }) => {
-	let suggestedDocKinds = [];
-	let otherDocKinds = [];
-	let documentKind = {
-		key: '',
-		probability: 0,
-	};
+const getDocumentKindDataFromInfer = ({ bucketName, inference, flavorValue }) => {
+	const flavor = flavorValue ? flavorValue.split(',') : inference[0].Flavor.split(',');
 
-	if (isCustomInfer) {
-		let minCount = Infinity;
-		inference = inference.properties;
-
-		for (let key in inference) {
-			if (isSuggestedDocKind(inference[key])) {
-				suggestedDocKinds.push(key);
-
-				if (inference[key]['%docs'] >= documentKind.probability && inference[key].samples.length < minCount) {
-					minCount = inference[key].samples.length;
-					documentKind.probability = inference[key]['%docs'];
-					documentKind.key = key;
-				}
-			} else if (inference[key]['type'] === 'string') {
-				otherDocKinds.push(key);
-			}
-		}
-	} else {
-		const flavor = flavorValue ? flavorValue.split(',') : inference[0].Flavor.split(',');
-		if (flavor.length === 1) {
-			suggestedDocKinds = getSuggestedDocKindsFromInference(inference);
-			const flavorRegex = new RegExp(FLAVOR_REGEX);
-			const matchedDocKind = flavor[0].match(flavorRegex);
-			documentKind.key = matchedDocKind.length ? matchedDocKind[1] : '';
-		}
+	if (flavor.length !== 1) {
+		return {
+			bucketName,
+			documentKind: '',
+			documentList: [],
+			otherDocKinds: [],
+		};
 	}
 
-	documentKind.key = replaceQuotes([documentKind.key])[0];
+	const suggestedDocKinds = getSuggestedDocKindsFromInference(inference);
+	const flavorRegex = new RegExp(FLAVOR_REGEX);
+	const matchedDocKind = flavor[0].match(flavorRegex);
+	const documentKindKey = matchedDocKind.length ? matchedDocKind[1] : '';
+	const documentKind = replaceQuotes(documentKindKey);
 
-	let documentKindData = {
+	return {
 		bucketName,
+		documentKind,
 		documentList: suggestedDocKinds,
-		documentKind: documentKind.key,
-		otherDocKinds,
+		otherDocKinds: [],
 	};
-
-	return documentKindData;
 };
 
+/**
+ * @param {{ bucketName: string; inference: Document; }} param0
+ * @returns {DocumentKindData}
+ */
+const getDocumentKindDataFromManualInfer = ({ bucketName, inference }) => {
+	let minCount = Infinity;
+	let probability = 0;
+
+	return Object.entries(inference.properties).reduce(
+		(result, [propertyName, property]) => {
+			const isSuggestedDocumentKind = isSuggestedDocKind(property);
+			const isOtherDocumentKind = property.type === 'string';
+
+			if (!isSuggestedDocumentKind && !isOtherDocumentKind) {
+				return result;
+			}
+
+			if (!isSuggestedDocumentKind && isOtherDocumentKind) {
+				return {
+					...result,
+					otherDocKinds: [...result.otherDocKinds, propertyName],
+				};
+			}
+
+			const propertyProbability = property['%docs'];
+			const propertySamplesCount = property.samples.length;
+
+			if (propertyProbability >= probability && propertySamplesCount < minCount) {
+				minCount = propertySamplesCount;
+				probability = propertyProbability;
+
+				return {
+					...result,
+					documentList: [...result.documentList, propertyName],
+					documentKind: replaceQuotes(propertyName),
+				};
+			}
+
+			return {
+				...result,
+				documentList: [...result.documentList, propertyName],
+			};
+		},
+		{
+			bucketName,
+			documentKind: '',
+			documentList: [],
+			otherDocKinds: [],
+		},
+	);
+};
+
+/**
+ * @param {{ bucketName: string; documents: Document[] }} param0
+ * @returns {DocumentKindData}
+ */
 const manualInfer = ({ bucketName, documents }) => {
 	const inference = generateCustomInferSchema({ bucketName, documents });
-	return getDocumentKindDataFromInfer({ bucketName, inference, isCustomInfer: true });
+	return getDocumentKindDataFromManualInfer({ bucketName, inference });
 };
 
 /**
