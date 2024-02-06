@@ -38,6 +38,15 @@ const DEFAULT_DOCUMENT_KIND = '*';
 const DEFAULT_KEY_NAME = 'KEY';
 const DEFAULT_LIMIT = 1000;
 const DEFAULT_NAME = '_default';
+const DEFAULT_SCOPE = {
+	name: DEFAULT_NAME,
+	collections: [
+		{
+			name: DEFAULT_NAME,
+			scopeName: DEFAULT_NAME,
+		},
+	],
+};
 
 const COUCHBASE_DEFAULT_KV_CONNECTION_PORT = 11210;
 
@@ -57,6 +66,7 @@ module.exports = {
 	DEFAULT_KEY_NAME,
 	DEFAULT_LIMIT,
 	DEFAULT_NAME,
+	DEFAULT_SCOPE,
 	DISABLED_TOOLTIP,
 	FLAVOR_REGEX,
 	GET_META_REGEXP,

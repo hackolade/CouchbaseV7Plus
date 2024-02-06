@@ -7,6 +7,7 @@
  * @typedef {import('../../shared/types').BucketCollectionNamesData} BucketCollectionNamesData
  * @typedef {import('../../shared/types').Logger} Logger
  */
+const async = require('async');
 const _ = require('lodash');
 const clusterHelper = require('./clusterHelper');
 const restApiHelper = require('./restApiHelper');
@@ -26,27 +27,26 @@ const getDefaultDocumentKindData = ({ bucketName, status }) => {
  * @returns {Promise<DocumentKindData[]>}
  */
 const getBucketsDocumentKindList = async ({ cluster, connectionInfo, logger, app }) => {
-	const documentKindList = [];
 	const selectedBucket = connectionInfo.couchbase_bucket;
-	const bucketScopeNameMap = await clusterHelper.getBucketScopeNameMap({ cluster, selectedBucket });
+	const bucketScopeNameMap = await clusterHelper.getBucketScopeNameMap({ cluster, selectedBucket, logger });
 
-	for (const bucketName in bucketScopeNameMap) {
-		const scopes = bucketScopeNameMap[bucketName];
+	return await async.reduce(Object.entries(bucketScopeNameMap), [], async (result, [bucketName, scopes]) => {
 		const hasDefaultCollection = clusterHelper.isBucketHasDefaultCollection({ scopes });
 
-		if (hasDefaultCollection) {
-			const documentKindData = await getBucketDocumentKindData({
-				cluster,
-				connectionInfo,
-				bucketName,
-				logger,
-				app,
-			});
-			documentKindList.push(documentKindData);
+		if (!hasDefaultCollection) {
+			return result;
 		}
-	}
 
-	return documentKindList;
+		const documentKindData = await getBucketDocumentKindData({
+			cluster,
+			connectionInfo,
+			bucketName,
+			logger,
+			app,
+		});
+
+		return [...result, documentKindData];
+	});
 };
 
 /**

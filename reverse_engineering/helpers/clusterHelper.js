@@ -10,6 +10,7 @@
  * @typedef {import('../../shared/types').Logger} Logger
  * @typedef {import('../../shared/types').RecordSamplingSettings} RecordSamplingSettings
  */
+const async = require('async');
 const _ = require('lodash');
 const restApiHelper = require('./restApiHelper');
 const schemaHelper = require('./schemaHelper');
@@ -20,6 +21,7 @@ const {
 	DISABLED_TOOLTIP,
 	STATUS,
 	DEFAULT_LIMIT,
+	DEFAULT_SCOPE,
 } = require('../../shared/constants');
 const queryHelper = require('./queryHelper');
 
@@ -44,40 +46,37 @@ const getBucketsForReverse = async ({ cluster, selectedBucket }) => {
 };
 
 /**
- * @param {{ cluster: Cluster; bucketName: string }} param0
+ * @param {{ cluster: Cluster; bucketName: string; logger: Logger }} param0
  * @returns {Promise<Scope[]>}
  */
-const getBucketScopes = async ({ cluster, bucketName }) => {
-	const bucketInstance = await cluster.bucket(bucketName);
-	const collectionManager = await bucketInstance.collections();
-	const bucketScopes = await collectionManager.getAllScopes();
+const getBucketScopes = async ({ cluster, bucketName, logger }) => {
+	try {
+		const bucketInstance = await cluster.bucket(bucketName);
+		const collectionManager = await bucketInstance.collections();
+		const bucketScopes = await collectionManager.getAllScopes();
 
-	return bucketScopes;
+		return bucketScopes;
+	} catch (error) {
+		logger.error(error);
+		return [DEFAULT_SCOPE];
+	}
 };
 
 /**
- * @param {{cluster: Cluster; selectedBucket: string; }} param0
+ * @param {{cluster: Cluster; selectedBucket: string; logger: Logger }} param0
  * @returns {Promise<NameMap>}
  */
-const getBucketScopeNameMap = async ({ cluster, selectedBucket }) => {
+const getBucketScopeNameMap = async ({ cluster, selectedBucket, logger }) => {
 	const buckets = await getBucketsForReverse({ cluster, selectedBucket });
-	const bucketScopeMap = {};
 
-	try {
-		for (const bucket of buckets) {
-			const scopes = await getBucketScopes({ cluster, bucketName: bucket.name });
-			bucketScopeMap[bucket.name] = scopes;
-		}
+	return await async.reduce(buckets, {}, async (result, bucket) => {
+		const scopes = await getBucketScopes({ cluster, bucketName: bucket.name, logger });
 
-		return bucketScopeMap;
-	} catch (error) {
-		for (const bucket of buckets) {
-			const defaultScope = { name: DEFAULT_NAME, collections: [{ name: DEFAULT_NAME }] };
-			bucketScopeMap[bucket.name] = [defaultScope];
-		}
-
-		return bucketScopeMap;
-	}
+		return {
+			...result,
+			[bucket.name]: scopes,
+		};
+	});
 };
 
 /**
@@ -94,36 +93,63 @@ const isBucketHasDefaultCollection = ({ scopes }) => {
  * @returns {Promise<BucketCollectionNamesData[]>}
  */
 const getDbCollectionsNames = async ({ cluster, connectionInfo, logger, app }) => {
-	const dbCollectionNames = [];
-	const bucketScopeMap = await getBucketScopeNameMap({ cluster, selectedBucket: connectionInfo.couchbase_bucket });
+	const bucketScopeMap = await getBucketScopeNameMap({
+		cluster,
+		selectedBucket: connectionInfo.couchbase_bucket,
+		logger,
+	});
 
-	for (const bucketName in bucketScopeMap) {
+	return await async.reduce(Object.entries(bucketScopeMap), [], async (result, [bucketName, scopes]) => {
 		const documentKind = connectionInfo.documentKinds?.[bucketName]?.documentKindName || DEFAULT_DOCUMENT_KIND;
-		const scopes = bucketScopeMap[bucketName];
+		const dbCollectionsNames = await async.map(scopes, async scope => {
+			const collectionNames = await getScopeCollectionNames({
+				cluster,
+				connectionInfo,
+				bucketName,
+				documentKind,
+				scope,
+				logger,
+				app,
+			});
 
-		for (const scope of scopes) {
-			const scopeName = scope.name;
-			const scopeCollectionNames = scope.collections.map(collection => collection.name);
-			const notDefaultScopeCollectionNames = scopeCollectionNames.filter(name => name !== DEFAULT_NAME);
-			const hasDefaultCollection = isBucketHasDefaultCollection({ scopes: [scope] });
-			const documentKindCollectionNames = hasDefaultCollection
-				? await getDocumentKindCollectionNames({
-						cluster,
-						connectionInfo,
-						bucketName,
-						documentKind,
-						logger,
-						app,
-					})
-				: [];
-			const collectionNames = [...documentKindCollectionNames, ...notDefaultScopeCollectionNames];
-			const dbCollectionNameData = prepareBucketCollectionNamesData({ bucketName, scopeName, collectionNames });
+			return prepareBucketCollectionNamesData({ bucketName, scopeName: scope.name, collectionNames });
+		});
 
-			dbCollectionNames.push(dbCollectionNameData);
-		}
+		return [...result, ...dbCollectionsNames];
+	});
+};
+
+/**
+ * @param {{
+ * cluster: Cluster;
+ * connectionInfo: ConnectionInfo;
+ * bucketName: string;
+ * documentKind: string;
+ * scope: Scope;
+ * logger: Logger;
+ * app: App
+ *  }} param0
+ * @returns {Promise<string[]>}
+ */
+const getScopeCollectionNames = async ({ cluster, connectionInfo, bucketName, documentKind, scope, logger, app }) => {
+	const scopeCollectionNames = scope.collections.map(collection => collection.name);
+	const notDefaultScopeCollectionNames = scopeCollectionNames.filter(name => name !== DEFAULT_NAME);
+	const hasDefaultCollection = isBucketHasDefaultCollection({ scopes: [scope] });
+
+	if (!hasDefaultCollection) {
+		return notDefaultScopeCollectionNames;
 	}
 
-	return dbCollectionNames;
+	const documentKindCollectionNames = await getDocumentKindCollectionNames({
+		cluster,
+		connectionInfo,
+		bucketName,
+		documentKind,
+		logger,
+		app,
+	});
+
+	return [...documentKindCollectionNames, ...notDefaultScopeCollectionNames];
 };
 
 /**
