@@ -35,8 +35,8 @@ const handleFileData = filePath => {
 };
 
 /**
- * @param {ConnectionInfo} connectionInfo
- * @param {AppLogger} appLogger
+ * @param {ConnectionInfo} __connectionInfo
+ * @param {AppLogger} __appLogger
  * @param {Callback} callback
  */
 const disconnect = async (__connectionInfo, __appLogger, callback) => {
@@ -58,7 +58,7 @@ const testConnection = async (connectionInfo, appLogger, callback, app) => {
 	});
 	try {
 		await connectionHelper.disconnect();
-		await connectionHelper.connect({ connectionInfo, app });
+		await connectionHelper.connect({ connectionInfo });
 		await connectionHelper.disconnect();
 		callback();
 	} catch (error) {
@@ -80,7 +80,7 @@ const getDocumentKinds = async (connectionInfo, appLogger, callback, app) => {
 		logger: appLogger,
 	});
 	try {
-		const cluster = await connectionHelper.connect({ connectionInfo, app });
+		const cluster = await connectionHelper.connect({ connectionInfo });
 		const bucketsDocumentKindList = await documentKindHelper.getBucketsDocumentKindList({
 			cluster,
 			connectionInfo,
@@ -109,7 +109,7 @@ const getDbCollectionsNames = async (connectionInfo, appLogger, callback, app) =
 	});
 
 	try {
-		const cluster = await connectionHelper.connect({ connectionInfo, app });
+		const cluster = await connectionHelper.connect({ connectionInfo });
 		const documents = await clusterHelper.getDbCollectionsNames({ connectionInfo, cluster, logger, app });
 
 		callback(null, documents);
@@ -137,7 +137,7 @@ const getDbCollectionsData = async (data, appLogger, callback, app) => {
 		const connectionInfo = data.connectionInfo;
 		const collectionVersion = data.collectionData.collectionVersion;
 		const includeEmptyCollection = data.includeEmptyCollection;
-		const cluster = await connectionHelper.connect({ connectionInfo, app });
+		const cluster = await connectionHelper.connect({ connectionInfo });
 		const indexes = await indexHelper.getIndexes({ cluster, connectionInfo, logger, app });
 		const indexesByCollectionMap = indexHelper.getIndexesByCollectionMap({ indexes });
 		const dbCollectionsData = [];
