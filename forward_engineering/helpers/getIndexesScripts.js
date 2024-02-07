@@ -11,26 +11,26 @@ const _ = require('lodash');
 const bucketFieldListService = require('./bucketFieldListService');
 const { getValidBucketName } = require('./objectConformance');
 
-const getIndexesScript = ({bucket, model, indexes}) => {
+const getIndexesScript = ({ bucket, dbVersion, indexes }) => {
 	const bucketName = getValidBucketName(bucket);
 
 	return indexes
 		.map(index => {
-			const indexStatement = getIndexScript(index, model, bucketName);
+			const indexStatement = getIndexScript({ index, dbVersion, bucketName });
 
 			return index.isActivated ? indexStatement : commentStatement(indexStatement);
 		})
 		.join('\n\n');
 };
 
-const getIndexScript = (index, model, bucketName) => {
-	const { script: keysScript, canHaveIndex } = getKeys(index, model);
+const getIndexScript = ({ index, dbVersion, bucketName }) => {
+	const { script: keysScript, canHaveIndex } = getKeys({ index, dbVersion });
 
 	if (!canHaveIndex || !index.indxName) {
 		return '';
 	}
 
-	const additionalOptions = getAdditionalOptions(index, model);
+	const additionalOptions = getAdditionalOptions(index);
 	const isPrimary = index.indxType === 'Primary';
 	const createIndexScript = isPrimary
 		? `CREATE PRIMARY INDEX \`${getValidIndexName(index.indxName)}\``
@@ -44,7 +44,7 @@ const getValidIndexName = name => {
 	return name.replace(/^[^A-Za-z]/, 'idx_').replace(/[^A-Za-z0-9#_]/g, '_');
 };
 
-const getKeys = (index, model) => {
+const getKeys = ({ index, dbVersion }) => {
 	switch (index.indxType) {
 		case 'Primary':
 			return { script: '', canHaveIndex: true };
@@ -52,10 +52,9 @@ const getKeys = (index, model) => {
 			const keysNames = bucketFieldListService
 				.updateTagItemsNames({
 					tagItems: index.indxKey || [],
-					mainModel: model,
 					entityName: false,
 				})
-				.map(key => _.filter([key.name, getOrder(model.dbVersion, key.type)]).join(' '))
+				.map(key => _.filter([key.name, getOrder(dbVersion, key.type)]).join(' '))
 				.concat(index.functionExpr)
 				.filter(Boolean)
 				.join(',');
@@ -70,19 +69,19 @@ const getKeys = (index, model) => {
 	}
 };
 
-const getAdditionalOptions = (index, model) => {
-	return getAdditionalOptionsFunctionsArray(index, model)
+const getAdditionalOptions = index => {
+	return getAdditionalOptionsFunctionsArray(index)
 		.map(getOption => getOption(index))
 		.filter(Boolean)
 		.join('\n\t');
 };
 
-const getAdditionalOptionsFunctionsArray = (index, model) => {
+const getAdditionalOptionsFunctionsArray = index => {
 	switch (index.indxType) {
 		case 'Primary':
 			return [getUsingGSI, getWithClause];
 		case 'Secondary':
-			return [getPartitionByHashClause(model), getWhereClause, getUsingGSI, getWithClause];
+			return [getPartitionByHashClause, getWhereClause, getUsingGSI, getWithClause];
 		case 'Array':
 			return [getWhereClause, getUsingGSI, getWithClause];
 		case 'Metadata':
@@ -126,13 +125,12 @@ const getOrder = (dbVersion, order) => {
 	}
 };
 
-const getPartitionByHashClause = model => index => {
+const getPartitionByHashClause = index => {
 	switch (index.partitionByHash) {
 		case 'Keys':
 			const keysNames = bucketFieldListService
 				.updateTagItemsNames({
 					tagItems: index.partitionByHashKeys || [],
-					mainModel: model,
 					entityName: false,
 				})
 				.map(key => `${key.name}`)
@@ -158,5 +156,5 @@ const commentStatement = statement => {
 };
 
 module.exports = {
-	getIndexesScript
-}
+	getIndexesScript,
+};

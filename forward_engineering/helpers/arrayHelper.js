@@ -4,13 +4,13 @@
  * @param {(item: T) => any} asyncIteratee
  * @returns
  */
-const mapEachAsync = (items, asyncIteratee) =>
+const eachAsync = (items, asyncIteratee) =>
 	items.reduce(async (promise, ...args) => {
-		const items = await promise;
+		await promise;
 
-		return [...items, await asyncIteratee(...args)];
-	}, Promise.resolve([]));
+		return await asyncIteratee(...args);
+	}, Promise.resolve());
 
 module.exports = {
-    mapEachAsync
-}
+	eachAsync,
+};
