@@ -1,5 +1,5 @@
-const { getValidBucketName } = require('./objectConformance');
-const { getIndexesScript } = require('./getIndexesScripts');
+const { getValidBucketName } = require('../utils/objectConformance');
+const { getIndexesScript } = require('./indexesScriptsService');
 const { getInsertScripts, getInsertScriptForCollection } = require('./insertScriptsService');
 
 const wrapWithCommentAboutNotExistingBucket = bucketName => {

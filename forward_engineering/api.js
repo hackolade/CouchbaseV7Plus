@@ -1,6 +1,6 @@
 const _ = require('lodash');
 const { backOff } = require('exponential-backoff');
-const { getValidBucketName } = require('./helpers/objectConformance');
+const { getValidBucketName } = require('./utils/objectConformance');
 const connectionHelper = require('../reverse_engineering/helpers/connectionHelper');
 
 const {
@@ -9,8 +9,8 @@ const {
 	handleError,
 	connectToCluster,
 	logApplyScriptAttempt,
-} = require('./helpers/applyToInstanceHelper');
-const ScriptBuilder = require('./helpers/forwardEngineeringScriptBuilder');
+} = require('./services/applyToInstanceService');
+const ForwardEngineeringScriptBuilder = require('./services/forwardEngineeringScriptBuilder');
 
 const MAX_APPLY_ATTEMPTS = 5;
 
@@ -18,7 +18,7 @@ module.exports = {
 	async generateContainerScript(data, logger, callback, app) {
 		try {
 			logger.clear();
-			const scriptBuilder = new ScriptBuilder();
+			const scriptBuilder = new ForwardEngineeringScriptBuilder();
 
 			const { jsonData, collections, options, modelData } = data;
 			const { origin, fakerLocalization, additionalOptions } = options;
@@ -61,7 +61,7 @@ module.exports = {
 	},
 	async generateScript(data, logger, callback, app) {
 		try {
-			const scriptBuilder = new ScriptBuilder();
+			const scriptBuilder = new ForwardEngineeringScriptBuilder();
 
 			const { jsonData, jsonSchema, options } = data;
 			const { fakerLocalization } = options;

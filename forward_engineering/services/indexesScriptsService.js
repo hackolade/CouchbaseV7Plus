@@ -9,7 +9,7 @@
 
 const _ = require('lodash');
 const bucketFieldListService = require('./bucketFieldListService');
-const { getValidBucketName } = require('./objectConformance');
+const { getValidBucketName } = require('../utils/objectConformance');
 
 const getIndexesScript = ({ bucket, dbVersion, indexes }) => {
 	const bucketName = getValidBucketName(bucket);

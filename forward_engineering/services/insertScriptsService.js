@@ -1,5 +1,5 @@
 const uuid = require('uuid');
-const { getValidBucketName } = require('./objectConformance');
+const { getValidBucketName } = require('../utils/objectConformance');
 
 const getInsertScripts = ({ bucket, jsonData, collections = [] }) => {
 	collections = collections.map(JSON.parse);

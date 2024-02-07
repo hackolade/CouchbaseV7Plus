@@ -1,7 +1,7 @@
 const _ = require('lodash');
 const couchbase = require('couchbase');
 const { createRestApiService } = require('../../reverse_engineering/helpers/restApiHelper');
-const { eachAsync } = require('./arrayHelper');
+const { eachAsync } = require('../utils/arrayHelper');
 
 const createNewBucket = async ({ containerData, bucketName, logger, cluster }) => {
 	const bucketOptions = getBucketOptions(containerData);

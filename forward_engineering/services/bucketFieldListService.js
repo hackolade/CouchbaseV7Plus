@@ -73,7 +73,6 @@ const treeViewFieldsService = {
 	},
 };
 
-
 const isPolyglotReference = item => item.type === 'reference' && item.refType === 'polyglot';
 
 const bucketFieldListService = {
@@ -84,8 +83,8 @@ const bucketFieldListService = {
 		ending,
 		allowCustomValue,
 		lastArray,
-		collections, 
-		views, 
+		collections,
+		views,
 		graphConnections,
 		buckets,
 		entityName = true,
@@ -110,8 +109,8 @@ const bucketFieldListService = {
 							entityName,
 							front,
 							rootTemplate,
-							collections, 
-							views, 
+							collections,
+							views,
 							graphConnections,
 							buckets,
 						}),
@@ -127,9 +126,9 @@ const bucketFieldListService = {
 	},
 };
 
-const getEntity = ({id, collections = [], views = [], graphConnections = []}) => {
+const getEntity = ({ id, collections = [], views = [], graphConnections = [] }) => {
 	const collection = collections.find(collection => collection.id === id);
-	 if (collection) {
+	if (collection) {
 		return collection;
 	}
 
@@ -255,13 +254,13 @@ const getTagItemName = ({
 	entityName = true,
 	front = false,
 	rootTemplate = '/*',
-	collections, 
-	views, 
+	collections,
+	views,
 	graphConnections,
 	buckets = [],
 }) => {
 	const entityId = path[0];
-	const entity = getEntity({entityId, collections, views, graphConnections});
+	const entity = getEntity({ entityId, collections, views, graphConnections });
 
 	if (entity) {
 		return findNameByPath({
@@ -285,4 +284,4 @@ const getTagItemName = ({
 	return '';
 };
 
-module.exports = bucketFieldListService
+module.exports = bucketFieldListService;
