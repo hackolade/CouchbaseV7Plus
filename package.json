@@ -34,6 +34,7 @@
     },
     "devDependencies": {
         "@hackolade/hck-esbuild-plugins-pack": "0.0.1",
+        "@types/couchbase": "2.4.9",
         "esbuild": "0.19.12",
         "esbuild-plugin-clean": "1.0.1",
         "eslint": "8.56.0",
