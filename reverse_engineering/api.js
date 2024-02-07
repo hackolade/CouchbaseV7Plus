@@ -193,7 +193,7 @@ const reFromFile = async (data, appLogger, callback) => {
 		);
 		const emptyScopes = scopes.filter(scope =>
 			collections.every(
-				collection => collection.bucketName !== scope.bucketName && collection.scopeName !== scope.scopeName,
+				collection => collection.bucketName !== scope.bucketName || collection.scopeName !== scope.scopeName,
 			),
 		);
 		const bucketIndexes = indexes.filter(index =>

@@ -90,7 +90,7 @@ const mapParsedResultToMultipleSchema = ({ entitiesData, indexesByCollectionMap,
 			doc: {
 				bucketInfo: {
 					bucket: bucketName,
-					ifNotExists: scopeBucketNameMap[scopeName]?.ifNotExists,
+					ifNotExists: scopeBucketNameMap[bucketName]?.[scopeName]?.ifNotExists,
 				},
 				emptyBucket: !collectionName,
 				dbName: scopeName,
