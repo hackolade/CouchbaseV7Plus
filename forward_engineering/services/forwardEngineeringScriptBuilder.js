@@ -18,8 +18,8 @@ class ForwardEngineeringScriptBuilder {
 		return this;
 	}
 
-	addIndexesScript({ bucket, dbVersion, indexes }) {
-		this.script = `${this.script}${getIndexesScript({ bucket, dbVersion, indexes })}`;
+	addIndexesScript({ bucket, indexes }) {
+		this.script = `${this.script}${getIndexesScript({ bucket, indexes })}`;
 		return this;
 	}
 

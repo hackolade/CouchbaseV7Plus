@@ -20,17 +20,27 @@ module.exports = {
 			logger.clear();
 			const scriptBuilder = new ForwardEngineeringScriptBuilder();
 
-			const { jsonData, collections, options, modelData } = data;
+			const { jsonData, collections, options, modelData, entities } = data;
 			const { origin, fakerLocalization, additionalOptions } = options;
-			const dbVersion = modelData[0]?.dbVersion;
 			const [bucket] = data.containerData;
-			const indexes = Object.values(data.entityData).reduce(
-				(indexes, entityData) => [...indexes, ...(entityData[1]?.indexes ?? [])],
-				[],
-			);
+			const indexes = entities.flatMap(collectionId => {
+				const collectionData = JSON.parse(data.jsonSchema[collectionId]);
+				const entityIndexes = collectionData?.indexes ?? [];
+				const keyIdToName = Object.entries(collectionData?.properties).reduce(
+					(keyIdToNameMap, [propertyName, propertyData]) => {
+						return {
+							...keyIdToNameMap,
+							[propertyData.GUID]: propertyName,
+						};
+					},
+					{},
+				);
+
+				return entityIndexes.map(index => injectKeysNamesIntoIndexKeys({ index, keyIdToName }));
+			});
 
 			scriptBuilder.addTemplateScript({ bucket });
-			scriptBuilder.addIndexesScript({ bucket, dbVersion, indexes });
+			scriptBuilder.addIndexesScript({ bucket, indexes });
 
 			const includeSamples = (additionalOptions || []).find(
 				option => option.id === 'INCLUDE_SAMPLES' && option.value,
@@ -168,3 +178,11 @@ module.exports = {
 		}
 	},
 };
+
+const injectKeysNamesIntoIndexKeys = ({ index, keyIdToName = {} }) => ({
+	...index,
+	...(index.indxKey && { indxKey: index.indxKey.map(key => ({ ...key, name: keyIdToName[key.keyId] })) }),
+	...(index.partitionByHashKeys && {
+		partitionByHashKeys: index.partitionByHashKeys.map(key => ({ ...key, name: keyIdToName[key.keyId] })),
+	}),
+});

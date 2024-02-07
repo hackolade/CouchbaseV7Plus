@@ -8,7 +8,6 @@
  */
 
 const _ = require('lodash');
-const bucketFieldListService = require('./bucketFieldListService');
 const { getValidBucketName } = require('../utils/objectConformance');
 
 const getIndexesScript = ({ bucket, dbVersion, indexes }) => {
@@ -23,8 +22,8 @@ const getIndexesScript = ({ bucket, dbVersion, indexes }) => {
 		.join('\n\n');
 };
 
-const getIndexScript = ({ index, dbVersion, bucketName }) => {
-	const { script: keysScript, canHaveIndex } = getKeys({ index, dbVersion });
+const getIndexScript = ({ index, bucketName }) => {
+	const { script: keysScript, canHaveIndex } = getKeys(index);
 
 	if (!canHaveIndex || !index.indxName) {
 		return '';
@@ -44,17 +43,13 @@ const getValidIndexName = name => {
 	return name.replace(/^[^A-Za-z]/, 'idx_').replace(/[^A-Za-z0-9#_]/g, '_');
 };
 
-const getKeys = ({ index, dbVersion }) => {
+const getKeys = index => {
 	switch (index.indxType) {
 		case 'Primary':
 			return { script: '', canHaveIndex: true };
 		case 'Secondary':
-			const keysNames = bucketFieldListService
-				.updateTagItemsNames({
-					tagItems: index.indxKey || [],
-					entityName: false,
-				})
-				.map(key => _.filter([key.name, getOrder(dbVersion, key.type)]).join(' '))
+			const keysNames = index.indxKey
+				.map(key => _.filter([key.name, getOrder(key.type)]).join(' '))
 				.concat(index.functionExpr)
 				.filter(Boolean)
 				.join(',');
@@ -110,11 +105,7 @@ const getWithClause = index => {
 
 const getUsingGSI = index => (index.usingGSI ? 'USING GSI' : '');
 
-const getOrder = (dbVersion, order) => {
-	if (dbVersion <= 'v5.0') {
-		return '';
-	}
-
+const getOrder = order => {
 	switch (order) {
 		case 'ascending':
 			return 'ASC';
@@ -128,13 +119,7 @@ const getOrder = (dbVersion, order) => {
 const getPartitionByHashClause = index => {
 	switch (index.partitionByHash) {
 		case 'Keys':
-			const keysNames = bucketFieldListService
-				.updateTagItemsNames({
-					tagItems: index.partitionByHashKeys || [],
-					entityName: false,
-				})
-				.map(key => `${key.name}`)
-				.join(',');
+			const keysNames = index.partitionByHashKeys.map(key => `${key.name}`).join(',');
 
 			return `PARTITION BY HASH(${keysNames})`;
 		case 'Expression':
