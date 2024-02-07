@@ -116,7 +116,6 @@ making sure that you maintain a proper JSON format.
 [
 	{
 		"lowerTab": "Details",
-		"containerLevelKeys": [],
 		"structure": [
 			{
 				"propertyKeyword": "name",
@@ -341,6 +340,23 @@ making sure that you maintain a proper JSON format.
 				"propertyKeyword": "flushEnable",
 				"shouldValidate": false,
 				"propertyType": "checkbox"
+			}
+		],
+		"containerLevelKeys": [
+			{
+				"labelName": "Key",
+				"propertyName": "Key",
+				"propertyKeyword": "key",
+				"defaultName": "KEY",
+				"propertyPrimaryKey": true,
+				"propertyType": "text",
+				"typeName": "type",
+				"typeOptions": ["string"],
+				"defaultType": "string",
+				"disabledFieldOption": true,
+				"validation": {
+					"disableNameValidationForReservedWords": true
+				}
 			}
 		]
 	}
