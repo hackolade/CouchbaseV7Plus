@@ -1,6 +1,7 @@
 const _ = require('lodash');
 const { backOff } = require('exponential-backoff');
 const { getValidBucketName } = require('./utils/objectConformance');
+const { getIndexKeyIdToKeyNameMap, injectKeysNamesIntoIndexKeys } = require('./services/indexesService');
 const connectionHelper = require('../reverse_engineering/helpers/connectionHelper');
 
 const {
@@ -20,21 +21,13 @@ module.exports = {
 			logger.clear();
 			const scriptBuilder = new ForwardEngineeringScriptBuilder();
 
-			const { jsonData, collections, options, modelData, entities } = data;
+			const { jsonData, collections, options, entities } = data;
 			const { origin, fakerLocalization, additionalOptions } = options;
 			const [bucket] = data.containerData;
 			const indexes = entities.flatMap(collectionId => {
 				const collectionData = JSON.parse(data.jsonSchema[collectionId]);
 				const entityIndexes = collectionData?.indexes ?? [];
-				const keyIdToName = Object.entries(collectionData?.properties).reduce(
-					(keyIdToNameMap, [propertyName, propertyData]) => {
-						return {
-							...keyIdToNameMap,
-							[propertyData.GUID]: propertyName,
-						};
-					},
-					{},
-				);
+				const keyIdToName = getIndexKeyIdToKeyNameMap(collectionData?.properties);
 
 				return entityIndexes.map(index => injectKeysNamesIntoIndexKeys({ index, keyIdToName }));
 			});
@@ -178,11 +171,3 @@ module.exports = {
 		}
 	},
 };
-
-const injectKeysNamesIntoIndexKeys = ({ index, keyIdToName = {} }) => ({
-	...index,
-	...(index.indxKey && { indxKey: index.indxKey.map(key => ({ ...key, name: keyIdToName[key.keyId] })) }),
-	...(index.partitionByHashKeys && {
-		partitionByHashKeys: index.partitionByHashKeys.map(key => ({ ...key, name: keyIdToName[key.keyId] })),
-	}),
-});
