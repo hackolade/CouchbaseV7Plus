@@ -10,7 +10,7 @@ const {
 	connectToCluster,
 	logApplyScriptAttempt,
 } = require('./helpers/applyToInstanceHelper');
-const ScriptBuilder = require('./helpers/scriptBuilder');
+const ScriptBuilder = require('./helpers/forwardEngineeringScriptBuilder');
 
 const MAX_APPLY_ATTEMPTS = 5;
 
