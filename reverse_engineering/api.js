@@ -135,16 +135,16 @@ const getDbCollectionsData = async (data, appLogger, callback, app) => {
 
 	try {
 		const connectionInfo = data.connectionInfo;
-		const collectionVersion = data.collectionData.collectionVersion;
 		const includeEmptyCollection = data.includeEmptyCollection;
 		const cluster = await connectionHelper.connect({ connectionInfo, app });
 		const indexes = await indexHelper.getIndexes({ cluster, connectionInfo, logger, app });
+		const selectedCollections = await clusterHelper.getSelectedCollections({ cluster, data, logger, app });
 		const indexesByCollectionMap = indexHelper.getIndexesByCollectionMap({ indexes });
 		const dbCollectionsData = [];
 
-		for (const bucketName in collectionVersion) {
-			for (const scopeName in collectionVersion[bucketName]) {
-				for (const collectionName of collectionVersion[bucketName][scopeName]) {
+		for (const bucketName in selectedCollections) {
+			for (const scopeName in selectedCollections[bucketName]) {
+				for (const collectionName of selectedCollections[bucketName][scopeName]) {
 					const collectionIndexes = indexesByCollectionMap[bucketName]?.[scopeName]?.[collectionName];
 					const dbCollectionData = await clusterHelper.getDbCollectionData({
 						cluster,

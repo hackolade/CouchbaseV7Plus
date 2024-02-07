@@ -476,6 +476,10 @@ const getDbCollectionData = async ({
 	}
 };
 
+/**
+ * @param {{ cluster: Cluster; logger: Logger }} param0
+ * @returns {Promise<object[]>}
+ */
 const getIndexes = async ({ cluster, logger }) => {
 	try {
 		const query = queryHelper.getSelectIndexesQuery();
@@ -486,6 +490,36 @@ const getIndexes = async ({ cluster, logger }) => {
 		logger.error(error);
 		return [];
 	}
+};
+
+/**
+ * @param { cluster: Cluster; data: object; logger: Logger; app: App } param0
+ * @returns {Promise<NameMap>}
+ */
+const getSelectedCollections = async ({ cluster, data, logger, app }) => {
+	const collectionVersion = data.collectionData.collectionVersion;
+	const dataBaseNames = data.collectionData.dataBaseNames;
+
+	if (!_.isEmpty(collectionVersion)) {
+		return collectionVersion;
+	}
+
+	const dbCollectionData = await async.flatMap(dataBaseNames, async bucketName => {
+		return getDbCollectionsNames({
+			connectionInfo: {
+				...data,
+				couchbase_bucket: bucketName,
+			},
+			cluster,
+			logger,
+			app,
+		});
+	});
+
+	return dbCollectionData.reduce((result, collectionData) => {
+		const { dbName, scopeName, dbCollections } = collectionData;
+		return _.set(result, [dbName, scopeName], dbCollections);
+	}, {});
 };
 
 module.exports = {
@@ -501,4 +535,5 @@ module.exports = {
 	getErrorMessage,
 	getIndexes,
 	getPaginatedQuery,
+	getSelectedCollections,
 };
