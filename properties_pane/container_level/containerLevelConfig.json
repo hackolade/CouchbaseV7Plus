@@ -116,7 +116,6 @@ making sure that you maintain a proper JSON format.
 [
 	{
 		"lowerTab": "Details",
-		"containerLevelKeys": [],
 		"structure": [
 			{
 				"propertyKeyword": "name",
@@ -348,15 +347,26 @@ making sure that you maintain a proper JSON format.
 				"propertyKeyword": "documentKey",
 				"template": "orderedList",
 				"propertyTooltip": "key",
-				"attribute": [
-					"",
-					"keys",
-					"values",
-					"entries",
-					"full"
-				],
+				"attribute": ["", "keys", "values", "entries", "full"],
 				"templateOptions": {
 					"maxFields": 1
+				}
+			}
+		],
+		"containerLevelKeys": [
+			{
+				"labelName": "Key",
+				"propertyName": "Key",
+				"propertyKeyword": "key",
+				"defaultName": "KEY",
+				"propertyPrimaryKey": true,
+				"propertyType": "text",
+				"typeName": "type",
+				"typeOptions": ["string"],
+				"defaultType": "string",
+				"disabledFieldOption": true,
+				"validation": {
+					"disableNameValidationForReservedWords": true
 				}
 			}
 		]

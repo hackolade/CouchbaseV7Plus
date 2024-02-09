@@ -1,7 +1,6 @@
 const _ = require('lodash');
 const async = require('async');
-
-const DEFAULT_LIMIT = 1000;
+const { DEFAULT_LIMIT } = require('../../shared/constants');
 
 class CustomError extends Error {
 	constructor({ code, message }) {

@@ -16,20 +16,8 @@
             ]
         },
         "features": {
-            "nestedCollections": false,
-            "forwardEngineering": {
-                "jsonSchema": {
-                    "keepParentType": {
-                        "binary": {}
-                    }
-                }
-            },
-            "enableReverseEngineering": true,
             "enableForwardEngineering": true,
-            "enableReverseEngineeringDetectionSchemaByContent": false,
-            "enableReversingDateTypeAsISODate": true,
-            "supportInferRelationships": true,
-            "enableREQueryAndSortCriteria": true
+            "enableArrayCollections": false
         }
     },
     "description": "Hackolade plugin for Couchbase v7+ with scopes and collections",
@@ -53,6 +41,7 @@
     },
     "devDependencies": {
         "@hackolade/hck-esbuild-plugins-pack": "0.0.1",
+        "@types/couchbase": "2.4.9",
         "esbuild": "0.19.12",
         "esbuild-plugin-clean": "1.0.1",
         "eslint": "8.56.0",
@@ -61,5 +50,10 @@
         "lint-staged": "14.0.1",
         "prettier": "3.2.4",
         "simple-git-hooks": "2.9.0"
+    },
+    "dependencies": {
+        "antlr4": "4.9.2",
+        "async": "3.2.5",
+        "lodash": "4.17.21"
     }
 }

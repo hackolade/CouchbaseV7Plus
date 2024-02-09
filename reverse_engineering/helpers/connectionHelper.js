@@ -60,11 +60,11 @@ const generateConnectionParams = ({ connectionInfo }) => {
 };
 
 /**
- * @param {{ connectionInfo: ConnectionInfo; app: App; }} param0
+ * @param {{ connectionInfo: ConnectionInfo, app: App }} param0
  * @throws {Error}
  * @returns {Promise<Cluster>}
  */
-const connect = async connectionInfo => {
+const connect = async ({ connectionInfo, app }) => {
 	if (cluster) {
 		return cluster;
 	}
