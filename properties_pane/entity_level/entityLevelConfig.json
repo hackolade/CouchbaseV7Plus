@@ -200,6 +200,18 @@ making sure that you maintain a proper JSON format.
 						"parentType": "indexes"
 					},
 					{
+						"propertyName": "Include missing",
+						"propertyKeyword": "includeMissing",
+						"parentType": "indexes",
+						"propertyType": "checkbox",
+						"shouldValidate": false,
+						"propertyTooltip": "Include Missing property for leading key",
+						"dependency": {
+							"key": "indxType",
+							"value": "Secondary"
+						}
+					},
+					{
 						"propertyType": "tagInput",
 
 						"template": "collectiontree",
@@ -411,111 +423,6 @@ making sure that you maintain a proper JSON format.
 						"propertyTooltip": "comments",
 						"propertyType": "details",
 						"parentType": "indexes"
-					}
-				]
-			}
-		]
-	},
-	{
-		"lowerTab": "Functions",
-		"hidden": true,
-		"structure": [
-			{
-				"propertyName": "Function",
-				"propertyType": "group",
-				"propertyKeyword": "function",
-				"propertyTooltip": "Click + to add a function",
-				"erdIndexAbbr": "I",
-				"structure": [
-					{
-						"propertyName": "Name",
-						"propertyKeyword": "name",
-						"propertyTooltip": "",
-						"propertyType": "text"
-					},
-					{
-						"propertyName": "Activated",
-						"propertyKeyword": "isActivated",
-						"propertyTooltip": "Deactivated item will be not included in forward-engineering script",
-						"propertyType": "checkbox",
-						"defaultValue": true
-					},
-					{
-						"propertyName": "Or replace",
-						"propertyKeyword": "orReplace",
-						"propertyTooltip": "This optional clause enables you to redefine a user-defined function if it already exists.",
-						"defaultValue": true,
-						"propertyType": "checkbox"
-					},
-					{
-						"propertyName": "If not exists",
-						"propertyKeyword": "ifNotExists",
-						"propertyTooltip": "This optional clause enables the statement to complete successfully when the specified function already exists.",
-						"defaultValue": true,
-						"propertyType": "checkbox",
-						"dependency": {
-							"key": "orReplace",
-							"value": false
-						}
-					},
-					{
-						"propertyName": "Function body",
-						"propertyKeyword": "functionBody",
-						"propertyTooltip": "A string constant defining the function; the meaning depends on the language. It can be an internal function name, the path to an object file, an SQL command, or text in a procedural language.",
-						"propertyType": "details",
-						"template": "textarea",
-						"markdown": false
-					},
-					{
-						"propertyName": "Parameters",
-						"propertyKeyword": "parameters",
-						"propertyTooltip": "Optional listing of parameters for the function.",
-						"propertyType": "details",
-						"template": "textarea",
-						"markdown": false
-					},
-					{
-						"propertyName": "If not exists",
-						"propertyKeyword": "ifNotExists",
-						"propertyTooltip": "This optional clause enables the statement to complete successfully when the specified function already exists.",
-						"defaultValue": true,
-						"propertyType": "checkbox",
-						"dependency": {
-							"key": "orReplace",
-							"value": false
-						}
-					},
-					{
-						"propertyName": "Language",
-						"propertyKeyword": "functionLanguage",
-						"propertyTooltip": "The name of the language that the procedure is implemented in.",
-						"propertyType": "select",
-						"defaultValue": "JavaScript",
-						"options": ["JavaScript"]
-					},
-					{
-						"propertyName": "AS object",
-						"propertyKeyword": "ASobject",
-						"propertyTooltip": "The name of the JavaScript function that you want to use for the user-defined function. This parameter is a string and must be wrapped in quotes.",
-						"propertyType": "details",
-						"template": "textarea",
-						"markdown": false
-					},
-					{
-						"propertyName": "AT library",
-						"propertyKeyword": "ATlibrary",
-						"propertyTooltip": "The name of the JavaScript library that contains the function you want to use.",
-						"propertyType": "details",
-						"template": "textarea",
-						"markdown": false
-					},
-					{
-						"propertyName": "Comments",
-						"propertyKeyword": "functionComments",
-						"propertyTooltip": "comments",
-						"addTimestampButton": false,
-						"propertyType": "details",
-						"template": "textarea"
 					}
 				]
 			}

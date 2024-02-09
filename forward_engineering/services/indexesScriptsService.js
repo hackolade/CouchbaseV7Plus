@@ -8,35 +8,73 @@
  */
 
 const _ = require('lodash');
-const { getValidBucketName } = require('../utils/objectConformance');
+const { getIndexKeyIdToKeyNameMap, injectKeysNamesIntoIndexKeys } = require('./indexesService');
 
-const getIndexesScript = ({ bucket, dbVersion, indexes }) => {
-	const bucketName = getValidBucketName(bucket);
+const getIndexesScript = collection => {
+	const collectionIndexes = collection?.indexes ?? [];
+	const keyIdToName = getIndexKeyIdToKeyNameMap(collection?.properties);
+	const indexesKeysWithCorrespondingPropertiesNames = collectionIndexes.map(index =>
+		injectKeysNamesIntoIndexKeys({ index, keyIdToName }),
+	);
 
-	return indexes
+	return indexesKeysWithCorrespondingPropertiesNames
 		.map(index => {
-			const indexStatement = getIndexScript({ index, dbVersion, bucketName });
+			const indexStatement = getIndexScript({ index, bucketName: collection.bucketName });
 
 			return index.isActivated ? indexStatement : commentStatement(indexStatement);
 		})
 		.join('\n\n');
 };
 
-const getIndexScript = ({ index, bucketName }) => {
-	const { script: keysScript, canHaveIndex } = getKeys(index);
-
-	if (!canHaveIndex || !index.indxName) {
+const getIndexScript = ({ index }) => {
+	if (!index.indxName) {
 		return '';
 	}
 
+	const { script: keysScript, canHaveIndex } = getKeys(index);
+
+	if (!canHaveIndex) {
+		return '';
+	}
+
+	const keySpaceRefStatement = geKeySpaceRefStatement(index);
 	const additionalOptions = getAdditionalOptions(index);
 	const isPrimary = index.indxType === 'Primary';
 	const createIndexScript = isPrimary
-		? `CREATE PRIMARY INDEX \`${getValidIndexName(index.indxName)}\``
-		: `CREATE INDEX \`${getValidIndexName(index.indxName)}\``;
-	const bucketWithKeysScript = `ON \`${bucketName}\` ` + keysScript;
+		? `CREATE PRIMARY INDEX ${wrapWithBackticks(getValidIndexName(index.indxName))}`
+		: `CREATE INDEX ${wrapWithBackticks(getValidIndexName(index.indxName))}`;
+	const bucketWithKeysScript = `ON ${keySpaceRefStatement}${keysScript}`;
 
-	return [createIndexScript, bucketWithKeysScript, additionalOptions].filter(Boolean).join('\n\t') + ';';
+	return (
+		[
+			wrapCreateIndexStatementWithIfNotExistsClause({
+				ifNotExists: index.ifNotExists,
+				createStatement: createIndexScript,
+			}),
+			bucketWithKeysScript,
+			additionalOptions,
+		]
+			.filter(Boolean)
+			.join('\n\t') + ';'
+	);
+};
+
+const wrapCreateIndexStatementWithIfNotExistsClause = ({ ifNotExists, createStatement }) =>
+	ifNotExists ? `${createStatement} IF NOT EXISTS` : createStatement;
+
+const geKeySpaceRefStatement = index => {
+	const { namespace, bucketName, scope, collectionName } = index;
+
+	if (!collectionName) {
+		return '';
+	}
+
+	const namespaceStatement = scope && namespace ? `${wrapWithBackticks(namespace)}: ` : '';
+	const collectionPath = scope
+		? `.${wrapWithBackticks(scope)}.${wrapWithBackticks(collectionName)}`
+		: wrapWithBackticks(index.keySpaceRef.collectionName);
+
+	return `${namespaceStatement}${bucketName}${collectionPath}`;
 };
 
 const getValidIndexName = name => {
@@ -48,8 +86,12 @@ const getKeys = index => {
 		case 'Primary':
 			return { script: '', canHaveIndex: true };
 		case 'Secondary':
-			const keysNames = index.indxKey
-				.map(key => _.filter([key.name, getOrder(key.type)]).join(' '))
+			const [leadingKey, ...keys] = index.indxKey;
+			const includeMissingStatement = index.includeMissing ? ' INCLUDE MISSING' : '';
+			const leadingKeyStatement = `${leadingKey.name} ${getOrder(leadingKey.type)}${includeMissingStatement}`;
+
+			const keysNames = [leadingKeyStatement]
+				.concat(keys.map(key => _.filter([key.name, getOrder(key.type)]).join(' ')))
 				.concat(index.functionExpr)
 				.filter(Boolean)
 				.join(',');
@@ -139,6 +181,8 @@ const commentStatement = statement => {
 		'\n */'
 	);
 };
+
+const wrapWithBackticks = str => `\`${str}\``;
 
 module.exports = {
 	getIndexesScript,

@@ -1,7 +1,6 @@
 const _ = require('lodash');
 const { backOff } = require('exponential-backoff');
 const { getValidBucketName } = require('./utils/objectConformance');
-const { getIndexKeyIdToKeyNameMap, injectKeysNamesIntoIndexKeys } = require('./services/indexesService');
 const connectionHelper = require('../reverse_engineering/helpers/connectionHelper');
 
 const {
@@ -15,34 +14,33 @@ const ForwardEngineeringScriptBuilder = require('./services/forwardEngineeringSc
 
 const MAX_APPLY_ATTEMPTS = 5;
 
+const includeSamples = (additionalOptions = []) =>
+	Boolean(additionalOptions.find(option => option.id === 'INCLUDE_SAMPLES' && option.value));
+
 module.exports = {
 	async generateContainerScript(data, logger, callback, app) {
 		try {
 			logger.clear();
 			const scriptBuilder = new ForwardEngineeringScriptBuilder();
 
-			const { jsonData, collections, options, entities } = data;
-			const { origin, fakerLocalization, additionalOptions } = options;
-			const [bucket] = data.containerData;
-			const indexes = entities.flatMap(collectionId => {
-				const collectionData = JSON.parse(data.jsonSchema[collectionId]);
-				const entityIndexes = collectionData?.indexes ?? [];
-				const keyIdToName = getIndexKeyIdToKeyNameMap(collectionData?.properties);
-
-				return entityIndexes.map(index => injectKeysNamesIntoIndexKeys({ index, keyIdToName }));
-			});
-
-			scriptBuilder.addTemplateScript({ bucket });
-			scriptBuilder.addIndexesScript({ bucket, indexes });
-
-			const includeSamples = (additionalOptions || []).find(
-				option => option.id === 'INCLUDE_SAMPLES' && option.value,
+			const { jsonData, collections, options } = data;
+			const { origin, additionalOptions } = options;
+			const [scope] = data.containerData;
+			const collectionsData = Object.fromEntries(
+				Object.entries(data.jsonSchema).map(([collectionId, collectionData]) => [
+					collectionId,
+					JSON.parse(collectionData),
+				]),
 			);
-			if (!includeSamples) {
+
+			scriptBuilder.addScopeScript(scope);
+			Object.values(collectionsData).forEach(collection => scriptBuilder.addCollectionScripts(collection));
+
+			if (!includeSamples(additionalOptions)) {
 				return callback(null, scriptBuilder.buildScriptWithoutSamples());
 			}
 
-			scriptBuilder.addContainerInsertScripts({ bucket, collections, jsonData, fakerLocalization });
+			scriptBuilder.addContainerInsertScripts({ bucket: scope, collections, jsonData });
 
 			if (origin !== 'ui') {
 				return callback(null, scriptBuilder.buildScriptConcatenatedWithInsertScripts('\n\n'));
@@ -67,15 +65,18 @@ module.exports = {
 			const scriptBuilder = new ForwardEngineeringScriptBuilder();
 
 			const { jsonData, jsonSchema, options } = data;
-			const { fakerLocalization } = options;
+			const { additionalOptions } = options;
 			const [bucket] = data.containerData;
 			const [keyPropertyId] = bucket?.documentKey?.[0].path.slice(-1);
 			const collection = JSON.parse(jsonSchema);
 
-			scriptBuilder.addTemplateScript({ bucket });
+			scriptBuilder.addCollectionScripts(collection);
+			if (!includeSamples(additionalOptions)) {
+				return callback(null, scriptBuilder.buildScriptWithoutSamples());
+			}
+
 			scriptBuilder.addCollectionInsertScripts({
 				bucket,
-				fakerLocalization,
 				jsonData,
 				keyPropertyId,
 				collection,

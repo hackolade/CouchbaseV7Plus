@@ -14,11 +14,12 @@ const getInsertScripts = ({ bucket, jsonData, collections = [] }) => {
 	return collectionsScripts;
 };
 
-const getInsertScriptForCollection = ({ bucketName, jsonData, collection }) => {
+const getInsertScriptForCollection = ({ jsonData, collection }) => {
 	if (collection.isActivated === false) {
 		return '';
 	}
 
+	const bucketName = collection.bucketName;
 	const parseJsonData = JSON.parse(jsonData);
 	const { key, ...jsonDataBody } = parseJsonData;
 	const sampledKey = getKeyFieldSample(key);

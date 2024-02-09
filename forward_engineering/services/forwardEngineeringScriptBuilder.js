@@ -2,54 +2,72 @@ const { getValidBucketName } = require('../utils/objectConformance');
 const { getIndexesScript } = require('./indexesScriptsService');
 const { getInsertScripts, getInsertScriptForCollection } = require('./insertScriptsService');
 
-const wrapWithCommentAboutNotExistingBucket = bucketName => {
-	return `/*\n * If bucket '${bucketName}' does not exists it will be created automatically by Hackolade\n */\n\n`;
+const wrapWithBackticks = str => `\`${str}\``;
+
+const getScopeScript = scope => {
+	const namespace = scope.namespace ? `${wrapWithBackticks(scope.namespace)}: ` : '';
+	const bucket = wrapWithBackticks(scope.bucket);
+	const scopeName = wrapWithBackticks(scope.name);
+	const ifNotExistsClause = scope.ifNotExists ? 'IF NOT EXISTS' : '';
+
+	return `CREATE SCOPE ${namespace}${bucket}.${scopeName} ${ifNotExistsClause}`;
+};
+
+const getCollectionScript = collection => {
+	const namespace = collection.namespace ? `${wrapWithBackticks(collection.namespace)}: ` : '';
+	const bucketAndScope =
+		collection.bucket && collection.scope
+			? `${wrapWithBackticks(collection.bucket)}.${wrapWithBackticks(collection.scope)}.`
+			: '';
+	const ifNotExistsClause = collection.ifNotExists ? 'IF NOT EXISTS' : '';
+
+	return `CREATE COLLECTION ${namespace}${bucketAndScope}${collection.collectionName} ${ifNotExistsClause}\n\n`;
 };
 
 class ForwardEngineeringScriptBuilder {
 	constructor() {
-		this.script = '';
+		this.ddlScript = '';
 		this.insertScripts = '';
 	}
 
-	addTemplateScript({ bucket }) {
-		const bucketName = getValidBucketName(bucket);
-		this.script = `${this.script}${wrapWithCommentAboutNotExistingBucket(bucketName)}`;
+	#getDdlStatementsSeparator() {
+		return this.ddlScript ? '\n\n' : '';
+	}
+
+	addScopeScript(scope) {
+		this.ddlScript = `${this.ddlScript}${this.#getDdlStatementsSeparator()}${getScopeScript(scope)}`;
 		return this;
 	}
 
-	addIndexesScript({ bucket, indexes }) {
-		this.script = `${this.script}${getIndexesScript({ bucket, indexes })}`;
+	addCollectionScripts(collection) {
+		this.ddlScript = `${this.ddlScript}${this.#getDdlStatementsSeparator()}${getCollectionScript(collection)}`;
+		this.ddlScript = `${this.ddlScript}${getIndexesScript(collection)}`;
 		return this;
 	}
 
-	async addContainerInsertScripts({ bucket, collections, jsonData, fakerLocalization }) {
-		this.insertScripts = getInsertScripts({ bucket, collections, jsonData, fakerLocalization });
+	async addContainerInsertScripts({ bucket, collections, jsonData }) {
+		this.insertScripts = getInsertScripts({ bucket, collections, jsonData });
 		return this;
 	}
 
-	async addCollectionInsertScripts({ bucket, fakerLocalization, jsonData, keyPropertyId, collection }) {
-		const bucketName = getValidBucketName(bucket);
+	async addCollectionInsertScripts({ jsonData, collection }) {
 		this.insertScripts = getInsertScriptForCollection({
-			bucketName,
-			fakerLocalization,
 			jsonData,
-			keyPropertyId,
 			collection,
 		});
 		return this;
 	}
 
 	buildScriptWithoutSamples() {
-		return this.script;
+		return this.ddlScript;
 	}
 
 	buildScriptSeparateFromInsertScripts() {
-		return { script: this.script, insertScripts: this.insertScripts };
+		return { script: this.ddlScript, insertScripts: this.insertScripts };
 	}
 
 	buildScriptConcatenatedWithInsertScripts(separator = '') {
-		return `${this.script}${separator}${this.insertScripts}`;
+		return `${this.ddlScript}${separator}${this.insertScripts}`;
 	}
 }
 
