@@ -1,19 +1,19 @@
 /**
- * @typedef {import('../../shared/types').DbCollectionData} DbCollectionData
- * @typedef {import('../../shared/types').Document} Document
- * @typedef {import('../../shared/types').Cluster} Cluster
- * @typedef {import('../../shared/types').Bucket} Bucket
- * @typedef {import('../../shared/types').Scope} Scope
- * @typedef {import('../../shared/types').NameMap} NameMap
- * @typedef {import('../../shared/types').BucketCollectionNamesData} BucketCollectionNamesData
- * @typedef {import('../../shared/types').ConnectionInfo} ConnectionInfo
- * @typedef {import('../../shared/types').Logger} Logger
- * @typedef {import('../../shared/types').RecordSamplingSettings} RecordSamplingSettings
+ * @typedef {import('../types').DbCollectionData} DbCollectionData
+ * @typedef {import('../types').Document} Document
+ * @typedef {import('../types').Cluster} Cluster
+ * @typedef {import('../types').Bucket} Bucket
+ * @typedef {import('../types').Scope} Scope
+ * @typedef {import('../types').NameMap} NameMap
+ * @typedef {import('../types').BucketCollectionNamesData} BucketCollectionNamesData
+ * @typedef {import('../types').ConnectionInfo} ConnectionInfo
+ * @typedef {import('../types').Logger} Logger
+ * @typedef {import('../types').RecordSamplingSettings} RecordSamplingSettings
  */
 const async = require('async');
 const _ = require('lodash');
-const restApiHelper = require('./restApiHelper');
-const schemaHelper = require('./schemaHelper');
+const restApiHelper = require('../../reverse_engineering/helpers/restApiHelper');
+const schemaHelper = require('../../reverse_engineering/helpers/schemaHelper');
 const {
 	COUCHBASE_ERROR_CODE,
 	DEFAULT_DOCUMENT_KIND,
@@ -22,8 +22,8 @@ const {
 	STATUS,
 	DEFAULT_LIMIT,
 	DEFAULT_SCOPE,
-} = require('../../shared/constants');
-const queryHelper = require('./queryHelper');
+} = require('../constants');
+const queryHelper = require('../../reverse_engineering/helpers/queryHelper');
 
 /**
  * @param {{ cluster: Cluster }} param0

@@ -1,13 +1,13 @@
 /**
- * @typedef {import('../../shared/types').App} App
- * @typedef {import('../../shared/types').Cluster} Cluster
- * @typedef {import('../../shared/types').ConnectionInfo} ConnectionInfo
- * @typedef {import('../../shared/types').ConnectionParams} ConnectionParams
+ * @typedef {import('../types').App} App
+ * @typedef {import('../types').Cluster} Cluster
+ * @typedef {import('../types').ConnectionInfo} ConnectionInfo
+ * @typedef {import('../types').ConnectionParams} ConnectionParams
  */
 
 const couchbase = require('couchbase');
 const clusterHelper = require('./clusterHelper');
-const { AUTH_TYPE, COUCHBASE_HOST_PREFIX, COUCHBASE_DEFAULT_KV_CONNECTION_PORT } = require('../../shared/constants');
+const { AUTH_TYPE, COUCHBASE_HOST_PREFIX, COUCHBASE_DEFAULT_KV_CONNECTION_PORT } = require('../constants');
 
 let cluster = null;
 

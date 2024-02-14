@@ -8,25 +8,44 @@
  */
 
 const _ = require('lodash');
-const { getIndexKeyIdToKeyNameMap, injectKeysNamesIntoIndexKeys } = require('./indexesService');
+const { getIndexKeyIdToKeyNameMap, injectKeysNamesIntoIndexKeys } = require('../../utils/indexes');
+const { wrapWithBackticks, getKeySpaceReference } = require('./commonDdlStatements');
 
+/**
+ *
+ * @param {object} collection
+ * @returns {string[]}
+ */
 const getIndexesScript = collection => {
-	const collectionIndexes = collection?.indexes ?? [];
-	const keyIdToName = getIndexKeyIdToKeyNameMap(collection?.properties);
+	const { namespace, bucket, bucketName: scope, collectionName, indexes, properties } = collection;
+	const collectionIndexes = indexes ?? [];
+	const keyIdToName = getIndexKeyIdToKeyNameMap(properties);
 	const indexesKeysWithCorrespondingPropertiesNames = collectionIndexes.map(index =>
 		injectKeysNamesIntoIndexKeys({ index, keyIdToName }),
 	);
 
 	return indexesKeysWithCorrespondingPropertiesNames
 		.map(index => {
-			const indexStatement = getIndexScript({ index, bucketName: collection.bucketName });
+			const indexData = {
+				...index,
+				namespace,
+				bucket,
+				scope,
+				collectionName,
+			};
+			const indexStatement = getIndexScript(indexData);
 
-			return index.isActivated ? indexStatement : commentStatement(indexStatement);
+			return indexData.isActivated ? indexStatement : commentStatement(indexStatement);
 		})
 		.join('\n\n');
 };
 
-const getIndexScript = ({ index }) => {
+/**
+ *
+ * @param {object} index
+ * @returns {string}
+ */
+const getIndexScript = index => {
 	if (!index.indxName) {
 		return '';
 	}
@@ -37,7 +56,7 @@ const getIndexScript = ({ index }) => {
 		return '';
 	}
 
-	const keySpaceRefStatement = geKeySpaceRefStatement(index);
+	const keySpaceRefStatement = getKeySpaceReference(index);
 	const additionalOptions = getAdditionalOptions(index);
 	const isPrimary = index.indxType === 'Primary';
 	const createIndexScript = isPrimary
@@ -59,39 +78,44 @@ const getIndexScript = ({ index }) => {
 	);
 };
 
+/**
+ *
+ * @param {string[]} statements
+ * return {string}
+ */
+const joinIndexesStatements = statements => `${statements.filter(Boolean).join('\n\t')};`;
+
+/**
+ *
+ * @param {{ifNotExists: boolean, createStatement: string}} param
+ * @returns {string}
+ */
 const wrapCreateIndexStatementWithIfNotExistsClause = ({ ifNotExists, createStatement }) =>
 	ifNotExists ? `${createStatement} IF NOT EXISTS` : createStatement;
 
-const geKeySpaceRefStatement = index => {
-	const { namespace, bucketName, scope, collectionName } = index;
-
-	if (!collectionName) {
-		return '';
-	}
-
-	const namespaceStatement = scope && namespace ? `${wrapWithBackticks(namespace)}: ` : '';
-	const collectionPath = scope
-		? `.${wrapWithBackticks(scope)}.${wrapWithBackticks(collectionName)}`
-		: wrapWithBackticks(index.keySpaceRef.collectionName);
-
-	return `${namespaceStatement}${bucketName}${collectionPath}`;
-};
-
+/**
+ *
+ * @param {string} name
+ * @returns {string}
+ */
 const getValidIndexName = name => {
 	return name.replace(/^[^A-Za-z]/, 'idx_').replace(/[^A-Za-z0-9#_]/g, '_');
 };
 
+/**
+ *
+ * @param {object} index
+ * @returns {{script: string, canHaveIndex: boolean}}
+ */
 const getKeys = index => {
 	switch (index.indxType) {
 		case 'Primary':
 			return { script: '', canHaveIndex: true };
 		case 'Secondary':
-			const [leadingKey, ...keys] = index.indxKey;
-			const includeMissingStatement = index.includeMissing ? ' INCLUDE MISSING' : '';
-			const leadingKeyStatement = `${leadingKey.name} ${getOrder(leadingKey.type)}${includeMissingStatement}`;
+			const keys = index.indxKey?.map(key => ({ ...key, name: wrapWithBackticks(key.name) }));
 
-			const keysNames = [leadingKeyStatement]
-				.concat(keys.map(key => _.filter([key.name, getOrder(key.type)]).join(' ')))
+			const keysNames = keys
+				.map(key => _.filter([key.name, getOrder(key.type)]).join(' '))
 				.concat(index.functionExpr)
 				.filter(Boolean)
 				.join(',');
@@ -106,6 +130,11 @@ const getKeys = index => {
 	}
 };
 
+/**
+ *
+ * @param {object} index
+ * @returns {string}
+ */
 const getAdditionalOptions = index => {
 	return getAdditionalOptionsFunctionsArray(index)
 		.map(getOption => getOption(index))
@@ -113,6 +142,11 @@ const getAdditionalOptions = index => {
 		.join('\n\t');
 };
 
+/**
+ *
+ * @param {object} index
+ * @returns {function[]}
+ */
 const getAdditionalOptionsFunctionsArray = index => {
 	switch (index.indxType) {
 		case 'Primary':
@@ -127,10 +161,20 @@ const getAdditionalOptionsFunctionsArray = index => {
 	}
 };
 
+/**
+ *
+ * @param {object} index
+ * @returns {string}
+ */
 const getWhereClause = index => {
 	return index.whereClause ? `WHERE ${index.whereClause}` : '';
 };
 
+/**
+ *
+ * @param {object} index
+ * @returns {string}
+ */
 const getWithClause = index => {
 	const defer_build = _.get(index, 'withOptions.defer_build') ? `"defer_build":true` : '';
 	const num_replica = !_.isEmpty(_.get(index, 'withOptions.num_replica'))
@@ -145,8 +189,18 @@ const getWithClause = index => {
 	return hasWithClosure ? `WITH{${withClosure}}` : '';
 };
 
-const getUsingGSI = index => (index.usingGSI ? 'USING GSI' : '');
+/**
+ *
+ * @param {{usingGSI: boolean}} param
+ * @returns {string}
+ */
+const getUsingGSI = ({ usingGSI }) => (usingGSI ? 'USING GSI' : '');
 
+/**
+ *
+ * @param {string} order
+ * @returns {string}
+ */
 const getOrder = order => {
 	switch (order) {
 		case 'ascending':
@@ -158,10 +212,15 @@ const getOrder = order => {
 	}
 };
 
+/**
+ *
+ * @param {object} index
+ * @returns {string}
+ */
 const getPartitionByHashClause = index => {
 	switch (index.partitionByHash) {
 		case 'Keys':
-			const keysNames = index.partitionByHashKeys.map(key => `${key.name}`).join(',');
+			const keysNames = index.partitionByHashKeys.map(key => wrapWithBackticks(key.name)).join(',');
 
 			return `PARTITION BY HASH(${keysNames})`;
 		case 'Expression':
@@ -171,6 +230,11 @@ const getPartitionByHashClause = index => {
 	}
 };
 
+/**
+ *
+ * @param {string} statement
+ * @returns {string}
+ */
 const commentStatement = statement => {
 	return (
 		'/*\n' +
@@ -181,8 +245,6 @@ const commentStatement = statement => {
 		'\n */'
 	);
 };
-
-const wrapWithBackticks = str => `\`${str}\``;
 
 module.exports = {
 	getIndexesScript,

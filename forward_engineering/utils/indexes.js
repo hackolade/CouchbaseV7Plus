@@ -1,3 +1,8 @@
+/**
+ *
+ * @param {{index: object, keyIdToNameMap: object}} param
+ * @returns {object}
+ */
 const injectKeysNamesIntoIndexKeys = ({ index, keyIdToName = {} }) => ({
 	...index,
 	...(index.indxKey && { indxKey: index.indxKey.map(key => ({ ...key, name: keyIdToName[key.keyId] })) }),
@@ -6,6 +11,11 @@ const injectKeysNamesIntoIndexKeys = ({ index, keyIdToName = {} }) => ({
 	}),
 });
 
+/**
+ *
+ * @param {object} collectionProperties
+ * @returns {object}
+ */
 const getIndexKeyIdToKeyNameMap = collectionProperties =>
 	Object.entries(collectionProperties).reduce((keyIdToNameMap, [propertyName, propertyData]) => {
 		return {

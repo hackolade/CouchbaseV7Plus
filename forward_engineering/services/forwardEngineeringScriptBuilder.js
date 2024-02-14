@@ -1,28 +1,7 @@
-const { getValidBucketName } = require('../utils/objectConformance');
-const { getIndexesScript } = require('./indexesScriptsService');
-const { getInsertScripts, getInsertScriptForCollection } = require('./insertScriptsService');
-
-const wrapWithBackticks = str => `\`${str}\``;
-
-const getScopeScript = scope => {
-	const namespace = scope.namespace ? `${wrapWithBackticks(scope.namespace)}: ` : '';
-	const bucket = wrapWithBackticks(scope.bucket);
-	const scopeName = wrapWithBackticks(scope.name);
-	const ifNotExistsClause = scope.ifNotExists ? 'IF NOT EXISTS' : '';
-
-	return `CREATE SCOPE ${namespace}${bucket}.${scopeName} ${ifNotExistsClause}`;
-};
-
-const getCollectionScript = collection => {
-	const namespace = collection.namespace ? `${wrapWithBackticks(collection.namespace)}: ` : '';
-	const bucketAndScope =
-		collection.bucket && collection.scope
-			? `${wrapWithBackticks(collection.bucket)}.${wrapWithBackticks(collection.scope)}.`
-			: '';
-	const ifNotExistsClause = collection.ifNotExists ? 'IF NOT EXISTS' : '';
-
-	return `CREATE COLLECTION ${namespace}${bucketAndScope}${collection.collectionName} ${ifNotExistsClause}\n\n`;
-};
+const { getIndexesScript } = require('./ddlStatements/indexesStatements');
+const { getInsertScripts, getInsertScriptForCollection } = require('./ddlStatements/insertStatements');
+const { getScopeScript } = require('./ddlStatements/scopesStatements');
+const { getCollectionScript } = require('./ddlStatements/collectionsStatements');
 
 class ForwardEngineeringScriptBuilder {
 	constructor() {
@@ -30,26 +9,50 @@ class ForwardEngineeringScriptBuilder {
 		this.insertScripts = '';
 	}
 
+	/**
+	 *
+	 * @returns {string}
+	 */
 	#getDdlStatementsSeparator() {
 		return this.ddlScript ? '\n\n' : '';
 	}
 
+	/**
+	 *
+	 * @param {object} scope
+	 * @returns {ForwardEngineeringScriptBuilder}
+	 */
 	addScopeScript(scope) {
 		this.ddlScript = `${this.ddlScript}${this.#getDdlStatementsSeparator()}${getScopeScript(scope)}`;
 		return this;
 	}
 
+	/**
+	 *
+	 * @param {object} collection
+	 * @returns {ForwardEngineeringScriptBuilder}
+	 */
 	addCollectionScripts(collection) {
 		this.ddlScript = `${this.ddlScript}${this.#getDdlStatementsSeparator()}${getCollectionScript(collection)}`;
 		this.ddlScript = `${this.ddlScript}${getIndexesScript(collection)}`;
 		return this;
 	}
 
-	async addContainerInsertScripts({ bucket, collections, jsonData }) {
-		this.insertScripts = getInsertScripts({ bucket, collections, jsonData });
+	/**
+	 *
+	 * @param {{collections: object[], jsonData: object}} insertScriptsParams
+	 * @returns {ForwardEngineeringScriptBuilder}
+	 */
+	async addContainerInsertScripts({ collections, jsonData }) {
+		this.insertScripts = getInsertScripts({ collections, jsonData });
 		return this;
 	}
 
+	/**
+	 *
+	 * @param {{collection: object, jsonData: object}} insertScriptsParams
+	 * @returns {ForwardEngineeringScriptBuilder}
+	 */
 	async addCollectionInsertScripts({ jsonData, collection }) {
 		this.insertScripts = getInsertScriptForCollection({
 			jsonData,
@@ -58,14 +61,27 @@ class ForwardEngineeringScriptBuilder {
 		return this;
 	}
 
+	/**
+	 *
+	 * @returns {string}
+	 */
 	buildScriptWithoutSamples() {
 		return this.ddlScript;
 	}
 
+	/**
+	 *
+	 * @returns {{script: string, insertScripts: string}}
+	 */
 	buildScriptSeparateFromInsertScripts() {
 		return { script: this.ddlScript, insertScripts: this.insertScripts };
 	}
 
+	/**
+	 *
+	 * @param {string} separator
+	 * @returns {string}
+	 */
 	buildScriptConcatenatedWithInsertScripts(separator = '') {
 		return `${this.ddlScript}${separator}${this.insertScripts}`;
 	}

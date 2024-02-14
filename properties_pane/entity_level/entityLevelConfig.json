@@ -200,18 +200,6 @@ making sure that you maintain a proper JSON format.
 						"parentType": "indexes"
 					},
 					{
-						"propertyName": "Include missing",
-						"propertyKeyword": "includeMissing",
-						"parentType": "indexes",
-						"propertyType": "checkbox",
-						"shouldValidate": false,
-						"propertyTooltip": "Include Missing property for leading key",
-						"dependency": {
-							"key": "indxType",
-							"value": "Secondary"
-						}
-					},
-					{
 						"propertyType": "tagInput",
 
 						"template": "collectiontree",

@@ -1,12 +1,15 @@
 const _ = require('lodash');
-const couchbase = require('couchbase');
-const { createRestApiService } = require('../../reverse_engineering/helpers/restApiHelper');
-const { eachAsync } = require('../utils/arrayHelper');
+const { eachAsync } = require('../utils/arrays');
 
+/**
+ *
+ * @param {{containerData: object, bucketName: string, logger: object, cluster: object}} param0
+ * @returns {object}
+ */
 const createNewBucket = async ({ containerData, bucketName, logger, cluster }) => {
-	const bucketOptions = getBucketOptions(containerData);
+	const bucketOptions = getScopeOptions(containerData);
 	logger.log('info', { message: 'Creating a bucket', bucketOptions }, 'Couchbase apply to instance');
-	logger.progress(null, { message: 'Creating a bucket' });
+	logger.progress({ message: 'Creating a bucket' });
 
 	await cluster.buckets().createBucket({ name: bucketName, ...bucketOptions });
 
@@ -19,7 +22,12 @@ const createNewBucket = async ({ containerData, bucketName, logger, cluster }) =
 	return cluster.bucket(bucketName);
 };
 
-const getBucketOptions = containerData => {
+/**
+ *
+ * @param {object} containerData
+ * @returns {object}
+ */
+const getScopeOptions = containerData => {
 	const bucketType = containerData.bucketType.toLowerCase();
 
 	return {
@@ -35,6 +43,11 @@ const getBucketOptions = containerData => {
 	};
 };
 
+/**
+ *
+ * @param {string} type
+ * @returns {string}
+ */
 const getConflictResolutionType = type => {
 	if (type === 'Timestamp') {
 		return 'lww';
@@ -43,6 +56,11 @@ const getConflictResolutionType = type => {
 	return 'seqno';
 };
 
+/**
+ *
+ * @param {string} type
+ * @returns {string}
+ */
 const getEvictionPolicy = type => {
 	if (type === 'Value ejection') {
 		return 'valueOnly';
@@ -53,6 +71,11 @@ const getEvictionPolicy = type => {
 	return 'noEviction';
 };
 
+/**
+ *
+ * @param {string} type
+ * @returns {number}
+ */
 const getThreadsNumber = type => {
 	if (type === 'High') {
 		return 8;
@@ -61,13 +84,23 @@ const getThreadsNumber = type => {
 	return 3;
 };
 
+/**
+ *
+ * @param {{err: object, logger: object, callback: function, message: string}} param
+ * @returns {string}
+ */
 const handleError = ({ err, logger, callback, message }) => {
 	logger.log('error', err, message);
 	logger.progress(err, { message });
 	return callback(err);
 };
 
-const indexAlreadyCreatedError = err => {
+/**
+ *
+ * @param {object} err
+ * @returns {boolean}
+ */
+const isIndexAlreadyCreatedError = err => {
 	const INDEX_ALREADY_CREATED_ERROR_CODE = 4300;
 
 	const cause = err.cause || {};
@@ -78,7 +111,12 @@ const indexAlreadyCreatedError = err => {
 	);
 };
 
-const duplicateDocumentKeyError = err => {
+/**
+ *
+ * @param {object} err
+ * @returns {boolean}
+ */
+const isDuplicateDocumentKeyError = err => {
 	const DUPLICATE_DOCUMENT_KEY_ERROR_CODE = 12009;
 
 	const cause = err.cause || {};
@@ -89,6 +127,11 @@ const duplicateDocumentKeyError = err => {
 	);
 };
 
+/**
+ *
+ * @param {{script: string, cluster: object, logger: object, callback: function}} param
+ * @returns {boolean}
+ */
 const applyScript = async ({ script, cluster, logger, callback }) => {
 	const scripts = script.split(';\n').map(_.trim).filter(Boolean);
 	const maxNumberStatements = scripts.length;
@@ -103,12 +146,12 @@ const applyScript = async ({ script, cluster, logger, callback }) => {
 				const applyingProgress = Math.round((appliedStatements / maxNumberStatements) * 100);
 				if (applyingProgress - previousApplyingProgress >= 5) {
 					previousApplyingProgress = applyingProgress;
-					logger.progress(null, { message: `Applying script: ${applyingProgress}%` });
+					logger.progress({ message: `Applying script: ${applyingProgress}%` });
 				}
 			} catch (err) {
-				if (indexAlreadyCreatedError(err)) {
+				if (isIndexAlreadyCreatedError(err)) {
 					logger.log('info', { error: err }, 'Couchbase apply to instance skipped error');
-				} else if (duplicateDocumentKeyError(err)) {
+				} else if (isDuplicateDocumentKeyError(err)) {
 					logger.log('info', { error: err }, 'Couchbase apply to instance error');
 					logger.progress(err, { message: `Applying script: ${script}%` });
 				} else {
@@ -117,7 +160,7 @@ const applyScript = async ({ script, cluster, logger, callback }) => {
 			}
 		});
 		logger.log('info', { message: 'Script successfully applied' }, 'Couchbase apply to instance');
-		logger.progress(null, { message: 'Successfully applied' });
+		logger.progress({ message: 'Successfully applied' });
 		callback();
 	} catch (err) {
 		handleError({
@@ -129,42 +172,11 @@ const applyScript = async ({ script, cluster, logger, callback }) => {
 	}
 };
 
-const connectToCluster = async ({ connectionInfo, app, logger }) => {
-	const DEFAULT_KV_CONNECTION_PORT = 11210;
-	const currentAddress = `couchbase://${connectionInfo.host}:${connectionInfo.kv_port || DEFAULT_KV_CONNECTION_PORT}`;
-	const cluster = await couchbase.connect(currentAddress, {
-		username: connectionInfo.couchbase_username,
-		password: connectionInfo.couchbase_password,
-	});
-	logger.log('info', { message: 'Connected successfully' }, 'Couchbase apply to instance');
-
-	getCouchbaseVersionByAPI({
-		connectionInfo,
-		app,
-		cb: (err, res) => {
-			if (!err) {
-				logger.log('info', { version: res.fullVersion }, 'Couchbase version');
-			}
-		},
-	});
-
-	return cluster;
-};
-
-const getCouchbaseVersionByAPI = ({ connectionInfo, app, cb }) => {
-	const apiService = createRestApiService({ connectionInfo, app });
-
-	apiService
-		.getVersion()
-		.then(fullVersion => {
-			const version = fullVersion[0] === '3' ? '3.1' : fullVersion.substring(0, 3);
-			cb(null, { fullVersion, version });
-		})
-		.catch(err => {
-			cb(err, null);
-		});
-};
-
+/**
+ *
+ * @param {{attemptNumber: number, bucketName: string, logger: object}} param
+ * @returns {void}
+ */
 const logApplyScriptAttempt = ({ attemptNumber, bucketName, logger }) => {
 	const attemptNumberMessage = attemptNumber ? ` Retry: attempt ${attemptNumber + 1}` : '';
 	logger.log(
@@ -172,15 +184,12 @@ const logApplyScriptAttempt = ({ attemptNumber, bucketName, logger }) => {
 		{ message: `Applying script to ${bucketName} bucket.${attemptNumberMessage}` },
 		'Couchbase apply to instance',
 	);
-	logger.progress(null, { message: 'Applying script' + attemptNumberMessage });
-
-	return true;
+	logger.progress({ message: `Applying script ${attemptNumberMessage}` });
 };
 
 module.exports = {
 	applyScript,
 	createNewBucket,
 	handleError,
-	connectToCluster,
 	logApplyScriptAttempt,
 };

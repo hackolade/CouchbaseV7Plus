@@ -9,7 +9,7 @@
  */
 const async = require('async');
 const _ = require('lodash');
-const clusterHelper = require('./clusterHelper');
+const clusterHelper = require('../../shared/connection/clusterHelper');
 const restApiHelper = require('./restApiHelper');
 const schemaHelper = require('./schemaHelper');
 const { COUCHBASE_ERROR_CODE, DEFAULT_NAME, FLAVOR_REGEX, STATUS } = require('../../shared/constants');
