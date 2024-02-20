@@ -13,11 +13,10 @@ const { wrapWithBackticks, getKeySpaceReference } = require('./commonDdlStatemen
 
 /**
  *
- * @param {object} collection
+ * @param {{ namespace: string, bucket: string, scope: string, collectionName: string, indexes: object[], properties: object[] }} collection
  * @returns {string[]}
  */
-const getIndexesScript = collection => {
-	const { namespace, bucket, bucketName: scope, collectionName, indexes, properties } = collection;
+const getIndexesScript = ({ namespace, bucket, scope, collectionName, indexes, properties }) => {
 	const collectionIndexes = indexes ?? [];
 	const keyIdToName = getIndexKeyIdToKeyNameMap(properties);
 	const indexesKeysWithCorrespondingPropertiesNames = collectionIndexes.map(index =>

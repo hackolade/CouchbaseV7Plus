@@ -41,6 +41,7 @@ const generateContainerScript = async (data, logger, callback, app) => {
 			...JSON.parse(schema),
 			namespace: scope.namespace,
 			bucket: scope.bucket,
+			scope: scope.name,
 		}));
 
 		scriptBuilder.addScopeScript(scope);
@@ -81,25 +82,29 @@ const generateScript = async (data, logger, callback, app) => {
 	try {
 		const scriptBuilder = new ForwardEngineeringScriptBuilder();
 
-		const { jsonData, jsonSchema, options } = data;
+		const { jsonData, jsonSchema, containerData, options } = data;
 		const { additionalOptions } = options;
-		const [bucket] = data.containerData;
-		const [keyPropertyId] = bucket?.documentKey?.[0].path.slice(-1);
-		const collection = JSON.parse(jsonSchema);
+		const [scope] = _.isEmpty(containerData) ? [{}] : containerData;
+		const rawCollectionData = JSON.parse(jsonSchema);
+		const collectionData = {
+			...rawCollectionData,
+			namespace: scope?.namespace,
+			bucket: scope?.bucket,
+			scope: scope?.name,
+			collectionName: rawCollectionData.title,
+		};
 
-		scriptBuilder.addCollectionScripts(collection);
+		scriptBuilder.addCollectionScripts(collectionData);
 		if (!includeSamples(additionalOptions)) {
 			return callback(null, scriptBuilder.buildScriptWithoutSamples());
 		}
 
 		scriptBuilder.addCollectionInsertScripts({
-			bucket,
 			jsonData,
-			keyPropertyId,
-			collection,
+			collection: collectionData,
 		});
 
-		callback(null, scriptBuilder.buildScriptConcatenatedWithInsertScripts());
+		callback(null, scriptBuilder.buildScriptConcatenatedWithInsertScripts('\n\n'));
 	} catch (error) {
 		logger.log('error', { message: error.message, stack: error.stack }, 'Couchbase Forward-Engineering Error');
 

@@ -340,31 +340,21 @@ making sure that you maintain a proper JSON format.
 				"propertyKeyword": "flushEnable",
 				"shouldValidate": false,
 				"propertyType": "checkbox"
-			},
-			{
-				"propertyName": "Key",
-				"propertyType": "fieldList",
-				"propertyKeyword": "documentKey",
-				"template": "orderedList",
-				"propertyTooltip": "key",
-				"attribute": ["", "keys", "values", "entries", "full"],
-				"templateOptions": {
-					"maxFields": 1
-				}
 			}
 		],
 		"containerLevelKeys": [
 			{
 				"labelName": "Key",
 				"propertyName": "Key",
-				"propertyKeyword": "key",
-				"defaultName": "KEY",
+				"propertyKeyword": "<key>",
+				"defaultName": "<key>",
 				"propertyPrimaryKey": true,
 				"propertyType": "text",
-				"typeName": "type",
+				"typeName": "Data type",
 				"typeOptions": ["string"],
 				"defaultType": "string",
 				"disabledFieldOption": true,
+				"sampleGen": "&containerName",
 				"validation": {
 					"disableNameValidationForReservedWords": true
 				}
