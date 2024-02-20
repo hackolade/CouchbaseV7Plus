@@ -135,17 +135,12 @@ const getCollectionDocuments = async ({ connectionInfo, bucketName, scopeName, c
  * @returns {Promise<object[]>}
  */
 const getIndexes = async ({ connectionInfo, logger, app }) => {
-	try {
-		logger.info(`Start getting indexes using REST API`);
+	logger.info(`Start getting indexes using REST API`);
 
-		const apiService = createRestApiService({ connectionInfo, app });
-		const { indexes } = await apiService.getIndexes();
+	const apiService = createRestApiService({ connectionInfo, app });
+	const { indexes } = await apiService.getIndexes();
 
-		return indexes;
-	} catch (error) {
-		logger.error(error);
-		return [];
-	}
+	return indexes;
 };
 
 module.exports = {

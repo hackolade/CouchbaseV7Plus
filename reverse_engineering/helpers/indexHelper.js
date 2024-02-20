@@ -128,7 +128,7 @@ const getIndexes = async ({ cluster, connectionInfo, logger, app }) => {
 			const indexes = await clusterHelper.getIndexes({ cluster, logger });
 
 			return indexes
-				.sort((a, b) => a.name.localeCompare(b.name))
+				.toSorted((a, b) => a.name.localeCompare(b.name))
 				.map(index => {
 					const isDefaultCollectionIndex = !index.bucket_id;
 					const bucketName = isDefaultCollectionIndex ? index.keyspace_id : index.bucket_id;
