@@ -533,6 +533,7 @@ const getSelectedCollections = async ({ cluster, data, logger, app }) => {
 };
 
 /**
+ * @description Function returns a document with original order of fields
  * @param {{
  * cluster: Cluster;
  * bucketName: string;
