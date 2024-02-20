@@ -1,22 +1,6 @@
 /**
- * @param {{ bucketName: string; documentKind: string; }} param0
- * @returns {string}
- */
-const getSelectBucketDocumentKindQuery = ({ bucketName, documentKind }) => {
-	return `SELECT ${documentKind} FROM \`${bucketName}\` WHERE ${documentKind} IS NOT MISSING GROUP BY ${documentKind}`;
-};
-
-/**
- * @param {{ bucketName: string; limit: number; }} param0
- * @returns {string}
- */
-const getInferBucketDocumentsQuery = ({ bucketName, limit }) => {
-	return `INFER \`${bucketName}\` WITH {"sample_size": ${limit},"num_sample_values":3};`;
-};
-
-/**
  * @param {{ bucketName: string; scopeName: string; collectionName: string; limit: number }} param0
- * @returns
+ * @returns {string}
  */
 const getInferCollectionDocumentsQuery = ({ bucketName, scopeName, collectionName, limit }) => {
 	return `INFER \`${bucketName}\`.\`${scopeName}\`.\`${collectionName}\` WITH {"sample_size":${limit}, "num_sample_values":3};`;
@@ -48,11 +32,6 @@ const getCountCollectionDocumentsQuery = ({ bucketName, scopeName, collectionNam
 	return `SELECT COUNT(*) AS size FROM \`${bucketName}\`.\`${scopeName}\`.\`${collectionName}\``;
 };
 
-const getSelectBucketDocumentsByDocumentKindQuery = ({ bucketName, documentKind, collectionName, limit, offset }) => {
-	const query = `SELECT *, META().id as docid FROM \`${bucketName}\` WHERE \`${documentKind}\` = "${collectionName}"`;
-	return getQueryOptions({ query, limit, offset });
-};
-
 /**
  * @returns {string}
  */
@@ -70,10 +49,7 @@ const getQueryOptions = ({ query, limit, offset }) => {
 
 module.exports = {
 	getCountCollectionDocumentsQuery,
-	getInferBucketDocumentsQuery,
 	getInferCollectionDocumentsQuery,
-	getSelectBucketDocumentKindQuery,
-	getSelectBucketDocumentsByDocumentKindQuery,
 	getSelectBucketDocumentsQuery,
 	getSelectCollectionDocumentsQuery,
 	getSelectIndexesQuery,

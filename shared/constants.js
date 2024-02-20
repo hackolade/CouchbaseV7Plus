@@ -34,25 +34,14 @@ const STATUS = {
 	hasError: 'hasError',
 };
 
-const DEFAULT_DOCUMENT_KIND = '*';
 const DEFAULT_KEY_NAME = 'KEY';
 const DEFAULT_LIMIT = 1000;
 const DEFAULT_NAME = '_default';
-const DEFAULT_SCOPE = {
-	name: DEFAULT_NAME,
-	collections: [
-		{
-			name: DEFAULT_NAME,
-			scopeName: DEFAULT_NAME,
-		},
-	],
-};
 
 const COUCHBASE_DEFAULT_KV_CONNECTION_PORT = 11210;
 
 const DISABLED_TOOLTIP = 'Something went wrong. Please, check logs for more details';
 
-const FLAVOR_REGEX = /([\s\S]*?) = "?([\s\S]*?)"?$/;
 const GET_META_REGEXP = /\(meta\(\)\.(.*?)\)/;
 const GET_NODES_REGEXP = /"nodes":(\[.*?\])/;
 const GET_PARTITION_HASH_REGEXP = /(HASH|hash)\((.*?)\)$/;
@@ -62,13 +51,10 @@ module.exports = {
 	COUCHBASE_ERROR_CODE,
 	COUCHBASE_HOST_PREFIX,
 	COUCHBASE_DEFAULT_KV_CONNECTION_PORT,
-	DEFAULT_DOCUMENT_KIND,
 	DEFAULT_KEY_NAME,
 	DEFAULT_LIMIT,
 	DEFAULT_NAME,
-	DEFAULT_SCOPE,
 	DISABLED_TOOLTIP,
-	FLAVOR_REGEX,
 	GET_META_REGEXP,
 	GET_NODES_REGEXP,
 	GET_PARTITION_HASH_REGEXP,

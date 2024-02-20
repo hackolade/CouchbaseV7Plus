@@ -12,7 +12,6 @@ const { DEFAULT_KEY_NAME, DEFAULT_NAME } = require('../../shared/constants');
  * bucketName: string;
  * scopeName: string;
  * collectionName: string;
- * documentKind: string;
  * collectionIndexes: object[];
  * includeEmptyCollection: boolean }} param0
  * @returns {DbCollectionData}
@@ -22,7 +21,6 @@ const getDbCollectionData = ({
 	bucketName,
 	scopeName,
 	collectionName,
-	documentKind,
 	collectionIndexes,
 	includeEmptyCollection,
 }) => {
@@ -38,7 +36,6 @@ const getDbCollectionData = ({
 	return {
 		dbName: scopeName,
 		collectionName,
-		documentKind,
 		collectionDocs: {},
 		standardDoc,
 		bucketInfo: {

@@ -12,7 +12,6 @@ const fs = require('fs');
 const _ = require('lodash');
 const connectionHelper = require('./helpers/connectionHelper');
 const clusterHelper = require('./helpers/clusterHelper');
-const documentKindHelper = require('./helpers/documentKindHelper');
 const indexHelper = require('./helpers/indexHelper');
 const logHelper = require('./helpers/logHelper');
 const parserHelper = require('./helpers/parserHelper');
@@ -74,23 +73,9 @@ const testConnection = async (connectionInfo, appLogger, callback, app) => {
  * @param {App} app
  */
 const getDocumentKinds = async (connectionInfo, appLogger, callback, app) => {
-	const logger = logHelper.createLogger({
-		title: 'Retrieving bucket default collection document kinds',
-		hiddenKeys: connectionInfo.hiddenKeys,
-		logger: appLogger,
-	});
 	try {
-		const cluster = await connectionHelper.connect({ connectionInfo, app });
-		const bucketsDocumentKindList = await documentKindHelper.getBucketsDocumentKindList({
-			cluster,
-			connectionInfo,
-			logger,
-			app,
-		});
-		callback(null, bucketsDocumentKindList);
+		callback(null, []);
 	} catch (error) {
-		logger.error(error);
-		await connectionHelper.disconnect();
 		callback(error, []);
 	}
 };
