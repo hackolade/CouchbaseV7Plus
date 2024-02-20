@@ -1,5 +1,11 @@
+/**
+ * @typedef {import('../../shared/types').App} App
+ * @typedef {import('../../shared/types').ConnectionInfo} ConnectionInfo
+ * @typedef {import('../../shared/types').Document} Document
+ * @typedef {import('../../shared/types').Logger} Logger
+ */
+
 const _ = require('lodash');
-const async = require('async');
 const { DEFAULT_LIMIT } = require('../../shared/constants');
 
 class CustomError extends Error {
@@ -15,7 +21,7 @@ class CouchbaseRestApiService {
 		this.host = connectionInfo.host;
 		this.port = connectionInfo.port;
 
-		if (connectionInfo.couchbase_username && connectionInfo.couchbase_password) {
+		if (connectionInfo?.couchbase_username && connectionInfo?.couchbase_password) {
 			this.password = connectionInfo.couchbase_password;
 			this.username = connectionInfo.couchbase_username;
 		}
@@ -23,22 +29,29 @@ class CouchbaseRestApiService {
 		this.httpService = httpService;
 	}
 
-	async fetch(endpoint, options = {}) {
-		const uri = `http://${this.host}:${this.port}${endpoint}`;
+	/**
+	 * @returns {string}
+	 */
+	encodeCredentials() {
+		return Buffer.from(`${this.username}:${this.password}`).toString('base64');
+	}
 
-		if (this.username && this.password) {
-			let encodedCredentials = Buffer.from(`${this.username}:${this.password}`).toString('base64');
-			options = {
-				...options,
+	/**
+	 * @param {string} endpoint
+	 * @returns {Promise<any>}
+	 * @throws {CustomError}
+	 */
+	async fetch(endpoint) {
+		try {
+			const uri = `http://${this.host}:${this.port}${endpoint}`;
+			const encodedCredentials = this.encodeCredentials();
+			const options = {
 				headers: {
-					...(options.headers || {}),
 					Authorization: `Basic ${encodedCredentials}`,
 				},
 				useElectronNet: false,
 			};
-		}
 
-		try {
 			return await this.httpService.get(uri, options);
 		} catch (error) {
 			throw new CustomError({
@@ -48,66 +61,37 @@ class CouchbaseRestApiService {
 		}
 	}
 
-	async count(bucketName) {
-		const body = await this.fetch(`/pools/default/buckets/${bucketName}`);
-
-		return body?.basicStats?.itemCount;
+	/**
+	 * @param {{ bucketName: string; scopeName: string; collectionName: string; limit: number }} param0
+	 * @returns {Promise<Document[]>}
+	 */
+	async getCollectionDocuments({ bucketName, scopeName, collectionName, limit }) {
+		const endpoint = `/pools/default/buckets/${bucketName}/scopes/${scopeName}/collections/${collectionName}/docs?include_docs=true&limit=${limit}&skip=0`;
+		return await this.fetch(endpoint);
 	}
 
-	async getDocuments(bucketName, size) {
-		let docsUri = `/pools/default/buckets/${bucketName}/docs?include_docs=true&limit=${size}&skip=0`;
-
-		const body = await this.fetch(docsUri);
-
-		return body?.rows?.map(item => {
-			return {
-				json: safeParse(item?.doc?.json),
-				meta: {
-					id: item?.id,
-				},
-			};
-		});
-	}
-
-	async getDocumentByKey(bucketName, key) {
-		let docsUri = `/pools/default/buckets/${bucketName}/docs/${encodeURIComponent(key.replace(/\u0000/g, ''))}`;
-		const body = await this.fetch(docsUri);
-
-		return {
-			...body,
-			json: safeParse(body.json),
-		};
-	}
-
-	async getRandomKey(bucketName) {
-		const randomKeyUri = `/pools/default/buckets/${bucketName}/localRandomKey`;
-
-		return this.fetch(randomKeyUri);
-	}
-
-	async getVersion() {
-		const body = await this.fetch('/pools');
-
-		return body.implementationVersion;
+	/**
+	 * @param {{ bucketName: string; scopeName: string; collectionName: string; }} param0
+	 * @returns {Promise<{ error: Error; key: string }>}
+	 */
+	async getLocalRandomKey({ bucketName, scopeName, collectionName }) {
+		const endpoint = `/pools/default/buckets/${bucketName}/scopes/${scopeName}/collections/${collectionName}/localRandomKey`;
+		return await this.fetch(endpoint);
 	}
 
 	async getIndexes() {
-		const body = await this.fetch('/indexStatus');
-
-		return body.indexes;
+		return await this.fetch('/indexStatus');
 	}
 }
 
 const safeParse = value => {
 	try {
-		if (typeof value !== 'string') {
-			return value;
-		}
 		return JSON.parse(value);
 	} catch (error) {
 		return value;
 	}
 };
+
 const isBinaryFile = obj => _.isObject(obj) && !!obj.base64 && !!obj.meta;
 
 const createRestApiService = ({ connectionInfo, app }) => {
@@ -118,79 +102,53 @@ const createRestApiService = ({ connectionInfo, app }) => {
 	return apiService;
 };
 
-const getBucketDocuments = async ({ connectionInfo, bucketName, logger, app }) => {
-	logger.info(`${bucketName}: Start getting documents using REST API`);
+/**
+ * @param {{ connectionInfo: ConnectionInfo; bucketName: string; scopeName: string; collectionName: string; logger: Logger; app: App }} param0
+ * @returns {Promise<Document[]>}
+ */
+const getCollectionDocuments = async ({ connectionInfo, bucketName, scopeName, collectionName, logger, app }) => {
+	try {
+		logger.info(`${bucketName}.${scopeName}.${collectionName}: Start getting documents using REST API`);
 
-	const apiService = createRestApiService({ connectionInfo, app });
-	const count = await apiService.count(bucketName);
-	const body = await apiService.getRandomKey(bucketName);
-	const size = count ?? DEFAULT_LIMIT;
+		const apiService = createRestApiService({ connectionInfo, app });
+		const { rows } = await apiService.getCollectionDocuments({
+			bucketName,
+			scopeName,
+			collectionName,
+			limit: DEFAULT_LIMIT,
+		});
 
-	if (body.error === 'fallback_to_all_docs') {
-		logger.error({ message: `"localRandomKey" in not available or bucket ${bucketName} is empty` });
-
-		return await apiService.getDocuments(bucketName, size);
+		return rows
+			.filter(row => !isBinaryFile(row))
+			.map(row => ({
+				[bucketName]: safeParse(row.doc?.json),
+				docid: row.id,
+			}));
+	} catch (error) {
+		logger.error(error);
+		return [];
 	}
-
-	logger.info(`REST API: fetching documents by random key`);
-
-	const maxNumberOfAttempts = 5;
-
-	let numberOfAttempts = 0;
-
-	return new Promise((resolve, reject) => {
-		async.timesLimit(
-			size,
-			50,
-			async index => {
-				if (numberOfAttempts > maxNumberOfAttempts) {
-					return;
-				}
-
-				const keyBody = await apiService.getRandomKey(bucketName).catch(error => {
-					logger.error({ message: `Error fetching random key from bucket "${bucketName}" (${index})` });
-					return Promise.reject(error);
-				});
-
-				return await apiService.getDocumentByKey(bucketName, keyBody.key).catch(error => {
-					if (numberOfAttempts >= maxNumberOfAttempts) {
-						throw error;
-					}
-
-					logger.error({
-						message: `Error fetching document by random key from bucket "${bucketName}" (${index})`,
-					});
-
-					numberOfAttempts++;
-				});
-			},
-			(error, result) => {
-				if (error) {
-					logger.error(error);
-					return reject(error);
-				}
-
-				logger.info(`Successfully read ${result.length} document(s)`);
-
-				const documents = (result || [])
-					.filter(item => Boolean(item) && !isBinaryFile(item))
-					.map(item => ({ [bucketName]: item.json }));
-
-				return resolve(documents);
-			},
-		);
-	});
 };
 
+/**
+ * @param {{ connectionInfo: ConnectionInfo; logger: Logger; app: App }} param0
+ * @returns {Promise<object[]>}
+ */
 const getIndexes = async ({ connectionInfo, logger, app }) => {
-	logger.info(`Start getting indexes using REST API`);
+	try {
+		logger.info(`Start getting indexes using REST API`);
 
-	const apiService = createRestApiService({ connectionInfo, app });
+		const apiService = createRestApiService({ connectionInfo, app });
+		const { indexes } = await apiService.getIndexes();
 
-	return await apiService.getIndexes();
+		return indexes;
+	} catch (error) {
+		logger.error(error);
+		return [];
+	}
 };
 
 module.exports = {
-	getBucketDocuments,
+	getCollectionDocuments,
 	getIndexes,
 };
