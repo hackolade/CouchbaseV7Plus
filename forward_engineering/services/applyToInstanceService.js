@@ -6,82 +6,19 @@ const { eachAsync } = require('../utils/arrays');
  * @param {{containerData: object, bucketName: string, logger: object, cluster: object}} param0
  * @returns {object}
  */
-const createNewBucket = async ({ containerData, bucketName, logger, cluster }) => {
-	const bucketOptions = getScopeOptions(containerData);
-	logger.log('info', { message: 'Creating a bucket', bucketOptions }, 'Couchbase apply to instance');
+const createNewBucket = async ({ bucketName, logger, cluster }) => {
+	logger.log('info', { message: `Creating a bucket: ${bucketName}` }, 'Couchbase apply to instance');
 	logger.progress({ message: 'Creating a bucket' });
 
-	await cluster.buckets().createBucket({ name: bucketName, ...bucketOptions });
+	await cluster.buckets().createBucket({ name: bucketName });
 
 	logger.log(
 		'info',
-		{ message: 'Bucket successfully created on cluster', bucketOptions },
+		{ message: `Bucket ${bucketName} successfully created on cluster` },
 		'Couchbase apply to instance',
 	);
 
 	return cluster.bucket(bucketName);
-};
-
-/**
- *
- * @param {object} containerData
- * @returns {object}
- */
-const getScopeOptions = containerData => {
-	const bucketType = containerData.bucketType.toLowerCase();
-
-	return {
-		bucketType: bucketType === 'couchbase' ? null : bucketType,
-		ramQuotaMB: containerData.ramQuota || 0,
-		replicaNumber: containerData.replicaNumber || 1,
-		replicaIndex: containerData.replicasViewIndex || 0,
-		flushEnabled: containerData.flushEnable || 0,
-		autoCompactionDefined: containerData.overrideDefault || false,
-		conflictResolutionType: getConflictResolutionType(containerData.conflictResolution),
-		evictionPolicy: getEvictionPolicy(containerData.cacheMetadata),
-		threadsNumber: getThreadsNumber(containerData.bucketIOPriority),
-	};
-};
-
-/**
- *
- * @param {string} type
- * @returns {string}
- */
-const getConflictResolutionType = type => {
-	if (type === 'Timestamp') {
-		return 'lww';
-	}
-
-	return 'seqno';
-};
-
-/**
- *
- * @param {string} type
- * @returns {string}
- */
-const getEvictionPolicy = type => {
-	if (type === 'Value ejection') {
-		return 'valueOnly';
-	} else if (type === 'Full ejection') {
-		return 'full';
-	}
-
-	return 'noEviction';
-};
-
-/**
- *
- * @param {string} type
- * @returns {number}
- */
-const getThreadsNumber = type => {
-	if (type === 'High') {
-		return 8;
-	}
-
-	return 3;
 };
 
 /**
@@ -93,38 +30,6 @@ const handleError = ({ err, logger, callback, message }) => {
 	logger.log('error', err, message);
 	logger.progress(err, { message });
 	return callback(err);
-};
-
-/**
- *
- * @param {object} err
- * @returns {boolean}
- */
-const isIndexAlreadyCreatedError = err => {
-	const INDEX_ALREADY_CREATED_ERROR_CODE = 4300;
-
-	const cause = err.cause || {};
-
-	return (
-		cause.first_error_code === INDEX_ALREADY_CREATED_ERROR_CODE ||
-		cause.first_error_message.includes('already exist')
-	);
-};
-
-/**
- *
- * @param {object} err
- * @returns {boolean}
- */
-const isDuplicateDocumentKeyError = err => {
-	const DUPLICATE_DOCUMENT_KEY_ERROR_CODE = 12009;
-
-	const cause = err.cause || {};
-
-	return (
-		cause.first_error_code === DUPLICATE_DOCUMENT_KEY_ERROR_CODE &&
-		cause.first_error_message.includes('Duplicate Key')
-	);
 };
 
 /**
@@ -170,6 +75,38 @@ const applyScript = async ({ script, cluster, logger, callback }) => {
 			message: 'Error has been thrown while applying script to Couchbase instance',
 		});
 	}
+};
+
+/**
+ *
+ * @param {object} err
+ * @returns {boolean}
+ */
+const isIndexAlreadyCreatedError = err => {
+	const INDEX_ALREADY_CREATED_ERROR_CODE = 4300;
+
+	const cause = err.cause || {};
+
+	return (
+		cause.first_error_code === INDEX_ALREADY_CREATED_ERROR_CODE ||
+		cause.first_error_message.includes('already exist')
+	);
+};
+
+/**
+ *
+ * @param {object} err
+ * @returns {boolean}
+ */
+const isDuplicateDocumentKeyError = err => {
+	const DUPLICATE_DOCUMENT_KEY_ERROR_CODE = 12009;
+
+	const cause = err.cause || {};
+
+	return (
+		cause.first_error_code === DUPLICATE_DOCUMENT_KEY_ERROR_CODE &&
+		cause.first_error_message.includes('Duplicate Key')
+	);
 };
 
 /**
