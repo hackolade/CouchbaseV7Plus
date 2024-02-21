@@ -401,21 +401,21 @@ const getDbCollectionData = async ({
 	});
 	const documentKind = data.documentKinds?.[bucketName]?.documentKindName || '';
 	const options = { limit, pagination: data.pagination, bucketName, scopeName, collectionName };
+	const fieldInference = data.fieldInference;
 
 	let documents = [];
+	let standardDocument = null;
 	let query = queryHelper.getSelectCollectionDocumentsQuery({ bucketName, scopeName, collectionName });
 
 	try {
 		documents = await getPaginatedQuery({ cluster, options, query, logger });
-
-		return schemaHelper.getDbCollectionData({
+		standardDocument = await getCollectionDocumentByDocumentId({
+			cluster,
 			bucketName,
 			scopeName,
 			collectionName,
-			documentKind,
-			documents,
-			collectionIndexes,
-			includeEmptyCollection,
+			documentId: documents[0]?.docid,
+			logger,
 		});
 	} catch (error) {
 		try {
@@ -429,6 +429,14 @@ const getDbCollectionData = async ({
 						collectionName,
 					});
 					documents = await getPaginatedQuery({ cluster, options, query, logger });
+					standardDocument = await getCollectionDocumentByDocumentId({
+						cluster,
+						bucketName,
+						scopeName,
+						collectionName: DEFAULT_NAME,
+						documentId: documents[0]?.docid,
+						logger,
+					});
 					break;
 				case COUCHBASE_ERROR_CODE.primaryIndexDoesNotExist:
 					documents = await getCollectionDocumentsByInfer({
@@ -463,17 +471,19 @@ const getDbCollectionData = async ({
 		}
 
 		logger.error(error);
-
-		return schemaHelper.getDbCollectionData({
-			bucketName,
-			scopeName,
-			collectionName,
-			documentKind,
-			documents,
-			collectionIndexes,
-			includeEmptyCollection,
-		});
 	}
+
+	return schemaHelper.getDbCollectionData({
+		bucketName,
+		scopeName,
+		collectionName,
+		documentKind,
+		documents,
+		collectionIndexes,
+		includeEmptyCollection,
+		standardDocument,
+		fieldInference,
+	});
 };
 
 /**
@@ -520,6 +530,39 @@ const getSelectedCollections = async ({ cluster, data, logger, app }) => {
 		const { dbName, scopeName, dbCollections } = collectionData;
 		return _.set(result, [dbName, scopeName], dbCollections);
 	}, {});
+};
+
+/**
+ * @description Function returns a document with original order of fields
+ * @param {{
+ * cluster: Cluster;
+ * bucketName: string;
+ * scopeName: string;
+ * collectionName: string;
+ * documentId?: string;
+ * logger: Logger;
+ * }} param0
+ * @returns {Promise<Document|null>}
+ */
+const getCollectionDocumentByDocumentId = async ({
+	cluster,
+	bucketName,
+	scopeName,
+	collectionName,
+	documentId,
+	logger,
+}) => {
+	try {
+		const bucket = cluster.bucket(bucketName);
+		const scope = bucket.scope(scopeName);
+		const collection = scope.collection(collectionName);
+		const { content } = await collection.get(documentId);
+
+		return content;
+	} catch (error) {
+		logger.error(error);
+		return null;
+	}
 };
 
 module.exports = {
