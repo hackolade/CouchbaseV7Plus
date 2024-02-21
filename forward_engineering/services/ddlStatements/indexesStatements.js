@@ -11,6 +11,13 @@ const _ = require('lodash');
 const { getIndexKeyIdToKeyNameMap, injectKeysNamesIntoIndexKeys } = require('../../utils/indexes');
 const { wrapWithBackticks, getKeySpaceReference } = require('./commonDdlStatements');
 
+const INDEX_TYPE = {
+	primary: 'Primary',
+	secondary: 'Secondary',
+	array: 'Array',
+	metadata: 'Metadata',
+};
+
 /**
  *
  * @param {{ namespace: string, bucket: string, scope: string, collectionName: string, indexes: object[], properties: object[] }} collection
@@ -57,7 +64,7 @@ const getIndexScript = index => {
 
 	const keySpaceRefStatement = getKeySpaceReference(index);
 	const additionalOptions = getAdditionalOptions(index);
-	const isPrimary = index.indxType === 'Primary';
+	const isPrimary = index.indxType === INDEX_TYPE.primary;
 	const createIndexScript = isPrimary
 		? `CREATE PRIMARY INDEX ${wrapWithBackticks(getValidIndexName(index.indxName))}`
 		: `CREATE INDEX ${wrapWithBackticks(getValidIndexName(index.indxName))}`;
@@ -108,9 +115,9 @@ const getValidIndexName = name => {
  */
 const getKeys = index => {
 	switch (index.indxType) {
-		case 'Primary':
+		case INDEX_TYPE.primary:
 			return { script: '', canHaveIndex: true };
-		case 'Secondary':
+		case INDEX_TYPE.secondary:
 			const keys = index.indxKey?.map(key => ({ ...key, name: wrapWithBackticks(key.name) }));
 
 			const keysNames = keys
@@ -120,9 +127,9 @@ const getKeys = index => {
 				.join(',');
 
 			return { script: `(${keysNames})`, canHaveIndex: Boolean(keysNames.length) };
-		case 'Array':
+		case INDEX_TYPE.array:
 			return { script: `(${index.arrayExpr})`, canHaveIndex: true };
-		case 'Metadata':
+		case INDEX_TYPE.metadata:
 			return { script: `(${index.metadataExpr})`, canHaveIndex: true };
 		default:
 			return { script: '', canHaveIndex: true };
@@ -135,8 +142,8 @@ const getKeys = index => {
  * @returns {string}
  */
 const getAdditionalOptions = index => {
-	return getAdditionalOptionsFunctionsArray(index)
-		.map(getOption => getOption(index))
+	return getAdditionalOptionsFunctions(index)
+		.map(addOption => addOption(index))
 		.filter(Boolean)
 		.join('\n\t');
 };
@@ -146,15 +153,15 @@ const getAdditionalOptions = index => {
  * @param {object} index
  * @returns {function[]}
  */
-const getAdditionalOptionsFunctionsArray = index => {
+const getAdditionalOptionsFunctions = index => {
 	switch (index.indxType) {
-		case 'Primary':
+		case INDEX_TYPE.primary:
 			return [getUsingGSI, getWithClause];
-		case 'Secondary':
+		case INDEX_TYPE.secondary:
 			return [getPartitionByHashClause, getWhereClause, getUsingGSI, getWithClause];
-		case 'Array':
+		case INDEX_TYPE.array:
 			return [getWhereClause, getUsingGSI, getWithClause];
-		case 'Metadata':
+		case INDEX_TYPE.metadata:
 		default:
 			return [];
 	}
@@ -175,15 +182,15 @@ const getWhereClause = index => {
  * @returns {string}
  */
 const getWithClause = index => {
-	const defer_build = _.get(index, 'withOptions.defer_build') ? `"defer_build":true` : '';
-	const num_replica = !_.isEmpty(_.get(index, 'withOptions.num_replica'))
+	const deferBuild = _.get(index, 'withOptions.defer_build') ? `"defer_build":true` : '';
+	const numReplica = !_.isEmpty(_.get(index, 'withOptions.num_replica'))
 		? `"num_replica":${index.withOptions.num_replica}`
 		: '';
 	const nodes = _.get(index, 'withOptions.nodes', []).length
 		? `"nodes":[${index.withOptions.nodes.map(node => `"${node.nodeName}"`).join(',')}]`
 		: '';
-	const hasWithClosure = defer_build || num_replica || nodes;
-	const withClosure = [defer_build, num_replica, nodes].filter(Boolean).join(',');
+	const hasWithClosure = deferBuild || numReplica || nodes;
+	const withClosure = [deferBuild, numReplica, nodes].filter(Boolean).join(',');
 
 	return hasWithClosure ? `WITH{${withClosure}}` : '';
 };

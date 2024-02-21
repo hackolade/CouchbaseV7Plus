@@ -1,5 +1,23 @@
 const _ = require('lodash');
-const { eachAsync } = require('../utils/arrays');
+const async = require('async');
+const {
+	APPLY_QUERY,
+	COUCHBASE_APPLY_TO_INSTANCE,
+	CREATING_A_BUCKET,
+	COUCHBASE_APPLY_TO_INSTANCE_SKIPPED_ERROR,
+	COUCHBASE_APPLY_TO_INSTANCE_ERROR,
+	SCRIPT_SUCCESSFULLY_APPLIED,
+	SUCCESSFULLY_APPLIED,
+	ERROR_HAS_BEEN_THROWN_WHILE_APPLYING_SCRIPT_TO_COUCHBASE_INSTANCE,
+} = require('../../shared/enums/static-messages');
+const {
+	getCreatingBucketMessage,
+	getSuccessfullyCreatedBucketMessage,
+	getApplyingScriptPercentMessage,
+	getRetryAttemptNumberMessage,
+	getApplyingScriptToBucketWithAttemptNumberMessage,
+	getApplyingScriptMessage,
+} = require('../../shared/enums/dynamic-messages');
 
 /**
  *
@@ -7,16 +25,12 @@ const { eachAsync } = require('../utils/arrays');
  * @returns {object}
  */
 const createNewBucket = async ({ bucketName, logger, cluster }) => {
-	logger.log('info', { message: `Creating a bucket: ${bucketName}` }, 'Couchbase apply to instance');
-	logger.progress({ message: 'Creating a bucket' });
+	logger.log('info', { message: getCreatingBucketMessage(bucketName) }, COUCHBASE_APPLY_TO_INSTANCE);
+	logger.progress({ message: CREATING_A_BUCKET });
 
 	await cluster.buckets().createBucket({ name: bucketName });
 
-	logger.log(
-		'info',
-		{ message: `Bucket ${bucketName} successfully created on cluster` },
-		'Couchbase apply to instance',
-	);
+	logger.log('info', { message: getSuccessfullyCreatedBucketMessage(bucketName) }, COUCHBASE_APPLY_TO_INSTANCE);
 
 	return cluster.bucket(bucketName);
 };
@@ -43,36 +57,36 @@ const applyScript = async ({ script, cluster, logger, callback }) => {
 	let previousApplyingProgress = 0;
 
 	try {
-		await eachAsync(scripts, async (script, index) => {
-			logger.log('info', { message: 'Apply query', query: script }, 'Couchbase apply to instance');
+		async.eachSeries(scripts, async (script, index) => {
+			logger.log('info', { message: APPLY_QUERY, query: script }, COUCHBASE_APPLY_TO_INSTANCE);
 			try {
 				await cluster.query(script);
 				const appliedStatements = index + 1;
 				const applyingProgress = Math.round((appliedStatements / maxNumberStatements) * 100);
 				if (applyingProgress - previousApplyingProgress >= 5) {
 					previousApplyingProgress = applyingProgress;
-					logger.progress({ message: `Applying script: ${applyingProgress}%` });
+					logger.progress({ message: getApplyingScriptPercentMessage(applyingProgress) });
 				}
 			} catch (err) {
 				if (isIndexAlreadyCreatedError(err)) {
-					logger.log('info', { error: err }, 'Couchbase apply to instance skipped error');
+					logger.log('info', { error: err }, COUCHBASE_APPLY_TO_INSTANCE_SKIPPED_ERROR);
 				} else if (isDuplicateDocumentKeyError(err)) {
-					logger.log('info', { error: err }, 'Couchbase apply to instance error');
-					logger.progress(err, { message: `Applying script: ${script}%` });
+					logger.log('info', { error: err }, COUCHBASE_APPLY_TO_INSTANCE_ERROR);
+					logger.progress(err, { message: getApplyingScriptPercentMessage(script) });
 				} else {
 					throw err;
 				}
 			}
 		});
-		logger.log('info', { message: 'Script successfully applied' }, 'Couchbase apply to instance');
-		logger.progress({ message: 'Successfully applied' });
+		logger.log('info', { message: SCRIPT_SUCCESSFULLY_APPLIED }, COUCHBASE_APPLY_TO_INSTANCE);
+		logger.progress({ message: SUCCESSFULLY_APPLIED });
 		callback();
 	} catch (err) {
 		handleError({
 			err,
 			logger,
 			callback,
-			message: 'Error has been thrown while applying script to Couchbase instance',
+			message: ERROR_HAS_BEEN_THROWN_WHILE_APPLYING_SCRIPT_TO_COUCHBASE_INSTANCE,
 		});
 	}
 };
@@ -115,13 +129,13 @@ const isDuplicateDocumentKeyError = err => {
  * @returns {void}
  */
 const logApplyScriptAttempt = ({ attemptNumber, bucketName, logger }) => {
-	const attemptNumberMessage = attemptNumber ? ` Retry: attempt ${attemptNumber + 1}` : '';
+	const attemptNumberMessage = attemptNumber ? getRetryAttemptNumberMessage(attemptNumber + 1) : '';
 	logger.log(
 		'info',
-		{ message: `Applying script to ${bucketName} bucket.${attemptNumberMessage}` },
-		'Couchbase apply to instance',
+		{ message: getApplyingScriptToBucketWithAttemptNumberMessage(bucketName, attemptNumberMessage) },
+		COUCHBASE_APPLY_TO_INSTANCE,
 	);
-	logger.progress({ message: `Applying script ${attemptNumberMessage}` });
+	logger.progress({ message: getApplyingScriptMessage(attemptNumberMessage) });
 };
 
 module.exports = {

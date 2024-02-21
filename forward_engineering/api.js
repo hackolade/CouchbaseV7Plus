@@ -9,6 +9,16 @@
 const _ = require('lodash');
 const { backOff } = require('exponential-backoff');
 const connectionHelper = require('../shared/connection/connectionHelper');
+const {
+	COUCHBASE_APPLY_TO_INSTANCE,
+	COUCHBASE_FORWARD_ENGINEERING_ERROR,
+	CONTAINER_DATA_NOT_FOUND,
+	CONNECTING,
+	CHECK_BUCKET_EXISTS,
+	ERROR_HAS_BEEN_THROWN_WHILE_CONNECTING_TO_BUCKET,
+	ERROR_HAS_BEEN_THROWN_WHILE_CREATING_BUCKET_IN_COUCHBASE_INSTANCE,
+	ERROR_DURING_PUBLISHING_SAMPLE_DATA_IN_BULK,
+} = require('../shared/enums/static-messages');
 
 const {
 	applyScript,
@@ -66,7 +76,7 @@ const generateContainerScript = async (data, logger, callback, app) => {
 			},
 		]);
 	} catch (error) {
-		logger.log('error', { message: error.message, stack: error.stack }, 'Couchbase Forward-Engineering Error');
+		logger.log('error', { message: error.message, stack: error.stack }, COUCHBASE_FORWARD_ENGINEERING_ERROR);
 
 		callback({ message: error.message, stack: error.stack });
 	}
@@ -106,7 +116,7 @@ const generateScript = async (data, logger, callback, app) => {
 
 		callback(null, scriptBuilder.buildScriptConcatenatedWithInsertScripts('\n\n'));
 	} catch (error) {
-		logger.log('error', { message: error.message, stack: error.stack }, 'Couchbase Forward-Engineering Error');
+		logger.log('error', { message: error.message, stack: error.stack }, COUCHBASE_FORWARD_ENGINEERING_ERROR);
 
 		callback({ message: error.message, stack: error.stack });
 	}
@@ -120,26 +130,26 @@ const generateScript = async (data, logger, callback, app) => {
  */
 const applyToInstance = async (connectionInfo, logger, callback, app) => {
 	logger.clear({ appTarget: connectionInfo.appTarget, appVersion: connectionInfo.appVersion });
-	logger.log('info', connectionInfo, 'Couchbase apply to instance');
+	logger.log('info', connectionInfo, COUCHBASE_APPLY_TO_INSTANCE);
 
-	logger.progress({ message: 'Connecting' });
+	logger.progress({ message: CONNECTING });
 	const cluster = await connectionHelper.connect({ connectionInfo, app });
 
 	const containerData = _.first(connectionInfo.containerData);
 
 	if (!containerData) {
 		return handleError({
-			err: new Error('Container data not found.'),
+			err: new Error(CONTAINER_DATA_NOT_FOUND),
 			logger,
 			callback,
-			message: 'Error has been thrown while connecting to bucket',
+			message: ERROR_HAS_BEEN_THROWN_WHILE_CONNECTING_TO_BUCKET,
 		});
 	}
 
 	const bucketName = containerData?.bucket;
 	const scriptWithSamples = connectionInfo.script;
 
-	logger.progress({ message: 'Check bucket exists' });
+	logger.progress({ message: CHECK_BUCKET_EXISTS });
 
 	const buckets = await cluster.buckets().getAllBuckets();
 	const bucketExists = buckets.find(bucket => bucket.name === bucketName);
@@ -152,11 +162,11 @@ const applyToInstance = async (connectionInfo, logger, callback, app) => {
 					err,
 					logger,
 					callback,
-					message: 'Error has been thrown while creating a bucket in Couchbase instance',
+					message: ERROR_HAS_BEEN_THROWN_WHILE_CREATING_BUCKET_IN_COUCHBASE_INSTANCE,
 				});
 			}
 
-			logger.log('error', err, 'Error during publishing fake data in bulk');
+			logger.log('error', err, ERROR_DURING_PUBLISHING_SAMPLE_DATA_IN_BULK);
 		}
 	}
 
@@ -184,7 +194,7 @@ const applyToInstance = async (connectionInfo, logger, callback, app) => {
 			err,
 			logger,
 			callback,
-			message: 'Error has been thrown while applying script to Couchbase instance',
+			message: ERROR_HAS_BEEN_THROWN_WHILE_APPLYING_SCRIPT_TO_COUCHBASE_INSTANCE,
 		});
 	}
 };

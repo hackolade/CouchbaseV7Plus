@@ -1,0 +1,19 @@
+module.exports = {
+	COUCHBASE_APPLY_TO_INSTANCE: 'Couchbase apply to instance',
+	CREATING_A_BUCKET: 'Creating a bucket',
+	APPLY_QUERY: 'Apply query',
+	COUCHBASE_APPLY_TO_INSTANCE_SKIPPED_ERROR: 'Couchbase apply to instance skipped error',
+	COUCHBASE_APPLY_TO_INSTANCE_ERROR: 'Couchbase apply to instance error',
+	SCRIPT_SUCCESSFULLY_APPLIED: 'Script successfully applied',
+	SUCCESSFULLY_APPLIED: 'Successfully applied',
+	ERROR_HAS_BEEN_THROWN_WHILE_APPLYING_SCRIPT_TO_COUCHBASE_INSTANCE:
+		'Error has been thrown while applying script to Couchbase instance',
+	COUCHBASE_FORWARD_ENGINEERING_ERROR: 'Couchbase Forward-Engineering Error',
+	CONNECTING: 'Connecting',
+	CONTAINER_DATA_NOT_FOUND: 'Container data not found.',
+	CHECK_BUCKET_EXISTS: 'Check bucket exists',
+	ERROR_HAS_BEEN_THROWN_WHILE_CONNECTING_TO_BUCKET: 'Error has been thrown while connecting to bucket',
+	ERROR_HAS_BEEN_THROWN_WHILE_CREATING_BUCKET_IN_COUCHBASE_INSTANCE:
+		'Error has been thrown while creating a bucket in Couchbase instance',
+	ERROR_DURING_PUBLISHING_SAMPLE_DATA_IN_BULK: 'Error during publishing sample data in bulk',
+};
