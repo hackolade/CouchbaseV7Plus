@@ -72,20 +72,6 @@ const testConnection = async (connectionInfo, appLogger, callback, app) => {
  * @param {Callback} callback
  * @param {App} app
  */
-const getDocumentKinds = async (connectionInfo, appLogger, callback, app) => {
-	try {
-		callback(null, []);
-	} catch (error) {
-		callback(error, []);
-	}
-};
-
-/**
- * @param {ConnectionInfo} connectionInfo
- * @param {AppLogger} appLogger
- * @param {Callback} callback
- * @param {App} app
- */
 const getDbCollectionsNames = async (connectionInfo, appLogger, callback, app) => {
 	const logger = logHelper.createLogger({
 		title: 'Retrieving databases and collections information',
@@ -216,7 +202,6 @@ module.exports = {
 	disconnect,
 	getDbCollectionsNames,
 	getDbCollectionsData,
-	getDocumentKinds,
 	testConnection,
 	reFromFile,
 };
