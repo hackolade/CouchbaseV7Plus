@@ -49,7 +49,7 @@ class CouchbaseRestApiService {
 				headers: {
 					Authorization: `Basic ${encodedCredentials}`,
 				},
-				useElectronNet: false,
+				useElectronNet: true,
 			};
 
 			return await this.httpService.get(uri, options);
