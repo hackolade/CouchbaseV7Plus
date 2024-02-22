@@ -1,5 +1,6 @@
 module.exports = {
 	COUCHBASE_APPLY_TO_INSTANCE: 'Couchbase apply to instance',
+	CREATING_A_BUCKET: 'Creating a bucket',
 	APPLY_QUERY: 'Apply query',
 	COUCHBASE_APPLY_TO_INSTANCE_SKIPPED_ERROR: 'Couchbase apply to instance skipped error',
 	COUCHBASE_APPLY_TO_INSTANCE_ERROR: 'Couchbase apply to instance error',

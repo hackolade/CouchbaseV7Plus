@@ -20,8 +20,13 @@ const {
 	ERROR_HAS_BEEN_THROWN_WHILE_APPLYING_SCRIPT_TO_COUCHBASE_INSTANCE,
 	GENERATING_CONTAINER_SCRIPT,
 	GENERATING_ENTITY_SCRIPT,
+	CREATING_A_BUCKET,
 } = require('../shared/enums/static-messages');
-const { getCheckBucketExistsMessage } = require('../shared/enums/dynamic-messages');
+const {
+	getCheckBucketExistsMessage,
+	getCreatingBucketMessage,
+	getSuccessfullyCreatedBucketMessage,
+} = require('../shared/enums/dynamic-messages');
 const { HTTP_ERROR_CODES } = require('../shared/enums/http');
 
 const { applyScript, logApplyScriptAttempt } = require('./services/applyToInstanceService');
@@ -39,7 +44,7 @@ const includeSamples = (additionalOptions = []) =>
  * @param {Callback} callback
  * @param {App} app
  */
-const generateContainerScript = async (data, appLogger, callback, app) => {
+const generateContainerScript = async (connectionInfo, appLogger, callback, app) => {
 	const logger = logHelper.createLogger({
 		title: GENERATING_CONTAINER_SCRIPT,
 		hiddenKeys: connectionInfo.hiddenKeys,
@@ -49,9 +54,9 @@ const generateContainerScript = async (data, appLogger, callback, app) => {
 	try {
 		const scriptBuilder = new ForwardEngineeringScriptBuilder();
 
-		const { jsonData, collections, options } = data;
+		const { jsonData, collections, options } = connectionInfo;
 		const { origin, additionalOptions } = options;
-		const [scope] = data.containerData;
+		const [scope] = connectionInfo.containerData;
 		const collectionsData = collections.map(schema => ({
 			...JSON.parse(schema),
 			namespace: scope.namespace,
@@ -94,7 +99,7 @@ const generateContainerScript = async (data, appLogger, callback, app) => {
  * @param {Callback} callback
  * @param {App} app
  */
-const generateScript = async (data, appLogger, callback, app) => {
+const generateScript = async (connectionInfo, appLogger, callback, app) => {
 	const logger = logHelper.createLogger({
 		title: GENERATING_ENTITY_SCRIPT,
 		hiddenKeys: connectionInfo.hiddenKeys,
@@ -104,7 +109,7 @@ const generateScript = async (data, appLogger, callback, app) => {
 	try {
 		const scriptBuilder = new ForwardEngineeringScriptBuilder();
 
-		const { jsonData, jsonSchema, containerData, options } = data;
+		const { jsonData, jsonSchema, containerData, options } = connectionInfo;
 		const { additionalOptions } = options;
 		const scope = _.get(containerData, '[0]', {});
 		const rawCollectionData = JSON.parse(jsonSchema);
@@ -155,7 +160,8 @@ const applyToInstance = async (connectionInfo, appLogger, callback, app) => {
 	const containerData = _.first(connectionInfo.containerData);
 
 	if (!containerData) {
-		logger.error(new Error(CONTAINER_DATA_NOT_FOUND));
+		const err = new Error(CONTAINER_DATA_NOT_FOUND);
+		logger.error(err);
 		logger.progress(ERROR_HAS_BEEN_THROWN_WHILE_CONNECTING_TO_BUCKET);
 		return callback(err);
 	}

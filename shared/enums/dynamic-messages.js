@@ -1,4 +1,6 @@
 module.exports = {
+	getCreatingBucketMessage: bucketName => `Creating a bucket: ${bucketName}`,
+	getSuccessfullyCreatedBucketMessage: bucketName => `Bucket ${bucketName} successfully created on cluster`,
 	getApplyingScriptPercentMessage: applyingProgress => `Applying script: ${applyingProgress}%`,
 	getRetryAttemptNumberMessage: attemptNumber => ` Retry: attempt ${attemptNumber}`,
 	getApplyingScriptToBucketWithAttemptNumberMessage: (bucketName, attemptNumberMessage) =>
