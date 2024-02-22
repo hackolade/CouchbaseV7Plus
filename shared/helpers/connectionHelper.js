@@ -5,7 +5,6 @@
  * @typedef {import('../types').ConnectionParams} ConnectionParams
  */
 
-const couchbase = require('couchbase');
 const clusterHelper = require('./clusterHelper');
 const { AUTH_TYPE, COUCHBASE_HOST_PREFIX, COUCHBASE_DEFAULT_KV_CONNECTION_PORT } = require('../constants');
 
@@ -68,7 +67,7 @@ const connect = async ({ connectionInfo, app }) => {
 	if (cluster) {
 		return cluster;
 	}
-
+	const couchbase = app.require('couchbase');
 	const { url, options } = generateConnectionParams({ connectionInfo });
 	cluster = await couchbase.connect(url, options);
 	const buckets = await clusterHelper.getAllBuckets({ cluster });

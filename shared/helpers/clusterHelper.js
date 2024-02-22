@@ -34,6 +34,17 @@ const getAllBuckets = async ({ cluster }) => {
 };
 
 /**
+ *
+ * @param {{bucketName: string, cluster: Cluster}} param
+ * @returns {Promise<Bucket>}
+ */
+const createNewBucket = async ({ bucketName, cluster }) => {
+	await cluster.buckets().createBucket({ name: bucketName });
+
+	return cluster.bucket(bucketName);
+};
+
+/**
  * @param {{ cluster: Cluster; selectedBucket: string }} selectedBucket
  * @returns {Promise<Bucket[]>}
  */
@@ -568,6 +579,7 @@ const getCollectionDocumentByDocumentId = async ({
 module.exports = {
 	isBucketHasDefaultCollection,
 	getAllBuckets,
+	createNewBucket,
 	getBucketsForReverse,
 	getBucketScopeNameMap,
 	getDbCollectionsNames,

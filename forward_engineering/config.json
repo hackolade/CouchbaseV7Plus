@@ -1,61 +1,48 @@
 {
-		"extension": "n1ql",
-		"namePrefix": "Couchbase Schema",
-		"filterName": "Couchbase Schema",
-		"documentation": true,
-		"applyScriptToInstance": true,
-		"resolvedDefinitions": true,
-		"refresh": true,
-		"disableApplyScriptToInstance": false,
-		"applyToInstanceSettings": {
-			"generateSamplesInBulk": true
-		},
-		"level": {
-			"model": false,
-			"container": true,
-			"entity": true
-		},
-		"additionalOptions": [
-			{
-				"id": "INCLUDE_SAMPLES",
-				"value": true,
-				"name": "Include sample data",
-				"align": "right"
-			}
-		],
-		"numberOfDocumentsOptions": {
-			"id": "numberOfDocuments",
-			"value": 1,
-			"minValue": 1,
-			"maxValue": 10000000
-		},
-		"splitView": {
-			"byAdditionalOptions": [
-				"INCLUDE_SAMPLES"
+	"extension": "n1ql",
+	"namePrefix": "Couchbase Schema",
+	"filterName": "Couchbase Schema",
+	"documentation": true,
+	"applyScriptToInstance": true,
+	"resolvedDefinitions": true,
+	"refresh": true,
+	"disableApplyScriptToInstance": false,
+	"applyToInstanceSettings": {
+		"generateSamplesInBulk": true
+	},
+	"level": {
+		"model": false,
+		"container": true,
+		"entity": true
+	},
+	"additionalOptions": [
+		{
+			"id": "INCLUDE_SAMPLES",
+			"value": true,
+			"name": "Include sample data",
+			"align": "right"
+		}
+	],
+	"numberOfDocumentsOptions": {
+		"id": "numberOfDocuments",
+		"value": 1,
+		"minValue": 1,
+		"maxValue": 10000000
+	},
+	"splitView": {
+		"byAdditionalOptions": ["INCLUDE_SAMPLES"]
+	},
+	"options": [
+		{
+			"name": "Couchbase Script",
+			"keyword": "n1ql",
+			"supportsDeltaModel": true,
+			"fileExtensions": [
+				{
+					"label": "n1ql",
+					"value": "n1ql"
+				}
 			]
-		},
-		"options": [
-			{
-				"name": "Couchbase Script",
-				"keyword": "n1ql",
-				"supportsDeltaModel": true,
-				"fileExtensions": [
-					{
-						"label": "n1ql",
-						"value": "n1ql"
-					}
-				]
-			},
-			{
-				"name": "Ottoman",
-				"keyword": "js",
-				"supportsDeltaModel": true,
-				"fileExtensions": [
-					{
-						"label": "JavaScript",
-						"value": "js"
-					}
-				]
-			}
-		]
-	}
+		}
+	]
+}

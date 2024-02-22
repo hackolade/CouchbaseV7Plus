@@ -10,11 +10,11 @@
 
 const fs = require('fs');
 const _ = require('lodash');
-const connectionHelper = require('../shared/connection/connectionHelper');
-const clusterHelper = require('../shared/connection/clusterHelper');
+const connectionHelper = require('../shared/helpers/connectionHelper');
+const clusterHelper = require('../shared/helpers/clusterHelper');
+const logHelper = require('../shared/helpers/logHelper');
 const documentKindHelper = require('./helpers/documentKindHelper');
 const indexHelper = require('./helpers/indexHelper');
-const logHelper = require('./helpers/logHelper');
 const parserHelper = require('./helpers/parserHelper');
 const schemaHelper = require('./helpers/schemaHelper');
 

@@ -34,7 +34,6 @@
     },
     "dependencies": {
         "async": "3.2.5",
-        "couchbase": "npm:@hackolade/couchbase@27.4.7",
         "exponential-backoff": "3.1.1",
         "lodash": "4.17.21",
         "uuid": "9.0.1",

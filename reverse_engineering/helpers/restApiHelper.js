@@ -191,7 +191,6 @@ const getIndexes = async ({ connectionInfo, logger, app }) => {
 };
 
 module.exports = {
-	createRestApiService,
 	getBucketDocuments,
 	getIndexes,
 };

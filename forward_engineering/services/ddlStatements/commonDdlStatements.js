@@ -1,12 +1,3 @@
-/*
- * Copyright © 2016-2024 by IntegrIT S.A. dba Hackolade.  All rights reserved.
- *
- * The copyright to the computer software herein is the property of IntegrIT S.A.
- * The software may be used and/or copied only with the written permission of
- * IntegrIT S.A. or in accordance with the terms and conditions stipulated in
- * the agreement/contract under which the software has been supplied.
- */
-
 /**
  *
  * @param {string} str
@@ -16,29 +7,36 @@ const wrapWithBackticks = str => `\`${str}\``;
 
 /**
  *
- * @param {{namespace: string, bucket: string}} param
+ * @param {{statements: string[], separator: string}} param
  * @returns {string}
  */
-const getFullBucketPath = ({ namespace, bucket }) =>
-	namespace ? `${namespace}:${wrapWithBackticks(bucket)}` : wrapWithBackticks(bucket);
+const joinStatements = ({ statements, separator = '\n\t' }) => `${statements.filter(Boolean).join(separator)}`;
 
 /**
  *
- * @param {{namespace: string, bucket: string, scope: string, collectionName: string}} param
+ * @param {{namespace: string, bucketName: string}} param
  * @returns {string}
  */
-const getKeySpaceReference = ({ namespace, bucket, scope, collectionName }) => {
-	if (!bucket) {
+const getFullBucketPath = ({ namespace, bucketName }) =>
+	namespace ? `${namespace}:${wrapWithBackticks(bucketName)}` : wrapWithBackticks(bucketName);
+
+/**
+ *
+ * @param {{namespace: string, bucketName: string, scopeName: string, collectionName: string}} param
+ * @returns {string}
+ */
+const getKeySpaceReference = ({ namespace, bucketName, scopeName, collectionName }) => {
+	if (!bucketName) {
 		return wrapWithBackticks(collectionName);
 	}
 
-	const fullBucketPath = getFullBucketPath({ namespace, bucket });
+	const fullBucketPath = getFullBucketPath({ namespace, bucketName });
 
-	if (!collectionName || !scope) {
+	if (!collectionName || !scopeName) {
 		return fullBucketPath;
 	}
 
-	const collectionPath = `.${wrapWithBackticks(scope)}.${wrapWithBackticks(collectionName)}`;
+	const collectionPath = `.${wrapWithBackticks(scopeName)}.${wrapWithBackticks(collectionName)}`;
 
 	return `${fullBucketPath}${collectionPath}`;
 };
@@ -47,4 +45,5 @@ module.exports = {
 	wrapWithBackticks,
 	getFullBucketPath,
 	getKeySpaceReference,
+	joinStatements,
 };

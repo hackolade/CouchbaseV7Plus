@@ -9,40 +9,44 @@
 const _ = require('lodash');
 const { backOff } = require('exponential-backoff');
 const connectionHelper = require('../shared/connection/connectionHelper');
+const clusterHelper = require('../shared/helpers/clusterHelper');
+const logHelper = require('../shared/helpers/logHelper');
 const {
 	COUCHBASE_APPLY_TO_INSTANCE,
-	COUCHBASE_FORWARD_ENGINEERING_ERROR,
 	CONTAINER_DATA_NOT_FOUND,
 	CONNECTING,
-	CHECK_BUCKET_EXISTS,
 	ERROR_HAS_BEEN_THROWN_WHILE_CONNECTING_TO_BUCKET,
 	ERROR_HAS_BEEN_THROWN_WHILE_CREATING_BUCKET_IN_COUCHBASE_INSTANCE,
-	ERROR_DURING_PUBLISHING_SAMPLE_DATA_IN_BULK,
 	ERROR_HAS_BEEN_THROWN_WHILE_APPLYING_SCRIPT_TO_COUCHBASE_INSTANCE,
+	GENERATING_CONTAINER_SCRIPT,
+	GENERATING_ENTITY_SCRIPT,
 } = require('../shared/enums/static-messages');
+const { getCheckBucketExistsMessage } = require('../shared/enums/dynamic-messages');
+const { HTTP_ERROR_CODES } = require('../shared/enums/http');
 
-const {
-	applyScript,
-	createNewBucket,
-	handleError,
-	logApplyScriptAttempt,
-} = require('./services/applyToInstanceService');
+const { applyScript, logApplyScriptAttempt } = require('./services/applyToInstanceService');
 const ForwardEngineeringScriptBuilder = require('./services/forwardEngineeringScriptBuilder');
 
 const MAX_APPLY_ATTEMPTS = 5;
+const DEFAULT_START_DELAY = 1000;
 
 const includeSamples = (additionalOptions = []) =>
 	Boolean(additionalOptions.find(option => option.id === 'INCLUDE_SAMPLES' && option.value));
 
 /**
  * @param {ConnectionInfo} connectionInfo
- * @param {AppLogger} logger
+ * @param {AppLogger} appLogger
  * @param {Callback} callback
  * @param {App} app
  */
-const generateContainerScript = async (data, logger, callback, app) => {
+const generateContainerScript = async (data, appLogger, callback, app) => {
+	const logger = logHelper.createLogger({
+		title: GENERATING_CONTAINER_SCRIPT,
+		hiddenKeys: connectionInfo.hiddenKeys,
+		logger: appLogger,
+	});
+
 	try {
-		logger.clear();
 		const scriptBuilder = new ForwardEngineeringScriptBuilder();
 
 		const { jsonData, collections, options } = data;
@@ -51,15 +55,16 @@ const generateContainerScript = async (data, logger, callback, app) => {
 		const collectionsData = collections.map(schema => ({
 			...JSON.parse(schema),
 			namespace: scope.namespace,
-			bucket: scope.bucket,
-			scope: scope.name,
+			bucketName: scope.bucket,
+			scopeName: scope.name,
 		}));
 
 		scriptBuilder.addScopeScript(scope);
 		collectionsData.forEach(collection => scriptBuilder.addCollectionScripts(collection));
 
 		if (!includeSamples(additionalOptions)) {
-			return callback(null, scriptBuilder.buildScriptWithoutSamples());
+			const { script } = scriptBuilder.buildScriptSeparateFromInsertScripts();
+			return callback(null, script);
 		}
 
 		scriptBuilder.addContainerInsertScripts({ collections: collectionsData, jsonData });
@@ -77,7 +82,7 @@ const generateContainerScript = async (data, logger, callback, app) => {
 			},
 		]);
 	} catch (error) {
-		logger.log('error', { message: error.message, stack: error.stack }, COUCHBASE_FORWARD_ENGINEERING_ERROR);
+		logger.error(error);
 
 		callback({ message: error.message, stack: error.stack });
 	}
@@ -85,29 +90,36 @@ const generateContainerScript = async (data, logger, callback, app) => {
 
 /**
  * @param {ConnectionInfo} connectionInfo
- * @param {AppLogger} logger
+ * @param {AppLogger} appLogger
  * @param {Callback} callback
  * @param {App} app
  */
-const generateScript = async (data, logger, callback, app) => {
+const generateScript = async (data, appLogger, callback, app) => {
+	const logger = logHelper.createLogger({
+		title: GENERATING_ENTITY_SCRIPT,
+		hiddenKeys: connectionInfo.hiddenKeys,
+		logger: appLogger,
+	});
+
 	try {
 		const scriptBuilder = new ForwardEngineeringScriptBuilder();
 
 		const { jsonData, jsonSchema, containerData, options } = data;
 		const { additionalOptions } = options;
-		const [scope] = _.isEmpty(containerData) ? [{}] : containerData;
+		const scope = _.get(containerData, '[0]', {});
 		const rawCollectionData = JSON.parse(jsonSchema);
 		const collectionData = {
 			...rawCollectionData,
 			namespace: scope?.namespace,
-			bucket: scope?.bucket,
-			scope: scope?.name,
+			bucketName: scope?.bucket,
+			scopeName: scope?.name,
 			collectionName: rawCollectionData.title,
 		};
 
 		scriptBuilder.addCollectionScripts(collectionData);
 		if (!includeSamples(additionalOptions)) {
-			return callback(null, scriptBuilder.buildScriptWithoutSamples());
+			const { script } = scriptBuilder.buildScriptSeparateFromInsertScripts();
+			return callback(null, script);
 		}
 
 		scriptBuilder.addCollectionInsertScripts({
@@ -117,7 +129,7 @@ const generateScript = async (data, logger, callback, app) => {
 
 		callback(null, scriptBuilder.buildScriptConcatenatedWithInsertScripts('\n\n'));
 	} catch (error) {
-		logger.log('error', { message: error.message, stack: error.stack }, COUCHBASE_FORWARD_ENGINEERING_ERROR);
+		logger.error(error);
 
 		callback({ message: error.message, stack: error.stack });
 	}
@@ -125,49 +137,50 @@ const generateScript = async (data, logger, callback, app) => {
 
 /**
  * @param {ConnectionInfo} connectionInfo
- * @param {AppLogger} logger
+ * @param {AppLogger} appLogger
  * @param {Callback} callback
  * @param {App} app
  */
-const applyToInstance = async (connectionInfo, logger, callback, app) => {
-	logger.clear({ appTarget: connectionInfo.appTarget, appVersion: connectionInfo.appVersion });
-	logger.log('info', connectionInfo, COUCHBASE_APPLY_TO_INSTANCE);
+const applyToInstance = async (connectionInfo, appLogger, callback, app) => {
+	const logger = logHelper.createLogger({
+		title: COUCHBASE_APPLY_TO_INSTANCE,
+		hiddenKeys: connectionInfo.hiddenKeys,
+		logger: appLogger,
+	});
 
-	logger.progress({ message: CONNECTING });
+	logger.info(COUCHBASE_APPLY_TO_INSTANCE);
+	logger.progress(CONNECTING);
 	const cluster = await connectionHelper.connect({ connectionInfo, app });
 
 	const containerData = _.first(connectionInfo.containerData);
 
 	if (!containerData) {
-		return handleError({
-			err: new Error(CONTAINER_DATA_NOT_FOUND),
-			logger,
-			callback,
-			message: ERROR_HAS_BEEN_THROWN_WHILE_CONNECTING_TO_BUCKET,
-		});
+		logger.error(new Error(CONTAINER_DATA_NOT_FOUND));
+		logger.progress(ERROR_HAS_BEEN_THROWN_WHILE_CONNECTING_TO_BUCKET);
+		return callback(err);
 	}
 
 	const bucketName = containerData?.bucket;
 	const scriptWithSamples = connectionInfo.script;
 
-	logger.progress({ message: CHECK_BUCKET_EXISTS });
+	logger.progress(getCheckBucketExistsMessage(bucketName));
 
-	const buckets = await cluster.buckets().getAllBuckets();
+	const buckets = await clusterHelper.getAllBuckets({ cluster });
 	const bucketExists = buckets.find(bucket => bucket.name === bucketName);
 	if (!bucketExists) {
 		try {
-			await createNewBucket({ bucketName, containerData, logger, cluster });
+			logger.info(getCreatingBucketMessage(bucketName));
+			logger.progress(CREATING_A_BUCKET);
+			await clusterHelper.createNewBucket({ bucketName, cluster });
+			logger.info(getSuccessfullyCreatedBucketMessage(bucketName));
 		} catch (err) {
-			if (err.context?.response_code !== 400) {
-				return handleError({
-					err,
-					logger,
-					callback,
-					message: ERROR_HAS_BEEN_THROWN_WHILE_CREATING_BUCKET_IN_COUCHBASE_INSTANCE,
-				});
+			if (err.context?.response_code !== HTTP_ERROR_CODES.badRequest) {
+				logger.error(err);
+				logger.progress(ERROR_HAS_BEEN_THROWN_WHILE_CREATING_BUCKET_IN_COUCHBASE_INSTANCE);
+				return callback(err);
 			}
 
-			logger.log('error', err, ERROR_DURING_PUBLISHING_SAMPLE_DATA_IN_BULK);
+			logger.error(err);
 		}
 	}
 
@@ -187,16 +200,13 @@ const applyToInstance = async (connectionInfo, logger, callback, app) => {
 				retry: (err, attemptNumber) => {
 					logApplyScriptAttempt({ attemptNumber, bucketName, logger });
 				},
-				startingDelay: 1000,
+				startingDelay: DEFAULT_START_DELAY,
 			},
 		);
 	} catch (err) {
-		return handleError({
-			err,
-			logger,
-			callback,
-			message: ERROR_HAS_BEEN_THROWN_WHILE_APPLYING_SCRIPT_TO_COUCHBASE_INSTANCE,
-		});
+		logger.error(err);
+		logger.progress(ERROR_HAS_BEEN_THROWN_WHILE_APPLYING_SCRIPT_TO_COUCHBASE_INSTANCE);
+		return callback(err);
 	}
 };
 
@@ -206,13 +216,20 @@ const applyToInstance = async (connectionInfo, logger, callback, app) => {
  * @param {Callback} callback
  * @param {App} app
  */
-const testConnection = async (connectionInfo, logger, callback, app) => {
+const testConnection = async (connectionInfo, appLogger, callback, app) => {
+	const logger = logHelper.createLogger({
+		title: 'Test database connection',
+		hiddenKeys: connectionInfo.hiddenKeys,
+		logger: appLogger,
+	});
+
 	try {
 		await connectionHelper.disconnect();
-		await connectionHelper.connect({ connectionInfo });
+		await connectionHelper.connect({ connectionInfo, app });
 		await connectionHelper.disconnect();
 		callback();
 	} catch (error) {
+		logger.error(error);
 		callback(error);
 	}
 };

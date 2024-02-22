@@ -1,6 +1,6 @@
 const _ = require('lodash');
 const restApiHelper = require('./restApiHelper');
-const clusterHelper = require('../../shared/connection/clusterHelper');
+const clusterHelper = require('../../shared/helpers/clusterHelper');
 const parserHelper = require('./parserHelper');
 const { GET_META_REGEXP, GET_PARTITION_HASH_REGEXP, DEFAULT_NAME } = require('../../shared/constants');
 

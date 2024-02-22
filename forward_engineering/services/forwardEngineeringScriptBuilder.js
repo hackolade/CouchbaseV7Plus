@@ -63,14 +63,6 @@ class ForwardEngineeringScriptBuilder {
 
 	/**
 	 *
-	 * @returns {string}
-	 */
-	buildScriptWithoutSamples() {
-		return this.ddlScript;
-	}
-
-	/**
-	 *
 	 * @returns {{script: string, insertScripts: string}}
 	 */
 	buildScriptSeparateFromInsertScripts() {

@@ -25,6 +25,8 @@ const COUCHBASE_ERROR_CODE = {
 	parseSyntaxError: 3000,
 	inferMethodIsNotSupport: 16003,
 	collectionDoesNotExist: 12003,
+	indexAlreadyCreated: 4300,
+	duplicateDocumentKey: 12009,
 };
 
 /**

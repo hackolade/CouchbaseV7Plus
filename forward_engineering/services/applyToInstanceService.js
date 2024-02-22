@@ -1,9 +1,9 @@
 const _ = require('lodash');
 const async = require('async');
+const clusterHelper = require('../../shared/helpers/clusterHelper');
 const {
 	APPLY_QUERY,
 	COUCHBASE_APPLY_TO_INSTANCE,
-	CREATING_A_BUCKET,
 	COUCHBASE_APPLY_TO_INSTANCE_SKIPPED_ERROR,
 	COUCHBASE_APPLY_TO_INSTANCE_ERROR,
 	SCRIPT_SUCCESSFULLY_APPLIED,
@@ -11,40 +11,12 @@ const {
 	ERROR_HAS_BEEN_THROWN_WHILE_APPLYING_SCRIPT_TO_COUCHBASE_INSTANCE,
 } = require('../../shared/enums/static-messages');
 const {
-	getCreatingBucketMessage,
-	getSuccessfullyCreatedBucketMessage,
 	getApplyingScriptPercentMessage,
 	getRetryAttemptNumberMessage,
 	getApplyingScriptToBucketWithAttemptNumberMessage,
 	getApplyingScriptMessage,
 } = require('../../shared/enums/dynamic-messages');
-
-/**
- *
- * @param {{containerData: object, bucketName: string, logger: object, cluster: object}} param0
- * @returns {object}
- */
-const createNewBucket = async ({ bucketName, logger, cluster }) => {
-	logger.log('info', { message: getCreatingBucketMessage(bucketName) }, COUCHBASE_APPLY_TO_INSTANCE);
-	logger.progress({ message: CREATING_A_BUCKET });
-
-	await cluster.buckets().createBucket({ name: bucketName });
-
-	logger.log('info', { message: getSuccessfullyCreatedBucketMessage(bucketName) }, COUCHBASE_APPLY_TO_INSTANCE);
-
-	return cluster.bucket(bucketName);
-};
-
-/**
- *
- * @param {{err: object, logger: object, callback: function, message: string}} param
- * @returns {string}
- */
-const handleError = ({ err, logger, callback, message }) => {
-	logger.log('error', err, message);
-	logger.progress(err, { message });
-	return callback(err);
-};
+const { COUCHBASE_ERROR_CODE } = require('../../shared/constants');
 
 /**
  *
@@ -82,12 +54,9 @@ const applyScript = async ({ script, cluster, logger, callback }) => {
 		logger.progress({ message: SUCCESSFULLY_APPLIED });
 		callback();
 	} catch (err) {
-		handleError({
-			err,
-			logger,
-			callback,
-			message: ERROR_HAS_BEEN_THROWN_WHILE_APPLYING_SCRIPT_TO_COUCHBASE_INSTANCE,
-		});
+		logger.error(err);
+		logger.progress(ERROR_HAS_BEEN_THROWN_WHILE_APPLYING_SCRIPT_TO_COUCHBASE_INSTANCE);
+		return callback(err);
 	}
 };
 
@@ -97,14 +66,10 @@ const applyScript = async ({ script, cluster, logger, callback }) => {
  * @returns {boolean}
  */
 const isIndexAlreadyCreatedError = err => {
-	const INDEX_ALREADY_CREATED_ERROR_CODE = 4300;
+	const errorCode = clusterHelper.getErrorCode({ error: err });
+	const errorMessage = clusterHelper.getErrorMessage({ error: err });
 
-	const cause = err.cause || {};
-
-	return (
-		cause.first_error_code === INDEX_ALREADY_CREATED_ERROR_CODE ||
-		cause.first_error_message.includes('already exist')
-	);
+	return errorCode === COUCHBASE_ERROR_CODE.indexAlreadyCreated || errorMessage.includes('already exist');
 };
 
 /**
@@ -113,14 +78,10 @@ const isIndexAlreadyCreatedError = err => {
  * @returns {boolean}
  */
 const isDuplicateDocumentKeyError = err => {
-	const DUPLICATE_DOCUMENT_KEY_ERROR_CODE = 12009;
+	const errorCode = clusterHelper.getErrorCode({ error: err });
+	const errorMessage = clusterHelper.getErrorMessage({ error: err });
 
-	const cause = err.cause || {};
-
-	return (
-		cause.first_error_code === DUPLICATE_DOCUMENT_KEY_ERROR_CODE &&
-		cause.first_error_message.includes('Duplicate Key')
-	);
+	return errorCode === COUCHBASE_ERROR_CODE.duplicateDocumentKey && errorMessage.includes('Duplicate Key');
 };
 
 /**
@@ -130,17 +91,11 @@ const isDuplicateDocumentKeyError = err => {
  */
 const logApplyScriptAttempt = ({ attemptNumber, bucketName, logger }) => {
 	const attemptNumberMessage = attemptNumber ? getRetryAttemptNumberMessage(attemptNumber + 1) : '';
-	logger.log(
-		'info',
-		{ message: getApplyingScriptToBucketWithAttemptNumberMessage(bucketName, attemptNumberMessage) },
-		COUCHBASE_APPLY_TO_INSTANCE,
-	);
-	logger.progress({ message: getApplyingScriptMessage(attemptNumberMessage) });
+	logger.info(getApplyingScriptToBucketWithAttemptNumberMessage(bucketName, attemptNumberMessage));
+	logger.progress(getApplyingScriptMessage(attemptNumberMessage));
 };
 
 module.exports = {
 	applyScript,
-	createNewBucket,
-	handleError,
 	logApplyScriptAttempt,
 };

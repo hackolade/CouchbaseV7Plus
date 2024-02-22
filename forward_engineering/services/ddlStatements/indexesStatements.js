@@ -1,49 +1,35 @@
-/*
- * Copyright © 2016-2024 by IntegrIT S.A. dba Hackolade.  All rights reserved.
- *
- * The copyright to the computer software herein is the property of IntegrIT S.A.
- * The software may be used and/or copied only with the written permission of
- * IntegrIT S.A. or in accordance with the terms and conditions stipulated in
- * the agreement/contract under which the software has been supplied.
- */
-
 const _ = require('lodash');
 const { getIndexKeyIdToKeyNameMap, injectKeysNamesIntoIndexKeys } = require('../../utils/indexes');
-const { wrapWithBackticks, getKeySpaceReference } = require('./commonDdlStatements');
-
-const INDEX_TYPE = {
-	primary: 'Primary',
-	secondary: 'Secondary',
-	array: 'Array',
-	metadata: 'Metadata',
-};
+const { wrapWithBackticks, getKeySpaceReference, joinStatements } = require('./commonDdlStatements');
+const { INDEX_TYPE } = require('../../../shared/enums/n1ql');
 
 /**
  *
- * @param {{ namespace: string, bucket: string, scope: string, collectionName: string, indexes: object[], properties: object[] }} collection
+ * @param {{ namespace: string, bucketName: string, scopeName: string, collectionName: string, indexes: object[], properties: object[] }} collection
  * @returns {string[]}
  */
-const getIndexesScript = ({ namespace, bucket, scope, collectionName, indexes, properties }) => {
+const getIndexesScript = ({ namespace, bucketName, scopeName, collectionName, indexes, properties }) => {
 	const collectionIndexes = indexes ?? [];
 	const keyIdToName = getIndexKeyIdToKeyNameMap(properties);
 	const indexesKeysWithCorrespondingPropertiesNames = collectionIndexes.map(index =>
 		injectKeysNamesIntoIndexKeys({ index, keyIdToName }),
 	);
 
-	return indexesKeysWithCorrespondingPropertiesNames
-		.map(index => {
+	return joinStatements({
+		statements: indexesKeysWithCorrespondingPropertiesNames.map(index => {
 			const indexData = {
 				...index,
 				namespace,
-				bucket,
-				scope,
+				bucketName,
+				scopeName,
 				collectionName,
 			};
 			const indexStatement = getIndexScript(indexData);
 
 			return indexData.isActivated ? indexStatement : commentStatement(indexStatement);
-		})
-		.join('\n\n');
+		}),
+		separator: '\n\n',
+	});
 };
 
 /**
@@ -66,30 +52,21 @@ const getIndexScript = index => {
 	const additionalOptions = getAdditionalOptions(index);
 	const isPrimary = index.indxType === INDEX_TYPE.primary;
 	const createIndexScript = isPrimary
-		? `CREATE PRIMARY INDEX ${wrapWithBackticks(getValidIndexName(index.indxName))}`
-		: `CREATE INDEX ${wrapWithBackticks(getValidIndexName(index.indxName))}`;
+		? `CREATE PRIMARY INDEX ${wrapWithBackticks(index.indxName)}`
+		: `CREATE INDEX ${wrapWithBackticks(index.indxName)}`;
 	const bucketWithKeysScript = `ON ${keySpaceRefStatement}${keysScript}`;
 
-	return (
-		[
+	return `${joinStatements({
+		statements: [
 			wrapCreateIndexStatementWithIfNotExistsClause({
 				ifNotExists: index.ifNotExists,
 				createStatement: createIndexScript,
 			}),
 			bucketWithKeysScript,
 			additionalOptions,
-		]
-			.filter(Boolean)
-			.join('\n\t') + ';'
-	);
+		],
+	})};`;
 };
-
-/**
- *
- * @param {string[]} statements
- * return {string}
- */
-const joinIndexesStatements = statements => `${statements.filter(Boolean).join('\n\t')};`;
 
 /**
  *
@@ -98,15 +75,6 @@ const joinIndexesStatements = statements => `${statements.filter(Boolean).join('
  */
 const wrapCreateIndexStatementWithIfNotExistsClause = ({ ifNotExists, createStatement }) =>
 	ifNotExists ? `${createStatement} IF NOT EXISTS` : createStatement;
-
-/**
- *
- * @param {string} name
- * @returns {string}
- */
-const getValidIndexName = name => {
-	return name.replace(/^[^A-Za-z]/, 'idx_').replace(/[^A-Za-z0-9#_]/g, '_');
-};
 
 /**
  *
@@ -120,11 +88,14 @@ const getKeys = index => {
 		case INDEX_TYPE.secondary:
 			const keys = index.indxKey?.map(key => ({ ...key, name: wrapWithBackticks(key.name) }));
 
-			const keysNames = keys
-				.map(key => _.filter([key.name, getOrder(key.type)]).join(' '))
-				.concat(index.functionExpr)
-				.filter(Boolean)
-				.join(',');
+			const keysNames = joinStatements({
+				statements: keys
+					.map(key =>
+						joinStatements({ statements: _.filter([key.name, getOrder(key.type)]), separator: ' ' }),
+					)
+					.concat(index.functionExpr),
+				separator: ',',
+			});
 
 			return { script: `(${keysNames})`, canHaveIndex: Boolean(keysNames.length) };
 		case INDEX_TYPE.array:
@@ -141,12 +112,8 @@ const getKeys = index => {
  * @param {object} index
  * @returns {string}
  */
-const getAdditionalOptions = index => {
-	return getAdditionalOptionsFunctions(index)
-		.map(addOption => addOption(index))
-		.filter(Boolean)
-		.join('\n\t');
-};
+const getAdditionalOptions = index =>
+	joinStatements({ statements: getAdditionalOptionsFunctions(index).map(addOption => addOption(index)) });
 
 /**
  *
@@ -187,10 +154,10 @@ const getWithClause = index => {
 		? `"num_replica":${index.withOptions.num_replica}`
 		: '';
 	const nodes = _.get(index, 'withOptions.nodes', []).length
-		? `"nodes":[${index.withOptions.nodes.map(node => `"${node.nodeName}"`).join(',')}]`
+		? `"nodes":[${joinStatements({ statements: index.withOptions.nodes.map(node => `"${node.nodeName}"`), separator: ',' })}]`
 		: '';
 	const hasWithClosure = deferBuild || numReplica || nodes;
-	const withClosure = [deferBuild, numReplica, nodes].filter(Boolean).join(',');
+	const withClosure = joinStatements({ statements: [deferBuild, numReplica, nodes], separator: ',' });
 
 	return hasWithClosure ? `WITH{${withClosure}}` : '';
 };
@@ -226,7 +193,10 @@ const getOrder = order => {
 const getPartitionByHashClause = index => {
 	switch (index.partitionByHash) {
 		case 'Keys':
-			const keysNames = index.partitionByHashKeys.map(key => wrapWithBackticks(key.name)).join(',');
+			const keysNames = joinStatements({
+				statements: index.partitionByHashKeys.map(key => wrapWithBackticks(key.name)),
+				separator: ',',
+			});
 
 			return `PARTITION BY HASH(${keysNames})`;
 		case 'Expression':
@@ -241,16 +211,8 @@ const getPartitionByHashClause = index => {
  * @param {string} statement
  * @returns {string}
  */
-const commentStatement = statement => {
-	return (
-		'/*\n' +
-		statement
-			.split('\n')
-			.map(line => ' * ' + line)
-			.join('\n') +
-		'\n */'
-	);
-};
+const commentStatement = statement =>
+	`/*\n${joinStatements({ statements: statement.split('\n').map(line => ` * ${line}`), separator: '\n' })}\n */`;
 
 module.exports = {
 	getIndexesScript,
