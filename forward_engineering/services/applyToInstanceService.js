@@ -3,7 +3,6 @@ const async = require('async');
 const clusterHelper = require('../../shared/helpers/clusterHelper');
 const {
 	APPLY_QUERY,
-	COUCHBASE_APPLY_TO_INSTANCE,
 	COUCHBASE_APPLY_TO_INSTANCE_SKIPPED_ERROR,
 	COUCHBASE_APPLY_TO_INSTANCE_ERROR,
 	SCRIPT_SUCCESSFULLY_APPLIED,
@@ -30,7 +29,7 @@ const applyScript = async ({ script, cluster, logger, callback }) => {
 
 	try {
 		async.eachSeries(scripts, async (script, index) => {
-			logger.log('info', { message: APPLY_QUERY, query: script }, COUCHBASE_APPLY_TO_INSTANCE);
+			logger.info(APPLY_QUERY);
 			try {
 				await cluster.query(script);
 				const appliedStatements = index + 1;
@@ -41,17 +40,17 @@ const applyScript = async ({ script, cluster, logger, callback }) => {
 				}
 			} catch (err) {
 				if (isIndexAlreadyCreatedError(err)) {
-					logger.log('info', { error: err }, COUCHBASE_APPLY_TO_INSTANCE_SKIPPED_ERROR);
+					logger.info(COUCHBASE_APPLY_TO_INSTANCE_SKIPPED_ERROR);
 				} else if (isDuplicateDocumentKeyError(err)) {
-					logger.log('info', { error: err }, COUCHBASE_APPLY_TO_INSTANCE_ERROR);
-					logger.progress(err, { message: getApplyingScriptPercentMessage(script) });
+					logger.info(COUCHBASE_APPLY_TO_INSTANCE_ERROR);
+					logger.progress(getApplyingScriptPercentMessage(script));
 				} else {
 					throw err;
 				}
 			}
 		});
-		logger.log('info', { message: SCRIPT_SUCCESSFULLY_APPLIED }, COUCHBASE_APPLY_TO_INSTANCE);
-		logger.progress({ message: SUCCESSFULLY_APPLIED });
+		logger.info(SCRIPT_SUCCESSFULLY_APPLIED);
+		logger.progress(SUCCESSFULLY_APPLIED);
 		callback();
 	} catch (err) {
 		logger.error(err);

@@ -8,7 +8,7 @@
 
 const _ = require('lodash');
 const { backOff } = require('exponential-backoff');
-const connectionHelper = require('../shared/connection/connectionHelper');
+const connectionHelper = require('../shared/helpers/connectionHelper');
 const clusterHelper = require('../shared/helpers/clusterHelper');
 const logHelper = require('../shared/helpers/logHelper');
 const {
