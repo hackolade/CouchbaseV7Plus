@@ -2,6 +2,7 @@
  * @typedef {import('../../shared/types').DbCollectionData} DbCollectionData
  * @typedef {import('../../shared/types').Document} Document
  * @typedef {import('../../shared/types').NameMap} NameMap
+ * @typedef {{ active: 'field' | 'alphabetical' }} FieldInference
  */
 const _ = require('lodash');
 const { DEFAULT_KEY_NAME, DEFAULT_NAME } = require('../../shared/constants');
@@ -13,7 +14,10 @@ const { DEFAULT_KEY_NAME, DEFAULT_NAME } = require('../../shared/constants');
  * scopeName: string;
  * collectionName: string;
  * collectionIndexes: object[];
- * includeEmptyCollection: boolean }} param0
+ * includeEmptyCollection: boolean;
+ * standardDocument: Document | null;
+ * fieldInference: FieldInference
+ *  }} param0
  * @returns {DbCollectionData}
  */
 const getDbCollectionData = ({
@@ -23,6 +27,8 @@ const getDbCollectionData = ({
 	collectionName,
 	collectionIndexes,
 	includeEmptyCollection,
+	standardDocument,
+	fieldInference,
 }) => {
 	const jsonDocuments = documents
 		.filter(item => _.isPlainObject(item[bucketName]))
@@ -30,7 +36,7 @@ const getDbCollectionData = ({
 			[DEFAULT_KEY_NAME]: item.docid,
 			...item[bucketName],
 		}));
-	const standardDoc = _.first(jsonDocuments);
+	const standardDoc = fieldInference.active === 'field' ? standardDocument : null;
 	const emptyBucket = !includeEmptyCollection && _.isEmpty(jsonDocuments);
 
 	return {

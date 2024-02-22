@@ -317,6 +317,14 @@ const getDbCollectionData = async ({
 		const options = { limit, pagination: data.pagination, bucketName, scopeName, collectionName };
 		const query = queryHelper.getSelectCollectionDocumentsQuery({ bucketName, scopeName, collectionName });
 		const documents = await getPaginatedQuery({ cluster, options, query, logger });
+		const standardDocument = await getCollectionDocumentByDocumentId({
+			cluster,
+			bucketName,
+			scopeName,
+			collectionName,
+			documentId: documents[0]?.docid,
+			logger,
+		});
 
 		return schemaHelper.getDbCollectionData({
 			bucketName,
@@ -325,6 +333,8 @@ const getDbCollectionData = async ({
 			documents,
 			collectionIndexes,
 			includeEmptyCollection,
+			standardDocument,
+			fieldInference: data.fieldInference,
 		});
 	} catch (error) {
 		logger.error(error);
@@ -406,10 +416,10 @@ const getDbCollectionDataByErrorHandling = async ({
 			documents,
 			collectionIndexes,
 			includeEmptyCollection,
+			fieldInference: data.fieldInference,
 		});
 	} catch (error) {
 		logger.error(error);
-
 		return schemaHelper.getDbCollectionData({
 			bucketName,
 			scopeName,
@@ -417,6 +427,7 @@ const getDbCollectionDataByErrorHandling = async ({
 			documents: [],
 			collectionIndexes,
 			includeEmptyCollection,
+			fieldInference: data.fieldInference,
 		});
 	}
 };
@@ -465,6 +476,39 @@ const getSelectedCollections = async ({ cluster, data, logger, app }) => {
 		const { dbName, scopeName, dbCollections } = collectionData;
 		return _.set(result, [dbName, scopeName], dbCollections);
 	}, {});
+};
+
+/**
+ * @description Function returns a document with original order of fields
+ * @param {{
+ * cluster: Cluster;
+ * bucketName: string;
+ * scopeName: string;
+ * collectionName: string;
+ * documentId?: string;
+ * logger: Logger;
+ * }} param0
+ * @returns {Promise<Document|null>}
+ */
+const getCollectionDocumentByDocumentId = async ({
+	cluster,
+	bucketName,
+	scopeName,
+	collectionName,
+	documentId,
+	logger,
+}) => {
+	try {
+		const bucket = cluster.bucket(bucketName);
+		const scope = bucket.scope(scopeName);
+		const collection = scope.collection(collectionName);
+		const { content } = await collection.get(documentId);
+
+		return content;
+	} catch (error) {
+		logger.error(error);
+		return null;
+	}
 };
 
 module.exports = {
