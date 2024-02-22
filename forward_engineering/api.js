@@ -56,11 +56,15 @@ const generateContainerScript = async (connectionInfo, appLogger, callback, app)
 
 		const { jsonData, collections, options } = connectionInfo;
 		const { origin, additionalOptions } = options;
-		const [scope] = connectionInfo.containerData;
+		const [rawScope] = connectionInfo.containerData;
+		const scope = {
+			...rawScope,
+			bucketName: rawScope.bucket,
+		};
 		const collectionsData = collections.map(schema => ({
 			...JSON.parse(schema),
 			namespace: scope.namespace,
-			bucketName: scope.bucket,
+			bucketName: scope.bucketName,
 			scopeName: scope.name,
 		}));
 

@@ -2,12 +2,10 @@ const { wrapWithBackticks, getFullBucketPath } = require('./commonDdlStatements'
 
 /**
  *
- * @param {object} scope
+ * @param {{ namespace: string, bucketName: string, name: string, ifNotExists: boolean }} scope
  * @returns {string}
  */
-const getScopeScript = scope => {
-	const { namespace, bucketName, name, ifNotExists } = scope;
-
+const getScopeScript = ({ namespace, bucketName, name, ifNotExists }) => {
 	if (!bucketName || !name) {
 		return '';
 	}
