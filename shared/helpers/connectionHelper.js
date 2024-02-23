@@ -67,7 +67,7 @@ const connect = async ({ connectionInfo, app }) => {
 	if (cluster) {
 		return cluster;
 	}
-	const couchbase = app.require('couchbase');
+	const couchbase = await app.require('couchbase');
 	const { url, options } = generateConnectionParams({ connectionInfo });
 	cluster = await couchbase.connect(url, options);
 	const buckets = await clusterHelper.getAllBuckets({ cluster });

@@ -200,7 +200,6 @@ const applyToInstance = async (connectionInfo, appLogger, callback, app) => {
 			() =>
 				applyScript({
 					script: scriptWithSamples,
-					bucketName,
 					logger,
 					callback,
 					cluster,

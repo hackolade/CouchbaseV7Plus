@@ -28,30 +28,35 @@ const applyScript = async ({ script, cluster, logger, callback }) => {
 	let previousApplyingProgress = 0;
 
 	try {
-		async.eachSeries(scripts, async (script, index) => {
-			logger.info(APPLY_QUERY);
-			try {
-				await cluster.query(script);
-				const appliedStatements = index + 1;
-				const applyingProgress = Math.round((appliedStatements / maxNumberStatements) * 100);
-				if (applyingProgress - previousApplyingProgress >= 5) {
-					previousApplyingProgress = applyingProgress;
-					logger.progress({ message: getApplyingScriptPercentMessage(applyingProgress) });
+		async.eachOfSeries(
+			scripts,
+			async (script, index) => {
+				logger.info(APPLY_QUERY);
+				try {
+					await cluster.query(script);
+					const appliedStatements = index + 1;
+					const applyingProgress = Math.round((appliedStatements / maxNumberStatements) * 100);
+					if (applyingProgress - previousApplyingProgress >= 5) {
+						previousApplyingProgress = applyingProgress;
+						logger.progress({ message: getApplyingScriptPercentMessage(applyingProgress) });
+					}
+				} catch (err) {
+					if (isIndexAlreadyCreatedError(err)) {
+						logger.info(COUCHBASE_APPLY_TO_INSTANCE_SKIPPED_ERROR);
+					} else if (isDuplicateDocumentKeyError(err)) {
+						logger.info(COUCHBASE_APPLY_TO_INSTANCE_ERROR);
+						logger.progress(getApplyingScriptPercentMessage(script));
+					} else {
+						throw err;
+					}
 				}
-			} catch (err) {
-				if (isIndexAlreadyCreatedError(err)) {
-					logger.info(COUCHBASE_APPLY_TO_INSTANCE_SKIPPED_ERROR);
-				} else if (isDuplicateDocumentKeyError(err)) {
-					logger.info(COUCHBASE_APPLY_TO_INSTANCE_ERROR);
-					logger.progress(getApplyingScriptPercentMessage(script));
-				} else {
-					throw err;
-				}
-			}
-		});
-		logger.info(SCRIPT_SUCCESSFULLY_APPLIED);
-		logger.progress(SUCCESSFULLY_APPLIED);
-		callback();
+			},
+			() => {
+				logger.info(SCRIPT_SUCCESSFULLY_APPLIED);
+				logger.progress(SUCCESSFULLY_APPLIED);
+				callback();
+			},
+		);
 	} catch (err) {
 		logger.error(err);
 		logger.progress(ERROR_HAS_BEEN_THROWN_WHILE_APPLYING_SCRIPT_TO_COUCHBASE_INSTANCE);

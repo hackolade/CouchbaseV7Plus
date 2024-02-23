@@ -37,7 +37,7 @@ const STATUS = {
 };
 
 const DEFAULT_DOCUMENT_KIND = '*';
-const DEFAULT_KEY_NAME = 'KEY';
+const DEFAULT_KEY_NAME = '<key>';
 const DEFAULT_LIMIT = 1000;
 const DEFAULT_NAME = '_default';
 const DEFAULT_SCOPE = {
