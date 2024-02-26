@@ -1,7 +1,7 @@
-const { getIndexesScript } = require('./ddlStatements/indexesStatements');
-const { getInsertScripts, getInsertScriptForCollection } = require('./ddlStatements/insertStatements');
-const { getScopeScript } = require('./ddlStatements/scopesStatements');
-const { getCollectionScript } = require('./ddlStatements/collectionsStatements');
+const { getIndexesScript } = require('./statements/indexesStatements');
+const { getInsertScripts, getInsertScriptForCollection } = require('./statements/insertStatements');
+const { getScopeScript } = require('./statements/scopesStatements');
+const { getCollectionScript } = require('./statements/collectionsStatements');
 
 class ForwardEngineeringScriptBuilder {
 	constructor() {

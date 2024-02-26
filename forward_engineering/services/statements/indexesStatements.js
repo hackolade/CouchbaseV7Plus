@@ -1,6 +1,6 @@
 const _ = require('lodash');
 const { getIndexKeyIdToKeyNameMap, injectKeysNamesIntoIndexKeys } = require('../../utils/indexes');
-const { wrapWithBackticks, getKeySpaceReference, joinStatements } = require('./commonDdlStatements');
+const { wrapWithBackticks, getKeySpaceReference, joinStatements } = require('./commonStatements');
 const { INDEX_TYPE } = require('../../../shared/enums/n1ql');
 
 /**

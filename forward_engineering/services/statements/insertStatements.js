@@ -1,6 +1,6 @@
 const _ = require('lodash');
 const uuid = require('uuid');
-const { getKeySpaceReference } = require('./commonDdlStatements');
+const { getKeySpaceReference } = require('./commonStatements');
 
 /**
  *

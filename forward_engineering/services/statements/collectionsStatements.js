@@ -1,4 +1,4 @@
-const { wrapWithBackticks, getFullBucketPath } = require('./commonDdlStatements');
+const { wrapWithBackticks, getFullBucketPath } = require('./commonStatements');
 
 /**
  *
