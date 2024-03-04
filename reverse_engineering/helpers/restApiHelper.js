@@ -5,7 +5,7 @@
  * @typedef {import('../../shared/types').Logger} Logger
  */
 
-const _ = require('lodash');
+const { isObject } = require('lodash');
 const { DEFAULT_LIMIT } = require('../../shared/constants');
 
 class CustomError extends Error {
@@ -92,7 +92,7 @@ const safeParse = value => {
 	}
 };
 
-const isBinaryFile = obj => _.isObject(obj) && !!obj.base64 && !!obj.meta;
+const isBinaryFile = obj => isObject(obj) && !!obj.base64 && !!obj.meta;
 
 const createRestApiService = ({ connectionInfo, app }) => {
 	const httpService = app.require('httpService');

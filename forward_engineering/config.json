@@ -1,37 +1,48 @@
 {
-	"extension": "js",
-	"filterName": "MongoDB script",
-	"namePrefix": "DocumentDB",
-	"hasUpdateScript": false,
-	"mode": "javascript",
+	"extension": "n1ql",
+	"namePrefix": "Couchbase Schema",
+	"filterName": "Couchbase Schema",
+	"documentation": true,
+	"applyScriptToInstance": true,
+	"resolvedDefinitions": true,
+	"refresh": true,
+	"disableApplyScriptToInstance": false,
 	"applyToInstanceSettings": {
 		"generateSamplesInBulk": true
 	},
 	"level": {
-		"entity": true,
+		"model": false,
 		"container": true,
-		"view": false
+		"entity": true
 	},
 	"additionalOptions": [
 		{
 			"id": "INCLUDE_SAMPLES",
 			"value": true,
 			"name": "Include sample data",
-			"align": "right",
-			"level": {
-				"entity": false
-			}
+			"align": "right"
 		}
 	],
-	"splitView": {
-		"byAdditionalOptions": ["INCLUDE_SAMPLES"]
-	},
 	"numberOfDocumentsOptions": {
 		"id": "numberOfDocuments",
 		"value": 1,
 		"minValue": 1,
 		"maxValue": 10000000
 	},
-	"applyScriptToInstance": true,
-	"refresh": true
+	"splitView": {
+		"byAdditionalOptions": ["INCLUDE_SAMPLES"]
+	},
+	"options": [
+		{
+			"name": "Couchbase Script",
+			"keyword": "n1ql",
+			"supportsDeltaModel": true,
+			"fileExtensions": [
+				{
+					"label": "n1ql",
+					"value": "n1ql"
+				}
+			]
+		}
+	]
 }

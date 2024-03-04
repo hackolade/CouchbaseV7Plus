@@ -4,7 +4,7 @@
  * @typedef {import('../../shared/types').NameMap} NameMap
  * @typedef {{ active: 'field' | 'alphabetical' }} FieldInference
  */
-const _ = require('lodash');
+const { isPlainObject, isEmpty, uniq } = require('lodash');
 const { DEFAULT_KEY_NAME, DEFAULT_NAME } = require('../../shared/constants');
 
 /**
@@ -31,13 +31,13 @@ const getDbCollectionData = ({
 	fieldInference,
 }) => {
 	const jsonDocuments = documents
-		.filter(item => _.isPlainObject(item[bucketName]))
+		.filter(item => isPlainObject(item[bucketName]))
 		.map(item => ({
 			[DEFAULT_KEY_NAME]: item.docid,
 			...item[bucketName],
 		}));
 	const standardDoc = fieldInference.active === 'field' ? standardDocument : null;
-	const emptyBucket = !includeEmptyCollection && _.isEmpty(jsonDocuments);
+	const emptyBucket = !includeEmptyCollection && isEmpty(jsonDocuments);
 
 	return {
 		dbName: scopeName,
@@ -63,7 +63,7 @@ const getDbCollectionData = ({
  * @returns {Document[]}
  */
 const convertInferSchemaToDocuments = ({ inference, bucketName }) => {
-	if (_.isEmpty(inference?.properties)) {
+	if (isEmpty(inference?.properties)) {
 		return [];
 	}
 
@@ -122,8 +122,8 @@ const updateDefaultDbNames = ({ dbCollectionsData }) => {
 	const bucketNames = dbCollectionsData
 		.filter(data => data.dbName === DEFAULT_NAME)
 		.map(data => data.bucketInfo.bucket);
-	const uniqueBucketNames = _.uniq(bucketNames);
-	const shouldUpdateDefaultNames = _.uniq(bucketNames).length > 1;
+	const uniqueBucketNames = uniq(bucketNames);
+	const shouldUpdateDefaultNames = uniq(bucketNames).length > 1;
 
 	if (!shouldUpdateDefaultNames) {
 		return dbCollectionsData;

@@ -173,14 +173,15 @@ making sure that you maintain a proper JSON format.
 			{
 				"labelName": "Key",
 				"propertyName": "Key",
-				"propertyKeyword": "key",
-				"defaultName": "KEY",
+				"propertyKeyword": "<key>",
+				"defaultName": "<key>",
 				"propertyPrimaryKey": true,
 				"propertyType": "text",
-				"typeName": "type",
+				"typeName": "Data type",
 				"typeOptions": ["string"],
 				"defaultType": "string",
 				"disabledFieldOption": true,
+				"sampleGen": "&containerName",
 				"validation": {
 					"disableNameValidationForReservedWords": true
 				}

@@ -1,27 +1,21 @@
 /**
- * @typedef {import('../../shared/types').DbCollectionData} DbCollectionData
- * @typedef {import('../../shared/types').Document} Document
- * @typedef {import('../../shared/types').Cluster} Cluster
- * @typedef {import('../../shared/types').Bucket} Bucket
- * @typedef {import('../../shared/types').Scope} Scope
- * @typedef {import('../../shared/types').NameMap} NameMap
- * @typedef {import('../../shared/types').BucketCollectionNamesData} BucketCollectionNamesData
- * @typedef {import('../../shared/types').ConnectionInfo} ConnectionInfo
- * @typedef {import('../../shared/types').Logger} Logger
- * @typedef {import('../../shared/types').RecordSamplingSettings} RecordSamplingSettings
+ * @typedef {import('../types').DbCollectionData} DbCollectionData
+ * @typedef {import('../types').Document} Document
+ * @typedef {import('../types').Cluster} Cluster
+ * @typedef {import('../types').Bucket} Bucket
+ * @typedef {import('../types').Scope} Scope
+ * @typedef {import('../types').NameMap} NameMap
+ * @typedef {import('../types').BucketCollectionNamesData} BucketCollectionNamesData
+ * @typedef {import('../types').ConnectionInfo} ConnectionInfo
+ * @typedef {import('../types').Logger} Logger
+ * @typedef {import('../types').RecordSamplingSettings} RecordSamplingSettings
  */
 const async = require('async');
-const _ = require('lodash');
-const restApiHelper = require('./restApiHelper');
-const schemaHelper = require('./schemaHelper');
-const {
-	COUCHBASE_ERROR_CODE,
-	DEFAULT_NAME,
-	DISABLED_TOOLTIP,
-	STATUS,
-	DEFAULT_LIMIT,
-} = require('../../shared/constants');
-const queryHelper = require('./queryHelper');
+const { get, uniq, isEmpty, set } = require('lodash');
+const restApiHelper = require('../../reverse_engineering/helpers/restApiHelper');
+const schemaHelper = require('../../reverse_engineering/helpers/schemaHelper');
+const { COUCHBASE_ERROR_CODE, DEFAULT_NAME, DISABLED_TOOLTIP, STATUS, DEFAULT_LIMIT } = require('../constants');
+const queryHelper = require('../../reverse_engineering/helpers/queryHelper');
 
 /**
  * @param {{ cluster: Cluster }} param0
@@ -29,6 +23,17 @@ const queryHelper = require('./queryHelper');
  */
 const getAllBuckets = async ({ cluster }) => {
 	return await cluster.buckets().getAllBuckets();
+};
+
+/**
+ *
+ * @param {{bucketName: string, cluster: Cluster}} param
+ * @returns {Promise<Bucket>}
+ */
+const createNewBucket = async ({ bucketName, cluster }) => {
+	await cluster.buckets().createBucket({ name: bucketName });
+
+	return cluster.bucket(bucketName);
 };
 
 /**
@@ -74,7 +79,7 @@ const getNonDefaultScopesAndCollections = ({ scopes }) => {
 
 		const scopeCollections = scope.collections.filter(collection => !isDefault(collection));
 
-		if (!_.isEmpty(scopeCollections)) {
+		if (!isEmpty(scopeCollections)) {
 			return [...result, { ...scope, collections: scopeCollections }];
 		}
 
@@ -93,7 +98,7 @@ const getBucketScopeNameMap = async ({ cluster, selectedBucket, logger }) => {
 		const scopes = await getBucketScopes({ cluster, bucketName: bucket.name, logger });
 		const bucketScopes = getNonDefaultScopesAndCollections({ scopes });
 
-		if (_.isEmpty(bucketScopes)) {
+		if (isEmpty(bucketScopes)) {
 			return result;
 		}
 
@@ -174,7 +179,7 @@ const getErrorMessage = ({ error }) => {
  */
 const prepareBucketCollectionNamesData = ({ bucketName, scopeName, collectionNames, status }) => {
 	const hasError = status === STATUS.hasError;
-	const dbCollections = hasError ? [] : _.uniq(collectionNames);
+	const dbCollections = hasError ? [] : uniq(collectionNames);
 	return {
 		scopeName,
 		dbCollections,
@@ -269,7 +274,7 @@ const getCollectionSamplingSize = async ({
 const getCollectionDocumentsByInfer = async ({ cluster, bucketName, scopeName, collectionName, limit }) => {
 	const query = queryHelper.getInferCollectionDocumentsQuery({ bucketName, scopeName, collectionName, limit });
 	const { rows, meta } = await cluster.query(query);
-	const metaError = _.get(meta, 'errors.[0]');
+	const metaError = get(meta, 'errors.[0]');
 
 	if (metaError) {
 		throw metaError;
@@ -456,7 +461,7 @@ const getSelectedCollections = async ({ cluster, data, logger, app }) => {
 	const collectionVersion = data.collectionData.collectionVersion;
 	const dataBaseNames = data.collectionData.dataBaseNames;
 
-	if (!_.isEmpty(collectionVersion)) {
+	if (!isEmpty(collectionVersion)) {
 		return collectionVersion;
 	}
 
@@ -474,7 +479,7 @@ const getSelectedCollections = async ({ cluster, data, logger, app }) => {
 
 	return dbCollectionData.reduce((result, collectionData) => {
 		const { dbName, scopeName, dbCollections } = collectionData;
-		return _.set(result, [dbName, scopeName], dbCollections);
+		return set(result, [dbName, scopeName], dbCollections);
 	}, {});
 };
 
@@ -513,6 +518,7 @@ const getCollectionDocumentByDocumentId = async ({
 
 module.exports = {
 	getAllBuckets,
+	createNewBucket,
 	getBucketsForReverse,
 	getBucketScopeNameMap,
 	getDbCollectionsNames,
