@@ -9,7 +9,7 @@
  */
 
 const fs = require('fs');
-const _ = require('lodash');
+const { set, uniqBy } = require('lodash');
 const connectionHelper = require('../shared/helpers/connectionHelper');
 const clusterHelper = require('../shared/helpers/clusterHelper');
 const logHelper = require('../shared/helpers/logHelper');
@@ -188,7 +188,7 @@ const reFromFile = async (data, appLogger, callback) => {
 		const { scopes, collections, indexes } = parserHelper.parseN1qlStatements({ statements });
 		const indexesByCollectionMap = indexHelper.getIndexesByCollectionMap({ indexes });
 		const scopeBucketNameMap = scopes.reduce(
-			(result, scope) => _.set(result, [scope.bucketName, scope.scopeName], scope),
+			(result, scope) => set(result, [scope.bucketName, scope.scopeName], scope),
 			{},
 		);
 		const emptyScopes = scopes.filter(scope =>
@@ -215,7 +215,7 @@ const reFromFile = async (data, appLogger, callback) => {
 			scopeBucketNameMap,
 		});
 		const defaultSchemas = schemaHelper.mapParsedResultToMultipleSchema({
-			entitiesData: _.uniqBy(bucketIndexes, 'bucketName'),
+			entitiesData: uniqBy(bucketIndexes, 'bucketName'),
 			indexesByCollectionMap,
 			scopeBucketNameMap,
 		});

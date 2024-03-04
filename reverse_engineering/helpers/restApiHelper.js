@@ -1,4 +1,4 @@
-const _ = require('lodash');
+const { isObject } = require('lodash');
 const async = require('async');
 const { DEFAULT_LIMIT } = require('../../shared/constants');
 
@@ -108,7 +108,7 @@ const safeParse = value => {
 		return value;
 	}
 };
-const isBinaryFile = obj => _.isObject(obj) && !!obj.base64 && !!obj.meta;
+const isBinaryFile = obj => isObject(obj) && !!obj.base64 && !!obj.meta;
 
 const createRestApiService = ({ connectionInfo, app }) => {
 	const httpService = app.require('httpService');

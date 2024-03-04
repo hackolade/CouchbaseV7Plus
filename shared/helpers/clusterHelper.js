@@ -11,7 +11,7 @@
  * @typedef {import('../types').RecordSamplingSettings} RecordSamplingSettings
  */
 const async = require('async');
-const _ = require('lodash');
+const { get, uniq, isEmpty, set } = require('lodash');
 const restApiHelper = require('../../reverse_engineering/helpers/restApiHelper');
 const schemaHelper = require('../../reverse_engineering/helpers/schemaHelper');
 const {
@@ -211,8 +211,8 @@ const getDocumentKindCollectionNames = async ({ cluster, connectionInfo, bucketN
 const getBucketDocumentsByInfer = async ({ cluster, bucketName }) => {
 	const inferBucketDocumentsQuery = queryHelper.getInferBucketDocumentsQuery({ bucketName, limit: DEFAULT_LIMIT });
 	const { rows: documents, meta } = await cluster.query(inferBucketDocumentsQuery);
-	const metaError = _.get(meta, 'errors.[0]');
-	const isDocumentEmpty = _.get(documents, '[0].properties');
+	const metaError = get(meta, 'errors.[0]');
+	const isDocumentEmpty = get(documents, '[0].properties');
 
 	if (metaError) {
 		throw metaError;
@@ -271,7 +271,7 @@ const getErrorMessage = ({ error }) => {
  */
 const prepareBucketCollectionNamesData = ({ bucketName, scopeName, collectionNames, status }) => {
 	const hasError = status === STATUS.hasError;
-	const dbCollections = hasError ? [] : _.uniq(collectionNames);
+	const dbCollections = hasError ? [] : uniq(collectionNames);
 	return {
 		scopeName,
 		dbCollections,
@@ -366,7 +366,7 @@ const getCollectionSamplingSize = async ({
 const getCollectionDocumentsByInfer = async ({ cluster, bucketName, scopeName, collectionName, limit }) => {
 	const query = queryHelper.getInferCollectionDocumentsQuery({ bucketName, scopeName, collectionName, limit });
 	const { rows, meta } = await cluster.query(query);
-	const metaError = _.get(meta, 'errors.[0]');
+	const metaError = get(meta, 'errors.[0]');
 
 	if (metaError) {
 		throw metaError;
@@ -521,7 +521,7 @@ const getSelectedCollections = async ({ cluster, data, logger, app }) => {
 	const collectionVersion = data.collectionData.collectionVersion;
 	const dataBaseNames = data.collectionData.dataBaseNames;
 
-	if (!_.isEmpty(collectionVersion)) {
+	if (!isEmpty(collectionVersion)) {
 		return collectionVersion;
 	}
 
@@ -539,7 +539,7 @@ const getSelectedCollections = async ({ cluster, data, logger, app }) => {
 
 	return dbCollectionData.reduce((result, collectionData) => {
 		const { dbName, scopeName, dbCollections } = collectionData;
-		return _.set(result, [dbName, scopeName], dbCollections);
+		return set(result, [dbName, scopeName], dbCollections);
 	}, {});
 };
 

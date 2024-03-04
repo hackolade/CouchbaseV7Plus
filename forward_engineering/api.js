@@ -6,7 +6,7 @@
  * @typedef {import('../shared/types').Callback} Callback
  */
 
-const _ = require('lodash');
+const { get, first } = require('lodash');
 const { backOff } = require('exponential-backoff');
 const connectionHelper = require('../shared/helpers/connectionHelper');
 const clusterHelper = require('../shared/helpers/clusterHelper');
@@ -115,7 +115,7 @@ const generateScript = async (connectionInfo, appLogger, callback, app) => {
 
 		const { jsonData, jsonSchema, containerData, options } = connectionInfo;
 		const { additionalOptions } = options;
-		const scope = _.get(containerData, '[0]', {});
+		const scope = get(containerData, '[0]', {});
 		const rawCollectionData = JSON.parse(jsonSchema);
 		const collectionData = {
 			...rawCollectionData,
@@ -161,7 +161,7 @@ const applyToInstance = async (connectionInfo, appLogger, callback, app) => {
 	logger.progress(CONNECTING);
 	const cluster = await connectionHelper.connect({ connectionInfo, app });
 
-	const containerData = _.first(connectionInfo.containerData);
+	const containerData = first(connectionInfo.containerData);
 
 	if (!containerData) {
 		const err = new Error(CONTAINER_DATA_NOT_FOUND);

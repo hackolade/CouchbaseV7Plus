@@ -1,4 +1,4 @@
-const _ = require('lodash');
+const { trim } = require('lodash');
 const async = require('async');
 const clusterHelper = require('../../shared/helpers/clusterHelper');
 const {
@@ -23,7 +23,7 @@ const { COUCHBASE_ERROR_CODE } = require('../../shared/constants');
  * @returns {boolean}
  */
 const applyScript = async ({ script, cluster, logger, callback }) => {
-	const scripts = script.split(';\n').map(_.trim).filter(Boolean);
+	const scripts = script.split(';\n').map(trim).filter(Boolean);
 	const maxNumberStatements = scripts.length;
 	let previousApplyingProgress = 0;
 
