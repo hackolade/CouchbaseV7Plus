@@ -1,4 +1,3 @@
-const _ = require('lodash');
 const uuid = require('uuid');
 const { getKeySpaceReference } = require('./commonStatements');
 
@@ -39,7 +38,7 @@ const getInsertScriptForCollection = ({ jsonData, collection }) => {
 	const isKeyGeneratedWithFakerFunction = collection?.properties?.[keyPropertyName]?.fakerFunction;
 	const parseJsonData = JSON.parse(jsonData);
 	const keyFakedValue = isKeyGeneratedWithFakerFunction ? parseJsonData[keyPropertyName] : '';
-	const jsonDataBody = _.omit(parseJsonData, [keyPropertyName]);
+	const { [keyPropertyName]: keyProperty, ...jsonDataBody } = parseJsonData;
 	const sampledKey = getKeyFieldSample(keyFakedValue);
 
 	return `INSERT INTO ${insertionPath} (KEY, VALUE)\n\tVALUES("${sampledKey}",${JSON.stringify(jsonDataBody, null, '\t')});`;

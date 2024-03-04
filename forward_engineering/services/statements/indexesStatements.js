@@ -1,4 +1,4 @@
-const _ = require('lodash');
+const { filter, get, isEmpty } = require('lodash');
 const { getIndexKeyIdToKeyNameMap, injectKeysNamesIntoIndexKeys } = require('../../utils/indexes');
 const { wrapWithBackticks, getKeySpaceReference, joinStatements } = require('./commonStatements');
 const { INDEX_TYPE } = require('../../../shared/enums/n1ql');
@@ -90,9 +90,7 @@ const getKeys = index => {
 
 			const keysNames = joinStatements({
 				statements: keys
-					.map(key =>
-						joinStatements({ statements: _.filter([key.name, getOrder(key.type)]), separator: ' ' }),
-					)
+					.map(key => joinStatements({ statements: filter([key.name, getOrder(key.type)]), separator: ' ' }))
 					.concat(index.functionExpr),
 				separator: ',',
 			});
@@ -149,11 +147,11 @@ const getWhereClause = index => {
  * @returns {string}
  */
 const getWithClause = index => {
-	const deferBuild = _.get(index, 'withOptions.defer_build') ? `"defer_build":true` : '';
-	const numReplica = !_.isEmpty(_.get(index, 'withOptions.num_replica'))
+	const deferBuild = get(index, 'withOptions.defer_build') ? `"defer_build":true` : '';
+	const numReplica = !isEmpty(get(index, 'withOptions.num_replica'))
 		? `"num_replica":${index.withOptions.num_replica}`
 		: '';
-	const nodes = _.get(index, 'withOptions.nodes', []).length
+	const nodes = get(index, 'withOptions.nodes', []).length
 		? `"nodes":[${joinStatements({ statements: index.withOptions.nodes.map(node => `"${node.nodeName}"`), separator: ',' })}]`
 		: '';
 	const hasWithClosure = deferBuild || numReplica || nodes;
