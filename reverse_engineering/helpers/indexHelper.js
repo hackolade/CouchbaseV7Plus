@@ -1,12 +1,12 @@
-const _ = require('lodash');
+const { pickBy, isUndefined, get, set } = require('lodash');
 const restApiHelper = require('./restApiHelper');
-const clusterHelper = require('./clusterHelper');
+const clusterHelper = require('../../shared/helpers/clusterHelper');
 const parserHelper = require('./parserHelper');
 const { GET_META_REGEXP, GET_PARTITION_HASH_REGEXP, DEFAULT_NAME } = require('../../shared/constants');
 
 const handleIndex = index => {
 	const indexData = getHackoladeCompatibleIndex(index);
-	return _.pickBy(indexData, value => !_.isUndefined(value));
+	return pickBy(indexData, value => !isUndefined(value));
 };
 
 const getHackoladeCompatibleIndex = index => {
@@ -48,19 +48,19 @@ const getHackoladeCompatibleIndex = index => {
 };
 
 const checkMetaIndex = index => {
-	return Boolean(_.get(index, 'index_key', []).find(key => GET_META_REGEXP.test(key)));
+	return Boolean(get(index, 'index_key', []).find(key => GET_META_REGEXP.test(key)));
 };
 
 const checkArrayIndex = index => {
 	return Boolean(
-		_.get(index, 'index_key', []).find(
+		get(index, 'index_key', []).find(
 			key => key.startsWith('(distinct') || key.startsWith('(all') || key.startsWith('array'),
 		),
 	);
 };
 
 const getKeysAndExpression = index => {
-	const indexKeys = _.get(index, 'index_key', []);
+	const indexKeys = get(index, 'index_key', []);
 	const keys = indexKeys.filter(checkKeySimple).map(getSimpleKey);
 	const expression = indexKeys.filter(key => !checkKeySimple(key)).join(',');
 
@@ -97,7 +97,7 @@ const getSimpleKey = key => {
 
 const getPartition = index => {
 	if (index.partition && GET_PARTITION_HASH_REGEXP.test(index.partition)) {
-		return { expression: _.get(GET_PARTITION_HASH_REGEXP.exec(index.partition), '[2]'), type: 'Expression' };
+		return { expression: get(GET_PARTITION_HASH_REGEXP.exec(index.partition), '[2]'), type: 'Expression' };
 	}
 
 	return { type: '' };
@@ -153,9 +153,9 @@ const getIndexesByCollectionMap = ({ indexes }) => {
 	return indexes.reduce((result, indexData) => {
 		const { bucketName, scopeName, collectionName, index } = indexData;
 		const namePath = [bucketName, scopeName, collectionName];
-		const collectionIndexes = _.get(result, namePath, []);
+		const collectionIndexes = get(result, namePath, []);
 
-		return _.set(result, namePath, [...collectionIndexes, index]);
+		return set(result, namePath, [...collectionIndexes, index]);
 	}, {});
 };
 

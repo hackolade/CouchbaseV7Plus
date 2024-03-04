@@ -25,6 +25,8 @@ const COUCHBASE_ERROR_CODE = {
 	parseSyntaxError: 3000,
 	inferMethodIsNotSupport: 16003,
 	collectionDoesNotExist: 12003,
+	indexAlreadyCreated: 4300,
+	duplicateDocumentKey: 12009,
 };
 
 /**
@@ -35,7 +37,7 @@ const STATUS = {
 };
 
 const DEFAULT_DOCUMENT_KIND = '*';
-const DEFAULT_KEY_NAME = 'KEY';
+const DEFAULT_KEY_NAME = '<key>';
 const DEFAULT_LIMIT = 1000;
 const DEFAULT_NAME = '_default';
 const DEFAULT_SCOPE = {

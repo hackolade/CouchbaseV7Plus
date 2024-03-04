@@ -1,6 +1,6 @@
 /**
- * @typedef {import('../../shared/types').AppLogger} AppLogger
- * @typedef {import('../../shared/types').Logger} Logger
+ * @typedef {import('../types').AppLogger} AppLogger
+ * @typedef {import('../types').Logger} Logger
  */
 
 const os = require('os');

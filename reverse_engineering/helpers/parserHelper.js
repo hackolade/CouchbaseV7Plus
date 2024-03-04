@@ -2,7 +2,7 @@
  * @typedef {{ scopes: Scope[]; collections: Collection[]; indexes: object[] }} ParsedResult
  */
 
-const _ = require('lodash');
+const { isEmpty, get } = require('lodash');
 const antlr4 = require('antlr4');
 const n1qlLexer = require('../antlr/parser/n1qlLexer');
 const n1qlParser = require('../antlr/parser/n1qlParser');
@@ -49,14 +49,14 @@ const mapParsedResult = ({ result, statements }) => {
 
 const mapIndexes = ({ indexes, statements }) => {
 	return indexes.reduce((result, indexData) => {
-		if (_.isEmpty(indexData)) {
+		if (isEmpty(indexData)) {
 			return result;
 		}
 
 		let indexWithKeys = indexData.index;
 
 		if (indexWithKeys.indxType !== 'Primary') {
-			const indexKeys = _.get(indexData, 'indexKeys.indexKeysIntervals').reduce((indexKeys, key) => {
+			const indexKeys = get(indexData, 'indexKeys.indexKeysIntervals').reduce((indexKeys, key) => {
 				const select = key.select;
 				const name = removeParentheses(statements.substring(select.start, select.stop));
 				return [...indexKeys, { name, type: key.type }];
@@ -65,12 +65,12 @@ const mapIndexes = ({ indexes, statements }) => {
 			if (indexWithKeys.indxType === 'Secondary') {
 				indexWithKeys = {
 					...indexWithKeys,
-					[_.get(indexData, 'indexKeys.indexKeysPropertyKeyword')]: indexKeys,
+					[get(indexData, 'indexKeys.indexKeysPropertyKeyword')]: indexKeys,
 				};
 			} else {
 				indexWithKeys = {
 					...indexWithKeys,
-					[_.get(indexData, 'indexKeys.indexKeysPropertyKeyword')]: indexKeys
+					[get(indexData, 'indexKeys.indexKeysPropertyKeyword')]: indexKeys
 						.map(index => index.name)
 						.join(', '),
 				};

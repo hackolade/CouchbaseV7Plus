@@ -32,6 +32,13 @@
         "lint": "eslint . --max-warnings=0",
         "package": "node esbuild.package.js"
     },
+    "dependencies": {
+        "async": "3.2.5",
+        "exponential-backoff": "3.1.1",
+        "lodash": "4.17.21",
+        "uuid": "9.0.1",
+        "antlr4": "4.9.2"
+    },
     "devDependencies": {
         "@hackolade/hck-esbuild-plugins-pack": "0.0.1",
         "@types/couchbase": "2.4.9",
@@ -43,10 +50,5 @@
         "lint-staged": "14.0.1",
         "prettier": "3.2.4",
         "simple-git-hooks": "2.9.0"
-    },
-    "dependencies": {
-        "antlr4": "4.9.2",
-        "async": "3.2.5",
-        "lodash": "4.17.21"
     }
 }

@@ -8,8 +8,8 @@
  * @typedef {import('../../shared/types').Logger} Logger
  */
 const async = require('async');
-const _ = require('lodash');
-const clusterHelper = require('./clusterHelper');
+const { round, first, last, chain, uniq, isString } = require('lodash');
+const clusterHelper = require('../../shared/helpers/clusterHelper');
 const restApiHelper = require('./restApiHelper');
 const schemaHelper = require('./schemaHelper');
 const { COUCHBASE_ERROR_CODE, DEFAULT_NAME, FLAVOR_REGEX, STATUS } = require('../../shared/constants');
@@ -117,7 +117,7 @@ const generateCustomInferSchema = ({ bucketName, documents }) => {
 	});
 
 	for (const prop in inferSchema.properties) {
-		inferSchema.properties[prop]['%docs'] = _.round(
+		inferSchema.properties[prop]['%docs'] = round(
 			(inferSchema.properties[prop]['#docs'] / inferSchema['#docs']) * 100,
 			2,
 		);
@@ -138,13 +138,13 @@ const isSuggestedDocKind = property => {
  * @returns {string}
  */
 const replaceQuotes = string => {
-	const inQuotes = _.first(string) === '`' && _.last(string) === '`';
+	const inQuotes = first(string) === '`' && last(string) === '`';
 
 	return inQuotes ? string.slice(1, -1) : string;
 };
 
 const rejectPropertiesWithLowAppearancePercentage = properties => {
-	return _.chain(properties)
+	return chain(properties)
 		.toPairs()
 		.filter(([, propertyData]) => isSuggestedDocKind(propertyData))
 		.fromPairs()
@@ -156,7 +156,7 @@ const rejectPropertiesWithLowAppearancePercentage = properties => {
  * @returns {string[]}
  */
 const getSuggestedDocKindsFromInference = inferences => {
-	return _.uniq(
+	return uniq(
 		inferences.flatMap(inference => Object.keys(rejectPropertiesWithLowAppearancePercentage(inference.properties))),
 	);
 };
@@ -292,7 +292,7 @@ const getDocumentKindDataByInference = async ({ cluster, bucketName }) => {
 	const documents = await clusterHelper.getBucketDocumentsByInfer({ cluster, bucketName });
 	const [inference] = documents;
 	const flavorValue = getNonEmptyFlavorValue(inference);
-	const isFlavourString = _.isString(flavorValue);
+	const isFlavourString = isString(flavorValue);
 	const flavours = isFlavourString ? flavorValue.split(',') : [];
 	const isMultipleFlavours = flavours.length > 1;
 	const flavor = flavorValue?.match(new RegExp(FLAVOR_REGEX));
