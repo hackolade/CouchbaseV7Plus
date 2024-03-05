@@ -14,15 +14,7 @@ const async = require('async');
 const { get, uniq, isEmpty, set } = require('lodash');
 const restApiHelper = require('../../reverse_engineering/helpers/restApiHelper');
 const schemaHelper = require('../../reverse_engineering/helpers/schemaHelper');
-const {
-	COUCHBASE_ERROR_CODE,
-	DEFAULT_DOCUMENT_KIND,
-	DEFAULT_NAME,
-	DISABLED_TOOLTIP,
-	STATUS,
-	DEFAULT_LIMIT,
-	DEFAULT_SCOPE,
-} = require('../constants');
+const { COUCHBASE_ERROR_CODE, DEFAULT_NAME, DISABLED_TOOLTIP, STATUS, DEFAULT_LIMIT } = require('../constants');
 const queryHelper = require('../../reverse_engineering/helpers/queryHelper');
 
 /**
@@ -69,8 +61,30 @@ const getBucketScopes = async ({ cluster, bucketName, logger }) => {
 		return bucketScopes;
 	} catch (error) {
 		logger.error(error);
-		return [DEFAULT_SCOPE];
+		return [];
 	}
+};
+
+/**
+ * @param {{ scopes: Scope[] }} param0
+ * @returns {Scope[]}
+ */
+const getNonDefaultScopesAndCollections = ({ scopes }) => {
+	const isDefault = ({ name }) => name === DEFAULT_NAME;
+
+	return scopes.reduce((result, scope) => {
+		if (!isDefault(scope)) {
+			return [...result, scope];
+		}
+
+		const scopeCollections = scope.collections.filter(collection => !isDefault(collection));
+
+		if (!isEmpty(scopeCollections)) {
+			return [...result, { ...scope, collections: scopeCollections }];
+		}
+
+		return result;
+	}, []);
 };
 
 /**
@@ -82,147 +96,41 @@ const getBucketScopeNameMap = async ({ cluster, selectedBucket, logger }) => {
 
 	return await async.reduce(buckets, {}, async (result, bucket) => {
 		const scopes = await getBucketScopes({ cluster, bucketName: bucket.name, logger });
+		const bucketScopes = getNonDefaultScopesAndCollections({ scopes });
+
+		if (isEmpty(bucketScopes)) {
+			return result;
+		}
 
 		return {
 			...result,
-			[bucket.name]: scopes,
+			[bucket.name]: bucketScopes,
 		};
 	});
 };
 
 /**
- * @param {{ scopes: Scope[] }} param0
- * @returns {boolean}
- */
-const isBucketHasDefaultCollection = ({ scopes }) => {
-	const defaultScope = scopes.find(scope => scope.name === DEFAULT_NAME);
-	return !!defaultScope && defaultScope.collections.some(collection => collection.name === DEFAULT_NAME);
-};
-
-/**
- * @param {{ cluster: Cluster;connectionInfo: ConnectionInfo; logger: Logger; app: App }} param0
+ * @param {{ cluster: Cluster;connectionInfo: ConnectionInfo; logger: Logger; }} param0
  * @returns {Promise<BucketCollectionNamesData[]>}
  */
-const getDbCollectionsNames = async ({ cluster, connectionInfo, logger, app }) => {
+const getDbCollectionsNames = async ({ cluster, connectionInfo, logger }) => {
 	const bucketScopeMap = await getBucketScopeNameMap({
 		cluster,
 		selectedBucket: connectionInfo.couchbase_bucket,
 		logger,
 	});
 
-	return await async.reduce(Object.entries(bucketScopeMap), [], async (result, [bucketName, scopes]) => {
-		const documentKind = connectionInfo.documentKinds?.[bucketName]?.documentKindName || DEFAULT_DOCUMENT_KIND;
-		const dbCollectionsNames = await async.map(scopes, async scope => {
-			const collectionNames = await getScopeCollectionNames({
-				cluster,
-				connectionInfo,
+	return Object.entries(bucketScopeMap).flatMap(([bucketName, scopes]) => {
+		return scopes.map(scope => {
+			const collectionNames = scope.collections.map(collection => collection.name);
+
+			return prepareBucketCollectionNamesData({
 				bucketName,
-				documentKind,
-				scope,
-				logger,
-				app,
+				scopeName: scope.name,
+				collectionNames,
 			});
-
-			return prepareBucketCollectionNamesData({ bucketName, scopeName: scope.name, collectionNames });
 		});
-
-		return [...result, ...dbCollectionsNames];
 	});
-};
-
-/**
- * @param {{
- * cluster: Cluster;
- * connectionInfo: ConnectionInfo;
- * bucketName: string;
- * documentKind: string;
- * scope: Scope;
- * logger: Logger;
- * app: App
- *  }} param0
- * @returns {Promise<string[]>}
- */
-const getScopeCollectionNames = async ({ cluster, connectionInfo, bucketName, documentKind, scope, logger, app }) => {
-	const scopeCollectionNames = scope.collections.map(collection => collection.name);
-	const notDefaultScopeCollectionNames = scopeCollectionNames.filter(name => name !== DEFAULT_NAME);
-	const hasDefaultCollection = isBucketHasDefaultCollection({ scopes: [scope] });
-
-	if (!hasDefaultCollection) {
-		return notDefaultScopeCollectionNames;
-	}
-
-	const documentKindCollectionNames = await getDocumentKindCollectionNames({
-		cluster,
-		connectionInfo,
-		bucketName,
-		documentKind,
-		logger,
-		app,
-	});
-
-	return [...documentKindCollectionNames, ...notDefaultScopeCollectionNames];
-};
-
-/**
- *
- * @param {{ cluster: Cluster; connectionInfo: ConnectionInfo; bucketName: string; documentKind: string; logger: Logger; app: App }} param0
- * @returns {Promise<string[]>}
- */
-const getDocumentKindCollectionNames = async ({ cluster, connectionInfo, bucketName, documentKind, logger, app }) => {
-	try {
-		if (documentKind === DEFAULT_DOCUMENT_KIND) {
-			return [];
-		}
-
-		const selectQuery = queryHelper.getSelectBucketDocumentKindQuery({ bucketName, documentKind });
-		const { rows: documents } = await cluster.query(selectQuery);
-		const collectionNames = documents.map(doc => doc[documentKind]).filter(Boolean);
-
-		return collectionNames;
-	} catch (error) {
-		const errorCode = getErrorCode({ error });
-		if (
-			errorCode === COUCHBASE_ERROR_CODE.primaryIndexDoesNotExist ||
-			errorCode === COUCHBASE_ERROR_CODE.n1qlMethodsAreNotSupported
-		) {
-			const documents = await restApiHelper.getBucketDocuments({ connectionInfo, bucketName, logger, app });
-			const collectionNames = documents.reduce((result, doc) => {
-				const collectionName = doc[bucketName]?.[documentKind];
-
-				if (!collectionName || result.includes(collectionName)) {
-					return result;
-				}
-
-				return [...result, collectionName];
-			}, []);
-
-			return collectionNames;
-		}
-
-		logger.error(error);
-		return [];
-	}
-};
-/**
- * @param {{ cluster: Cluster; bucketName: string; }} param0
- * @throws
- * @returns {Promise<Document[]>}
- */
-const getBucketDocumentsByInfer = async ({ cluster, bucketName }) => {
-	const inferBucketDocumentsQuery = queryHelper.getInferBucketDocumentsQuery({ bucketName, limit: DEFAULT_LIMIT });
-	const { rows: documents, meta } = await cluster.query(inferBucketDocumentsQuery);
-	const metaError = get(meta, 'errors.[0]');
-	const isDocumentEmpty = get(documents, '[0].properties');
-
-	if (metaError) {
-		throw metaError;
-	}
-
-	if (isDocumentEmpty) {
-		throw { code: COUCHBASE_ERROR_CODE.bucketIsEmpty };
-	}
-
-	return documents;
 };
 
 /**
@@ -402,25 +310,19 @@ const getDbCollectionData = async ({
 	logger,
 	app,
 }) => {
-	const limit = await getCollectionSamplingSize({
-		cluster,
-		bucketName,
-		scopeName,
-		collectionName,
-		recordSamplingSettings: data.recordSamplingSettings,
-		logger,
-	});
-	const documentKind = data.documentKinds?.[bucketName]?.documentKindName || '';
-	const options = { limit, pagination: data.pagination, bucketName, scopeName, collectionName };
-	const fieldInference = data.fieldInference;
-
-	let documents = [];
-	let standardDocument = null;
-	let query = queryHelper.getSelectCollectionDocumentsQuery({ bucketName, scopeName, collectionName });
-
 	try {
-		documents = await getPaginatedQuery({ cluster, options, query, logger });
-		standardDocument = await getCollectionDocumentByDocumentId({
+		const limit = await getCollectionSamplingSize({
+			cluster,
+			bucketName,
+			scopeName,
+			collectionName,
+			recordSamplingSettings: data.recordSamplingSettings,
+			logger,
+		});
+		const options = { limit, pagination: data.pagination, bucketName, scopeName, collectionName };
+		const query = queryHelper.getSelectCollectionDocumentsQuery({ bucketName, scopeName, collectionName });
+		const documents = await getPaginatedQuery({ cluster, options, query, logger });
+		const standardDocument = await getCollectionDocumentByDocumentId({
 			cluster,
 			bucketName,
 			scopeName,
@@ -428,73 +330,111 @@ const getDbCollectionData = async ({
 			documentId: documents[0]?.docid,
 			logger,
 		});
+
+		return schemaHelper.getDbCollectionData({
+			bucketName,
+			scopeName,
+			collectionName,
+			documents,
+			collectionIndexes,
+			includeEmptyCollection,
+			standardDocument,
+			fieldInference: data.fieldInference,
+		});
 	} catch (error) {
-		try {
-			const errorCode = getErrorCode({ error });
-			switch (errorCode) {
-				case COUCHBASE_ERROR_CODE.parseSyntaxError:
-				case COUCHBASE_ERROR_CODE.collectionDoesNotExist:
-					query = queryHelper.getSelectBucketDocumentsByDocumentKindQuery({
-						bucketName,
-						documentKind,
-						collectionName,
-					});
-					documents = await getPaginatedQuery({ cluster, options, query, logger });
-					standardDocument = await getCollectionDocumentByDocumentId({
-						cluster,
-						bucketName,
-						scopeName,
-						collectionName: DEFAULT_NAME,
-						documentId: documents[0]?.docid,
-						logger,
-					});
-					break;
-				case COUCHBASE_ERROR_CODE.primaryIndexDoesNotExist:
-					documents = await getCollectionDocumentsByInfer({
-						cluster,
-						bucketName,
-						scopeName,
-						collectionName,
-						limit,
-					});
-					break;
-				case COUCHBASE_ERROR_CODE.inferMethodIsNotSupport:
-				case COUCHBASE_ERROR_CODE.n1qlMethodsAreNotSupported:
-					documents = await restApiHelper.getBucketDocuments({
-						connectionInfo: data.connectionInfo,
-						bucketName,
-						logger,
-						app,
-					});
-					break;
-			}
-		} catch (error) {
-			const errorCode = getErrorCode({ error });
-			if (errorCode === COUCHBASE_ERROR_CODE.n1qlMethodsAreNotSupported) {
-				documents = await restApiHelper.getBucketDocuments({
+		logger.error(error);
+
+		return getDbCollectionDataByErrorHandling({
+			error,
+			cluster,
+			data,
+			bucketName,
+			scopeName,
+			collectionName,
+			collectionIndexes,
+			includeEmptyCollection,
+			logger,
+			app,
+		});
+	}
+};
+
+/**
+ * @param {{
+ * error: Error;
+ * cluster: Cluster;
+ * data: object;
+ * bucketName: string;
+ * scopeName: string;
+ * collectionName: string;
+ * collectionIndexes: object[];
+ * includeEmptyCollection: boolean;
+ * logger: Logger;
+ * app: App;
+ *  }} param0
+ * @returns {Promise<DbCollectionData>}
+ */
+const getDbCollectionDataByErrorHandling = async ({
+	error,
+	cluster,
+	data,
+	bucketName,
+	scopeName,
+	collectionName,
+	collectionIndexes,
+	includeEmptyCollection,
+	logger,
+	app,
+}) => {
+	try {
+		const errorCode = getErrorCode({ error });
+
+		let documents = [];
+
+		switch (errorCode) {
+			case COUCHBASE_ERROR_CODE.primaryIndexDoesNotExist:
+				documents = await getCollectionDocumentsByInfer({
+					cluster,
+					bucketName,
+					scopeName,
+					collectionName,
+					limit: DEFAULT_LIMIT,
+				});
+				break;
+			case COUCHBASE_ERROR_CODE.inferMethodIsNotSupport:
+			case COUCHBASE_ERROR_CODE.n1qlMethodsAreNotSupported:
+				documents = await restApiHelper.getCollectionDocuments({
 					connectionInfo: data.connectionInfo,
 					bucketName,
+					scopeName,
+					collectionName,
 					logger,
 					app,
 				});
-			}
-			logger.error(error);
+				break;
 		}
 
+		return schemaHelper.getDbCollectionData({
+			bucketName,
+			scopeName,
+			collectionName,
+			documents,
+			collectionIndexes,
+			includeEmptyCollection,
+			fieldInference: data.fieldInference,
+		});
+	} catch (error) {
 		logger.error(error);
+		return schemaHelper.getDbCollectionData({
+			bucketName,
+			scopeName,
+			collectionName,
+			documents: [],
+			collectionIndexes,
+			includeEmptyCollection,
+			fieldInference: data.fieldInference,
+		});
 	}
-
-	return schemaHelper.getDbCollectionData({
-		bucketName,
-		scopeName,
-		collectionName,
-		documentKind,
-		documents,
-		collectionIndexes,
-		includeEmptyCollection,
-		standardDocument,
-		fieldInference,
-	});
 };
 
 /**
@@ -577,7 +517,6 @@ const getCollectionDocumentByDocumentId = async ({
 };
 
 module.exports = {
-	isBucketHasDefaultCollection,
 	getAllBuckets,
 	createNewBucket,
 	getBucketsForReverse,
@@ -585,7 +524,6 @@ module.exports = {
 	getDbCollectionsNames,
 	getDbCollectionData,
 	getDocumentsBySelectStatement,
-	getBucketDocumentsByInfer,
 	getErrorCode,
 	getErrorMessage,
 	getIndexes,

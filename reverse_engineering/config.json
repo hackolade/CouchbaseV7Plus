@@ -9,6 +9,6 @@
 		"WRONG_CONNECTION": "Can not connect to the Couchbase instance"
 	},
 	"excludeDocKind": ["id"],
-	"scenario": "getDocumentKind",
+	"scenario": "connectToDB",
 	"helpUrl": "https://hackolade.com/help/ConnecttoaCouchbaseinstance.html"
 }

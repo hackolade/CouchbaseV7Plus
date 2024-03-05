@@ -92,14 +92,6 @@ type Document = {
 	[key: string]: any;
 };
 
-type DocumentKindData = {
-	bucketName: string;
-	documentList: string[];
-	otherDocKinds: string[];
-	documentKind: string;
-	status?: STATUS;
-};
-
 type DbCollectionData = {
 	dbName: string;
 	collectionName: string;
@@ -125,7 +117,6 @@ export {
 	ConnectionParams,
 	DbCollectionData,
 	Document,
-	DocumentKindData,
 	FilePath,
 	NameMap,
 	Logger,
