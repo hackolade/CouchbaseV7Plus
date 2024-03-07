@@ -1,16 +1,16 @@
 {
     "name": "CouchbaseV7Plus",
-    "version": "0.0.3",
-    "versionDate": "2023-01-26",
+    "version": "0.1.0",
+    "versionDate": "2024-03-08",
     "author": "hackolade",
     "engines": {
-        "hackolade": "5.3.0",
+        "hackolade": "7.0.0",
         "hackoladePlugin": "1.0.1"
     },
     "contributes": {
         "target": {
             "applicationTarget": "CouchbaseV7Plus",
-            "title": "Couchbase v7 and above",
+            "title": "Couchbase Scopes&Collections",
             "versions": [
                 "7.x"
             ]
@@ -20,7 +20,7 @@
             "enableArrayCollections": false
         }
     },
-    "description": "Hackolade plugin for Couchbase v7+ with scopes and collections",
+    "description": "Hackolade plugin for Couchbase with scopes and collections",
     "lint-staged": {
         "*.{js,json}": "prettier --write"
     },
