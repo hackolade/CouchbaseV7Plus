@@ -94,6 +94,8 @@ const getDatabases = async (connectionInfo, appLogger, callback, app) => {
 };
 
 /**
+ * This method is involved in the scenario "getDatabases".
+ * Plugin doesn`t support the document kinds so it returns an empty result.
  * @param {ConnectionInfo} connectionInfo
  * @param {AppLogger} appLogger
  * @param {Callback} callback
