@@ -73,6 +73,44 @@ const testConnection = async (connectionInfo, appLogger, callback, app) => {
  * @param {Callback} callback
  * @param {App} app
  */
+const getDatabases = async (connectionInfo, appLogger, callback, app) => {
+	const logger = logHelper.createLogger({
+		title: 'Retrieving buckets',
+		hiddenKeys: connectionInfo.hiddenKeys,
+		logger: appLogger,
+	});
+
+	try {
+		const cluster = await connectionHelper.connect({ connectionInfo, app });
+		const buckets = await clusterHelper.getBucketsForReverse({ cluster });
+		const bucketNames = buckets.map(bucket => bucket.name);
+
+		callback(null, bucketNames);
+	} catch (error) {
+		logger.error(error);
+		await connectionHelper.disconnect();
+		callback(error);
+	}
+};
+
+/**
+ * This method is involved in the scenario "getDatabases".
+ * Plugin doesn`t support the document kinds so it returns an empty result.
+ * @param {ConnectionInfo} connectionInfo
+ * @param {AppLogger} appLogger
+ * @param {Callback} callback
+ * @param {App} app
+ */
+const getDocumentKinds = async (connectionInfo, appLogger, callback, app) => {
+	callback(null, []);
+};
+
+/**
+ * @param {ConnectionInfo} connectionInfo
+ * @param {AppLogger} appLogger
+ * @param {Callback} callback
+ * @param {App} app
+ */
 const getDbCollectionsNames = async (connectionInfo, appLogger, callback, app) => {
 	const logger = logHelper.createLogger({
 		title: 'Retrieving databases and collections information',
@@ -108,36 +146,34 @@ const getDbCollectionsData = async (data, appLogger, callback, app) => {
 	try {
 		const connectionInfo = data.connectionInfo;
 		const includeEmptyCollection = data.includeEmptyCollection;
+		const bucketName = data.database;
+		const collections = data.collectionData.collections;
 		const cluster = await connectionHelper.connect({ connectionInfo, app });
 		const indexes = await indexHelper.getIndexes({ cluster, connectionInfo, logger, app });
-		const selectedCollections = await clusterHelper.getSelectedCollections({ cluster, data, logger, app });
 		const indexesByCollectionMap = indexHelper.getIndexesByCollectionMap({ indexes });
 		const dbCollectionsData = [];
 
-		for (const bucketName in selectedCollections) {
-			for (const scopeName in selectedCollections[bucketName]) {
-				for (const collectionName of selectedCollections[bucketName][scopeName]) {
-					const collectionIndexes = indexesByCollectionMap[bucketName]?.[scopeName]?.[collectionName];
-					const dbCollectionData = await clusterHelper.getDbCollectionData({
-						cluster,
-						data,
-						bucketName,
-						scopeName,
-						collectionName,
-						collectionIndexes,
-						includeEmptyCollection,
-						logger,
-						app,
-					});
+		for (const scopeName in collections) {
+			for (const collectionName of collections[scopeName]) {
+				const collectionIndexes = indexesByCollectionMap[bucketName]?.[scopeName]?.[collectionName];
+				const dbCollectionData = await clusterHelper.getDbCollectionData({
+					cluster,
+					data,
+					bucketName,
+					scopeName,
+					collectionName,
+					collectionIndexes,
+					includeEmptyCollection,
+					logger,
+					app,
+				});
 
-					dbCollectionsData.push(dbCollectionData);
-				}
+				dbCollectionsData.push(dbCollectionData);
 			}
 		}
 
-		const updatedDbCollectionsData = schemaHelper.updateDefaultDbNames({ dbCollectionsData });
 		await connectionHelper.disconnect();
-		callback(null, updatedDbCollectionsData);
+		callback(null, dbCollectionsData);
 	} catch (error) {
 		await connectionHelper.disconnect();
 		callback(error);
@@ -201,8 +237,10 @@ const reFromFile = async (data, appLogger, callback) => {
 
 module.exports = {
 	disconnect,
+	getDatabases,
 	getDbCollectionsNames,
 	getDbCollectionsData,
+	getDocumentKinds,
 	testConnection,
 	reFromFile,
 };

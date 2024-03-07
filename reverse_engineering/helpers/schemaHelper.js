@@ -115,39 +115,6 @@ const mapParsedResultToMultipleSchema = ({ entitiesData, indexesByCollectionMap,
 };
 
 /**
- * @param {{ dbCollectionsData: DbCollectionData[] }} param0
- * @returns {DbCollectionData[]}
- */
-const updateDefaultDbNames = ({ dbCollectionsData }) => {
-	const bucketNames = dbCollectionsData
-		.filter(data => data.dbName === DEFAULT_NAME)
-		.map(data => data.bucketInfo.bucket);
-	const uniqueBucketNames = uniq(bucketNames);
-	const shouldUpdateDefaultNames = uniq(bucketNames).length > 1;
-
-	if (!shouldUpdateDefaultNames) {
-		return dbCollectionsData;
-	}
-
-	return dbCollectionsData.map(data => {
-		if (data.dbName !== DEFAULT_NAME) {
-			return data;
-		}
-
-		const bucketIndex = uniqueBucketNames.indexOf(data.bucketInfo.bucket);
-
-		if (bucketIndex < 1) {
-			return data;
-		}
-
-		return {
-			...data,
-			dbName: data.dbName + `(${bucketIndex})`,
-		};
-	});
-};
-
-/**
  * @param {any} obj
  * @returns {string}
  */
@@ -160,5 +127,4 @@ module.exports = {
 	convertInferSchemaToDocuments,
 	mapParsedResultToMultipleSchema,
 	typeOf,
-	updateDefaultDbNames,
 };

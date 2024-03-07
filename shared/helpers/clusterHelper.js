@@ -11,7 +11,7 @@
  * @typedef {import('../types').RecordSamplingSettings} RecordSamplingSettings
  */
 const async = require('async');
-const { get, uniq, isEmpty, set } = require('lodash');
+const { get, uniq, isEmpty } = require('lodash');
 const restApiHelper = require('../../reverse_engineering/helpers/restApiHelper');
 const schemaHelper = require('../../reverse_engineering/helpers/schemaHelper');
 const { COUCHBASE_ERROR_CODE, DEFAULT_NAME, DISABLED_TOOLTIP, STATUS, DEFAULT_LIMIT } = require('../constants');
@@ -56,9 +56,9 @@ const getBucketScopes = async ({ cluster, bucketName, logger }) => {
 	try {
 		const bucketInstance = await cluster.bucket(bucketName);
 		const collectionManager = await bucketInstance.collections();
-		const bucketScopes = await collectionManager.getAllScopes();
+		const scopes = await collectionManager.getAllScopes();
 
-		return bucketScopes;
+		return getNonDefaultScopesAndCollections({ scopes });
 	} catch (error) {
 		logger.error(error);
 		return [];
@@ -88,48 +88,16 @@ const getNonDefaultScopesAndCollections = ({ scopes }) => {
 };
 
 /**
- * @param {{cluster: Cluster; selectedBucket: string; logger: Logger }} param0
- * @returns {Promise<NameMap>}
- */
-const getBucketScopeNameMap = async ({ cluster, selectedBucket, logger }) => {
-	const buckets = await getBucketsForReverse({ cluster, selectedBucket });
-
-	return await async.reduce(buckets, {}, async (result, bucket) => {
-		const scopes = await getBucketScopes({ cluster, bucketName: bucket.name, logger });
-		const bucketScopes = getNonDefaultScopesAndCollections({ scopes });
-
-		if (isEmpty(bucketScopes)) {
-			return result;
-		}
-
-		return {
-			...result,
-			[bucket.name]: bucketScopes,
-		};
-	});
-};
-
-/**
- * @param {{ cluster: Cluster;connectionInfo: ConnectionInfo; logger: Logger; }} param0
+ * @param {{ cluster: Cluster; connectionInfo: ConnectionInfo; logger: Logger; }} param0
  * @returns {Promise<BucketCollectionNamesData[]>}
  */
 const getDbCollectionsNames = async ({ cluster, connectionInfo, logger }) => {
-	const bucketScopeMap = await getBucketScopeNameMap({
-		cluster,
-		selectedBucket: connectionInfo.couchbase_bucket,
-		logger,
-	});
+	const scopes = await getBucketScopes({ cluster, bucketName: connectionInfo.database, logger });
 
-	return Object.entries(bucketScopeMap).flatMap(([bucketName, scopes]) => {
-		return scopes.map(scope => {
-			const collectionNames = scope.collections.map(collection => collection.name);
+	return scopes.map(scope => {
+		const collectionNames = scope.collections.map(collection => collection.name);
 
-			return prepareBucketCollectionNamesData({
-				bucketName,
-				scopeName: scope.name,
-				collectionNames,
-			});
-		});
+		return prepareBucketCollectionNamesData({ scopeName: scope.name, collectionNames });
 	});
 };
 
@@ -174,16 +142,15 @@ const getErrorMessage = ({ error }) => {
 };
 
 /**
- * @param {{ bucketName: string; scopeName: string; collectionNames?: string[]; status?: STATUS; }} param0
+ * @param {{ scopeName: string; collectionNames?: string[]; status?: STATUS; }} param0
  * @returns {BucketCollectionNamesData}
  */
-const prepareBucketCollectionNamesData = ({ bucketName, scopeName, collectionNames, status }) => {
+const prepareBucketCollectionNamesData = ({ scopeName, collectionNames, status }) => {
 	const hasError = status === STATUS.hasError;
 	const dbCollections = hasError ? [] : uniq(collectionNames);
 	return {
-		scopeName,
 		dbCollections,
-		dbName: bucketName,
+		dbName: scopeName,
 		...(status && { status }),
 		...(hasError && { disabledTooltip: DISABLED_TOOLTIP }),
 	};
@@ -454,36 +421,6 @@ const getIndexes = async ({ cluster, logger }) => {
 };
 
 /**
- * @param { cluster: Cluster; data: object; logger: Logger; app: App } param0
- * @returns {Promise<NameMap>}
- */
-const getSelectedCollections = async ({ cluster, data, logger, app }) => {
-	const collectionVersion = data.collectionData.collectionVersion;
-	const dataBaseNames = data.collectionData.dataBaseNames;
-
-	if (!isEmpty(collectionVersion)) {
-		return collectionVersion;
-	}
-
-	const dbCollectionData = await async.flatMap(dataBaseNames, async bucketName => {
-		return getDbCollectionsNames({
-			connectionInfo: {
-				...data,
-				couchbase_bucket: bucketName,
-			},
-			cluster,
-			logger,
-			app,
-		});
-	});
-
-	return dbCollectionData.reduce((result, collectionData) => {
-		const { dbName, scopeName, dbCollections } = collectionData;
-		return set(result, [dbName, scopeName], dbCollections);
-	}, {});
-};
-
-/**
  * @description Function returns a document with original order of fields
  * @param {{
  * cluster: Cluster;
@@ -520,7 +457,6 @@ module.exports = {
 	getAllBuckets,
 	createNewBucket,
 	getBucketsForReverse,
-	getBucketScopeNameMap,
 	getDbCollectionsNames,
 	getDbCollectionData,
 	getDocumentsBySelectStatement,
@@ -528,5 +464,4 @@ module.exports = {
 	getErrorMessage,
 	getIndexes,
 	getPaginatedQuery,
-	getSelectedCollections,
 };
