@@ -11,7 +11,7 @@
  * @typedef {import('../types').RecordSamplingSettings} RecordSamplingSettings
  */
 const async = require('async');
-const { get, uniq, isEmpty, set } = require('lodash');
+const { get, uniq, isEmpty } = require('lodash');
 const restApiHelper = require('../../reverse_engineering/helpers/restApiHelper');
 const schemaHelper = require('../../reverse_engineering/helpers/schemaHelper');
 const { COUCHBASE_ERROR_CODE, DEFAULT_NAME, DISABLED_TOOLTIP, STATUS, DEFAULT_LIMIT } = require('../constants');
@@ -421,36 +421,6 @@ const getIndexes = async ({ cluster, logger }) => {
 };
 
 /**
- * @param { cluster: Cluster; data: object; logger: Logger; app: App } param0
- * @returns {Promise<NameMap>}
- */
-const getSelectedCollections = async ({ cluster, data, logger, app }) => {
-	const collectionVersion = data.collectionData.collectionVersion;
-	const dataBaseNames = data.collectionData.dataBaseNames;
-
-	if (!isEmpty(collectionVersion)) {
-		return collectionVersion;
-	}
-
-	const dbCollectionData = await async.flatMap(dataBaseNames, async bucketName => {
-		return getDbCollectionsNames({
-			connectionInfo: {
-				...data,
-				couchbase_bucket: bucketName,
-			},
-			cluster,
-			logger,
-			app,
-		});
-	});
-
-	return dbCollectionData.reduce((result, collectionData) => {
-		const { dbName, scopeName, dbCollections } = collectionData;
-		return set(result, [dbName, scopeName], dbCollections);
-	}, {});
-};
-
-/**
  * @description Function returns a document with original order of fields
  * @param {{
  * cluster: Cluster;
@@ -494,5 +464,4 @@ module.exports = {
 	getErrorMessage,
 	getIndexes,
 	getPaginatedQuery,
-	getSelectedCollections,
 };
