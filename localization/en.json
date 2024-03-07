@@ -147,6 +147,7 @@
 	"COLLECTION_SCHEMA_DEFINITION_NAME": "Collection definitions",
 	"COLLECTION_SCHEMA_DEFINITION_TYPE": "document",
 	"PLUGIN_MANAGER___CUSTOM_PROPERTIES_DESCRIPTION": "Custom properties for Couchbase",
+	"DATABASE_CONNECTIONS___CONTAINER_TYPE_NAME": "Bucket",
 
 	"TYPE": {
 		"document": "object"

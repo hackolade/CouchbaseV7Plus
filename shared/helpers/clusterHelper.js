@@ -56,9 +56,9 @@ const getBucketScopes = async ({ cluster, bucketName, logger }) => {
 	try {
 		const bucketInstance = await cluster.bucket(bucketName);
 		const collectionManager = await bucketInstance.collections();
-		const bucketScopes = await collectionManager.getAllScopes();
+		const scopes = await collectionManager.getAllScopes();
 
-		return bucketScopes;
+		return getNonDefaultScopesAndCollections({ scopes });
 	} catch (error) {
 		logger.error(error);
 		return [];
@@ -88,48 +88,16 @@ const getNonDefaultScopesAndCollections = ({ scopes }) => {
 };
 
 /**
- * @param {{cluster: Cluster; selectedBucket: string; logger: Logger }} param0
- * @returns {Promise<NameMap>}
- */
-const getBucketScopeNameMap = async ({ cluster, selectedBucket, logger }) => {
-	const buckets = await getBucketsForReverse({ cluster, selectedBucket });
-
-	return await async.reduce(buckets, {}, async (result, bucket) => {
-		const scopes = await getBucketScopes({ cluster, bucketName: bucket.name, logger });
-		const bucketScopes = getNonDefaultScopesAndCollections({ scopes });
-
-		if (isEmpty(bucketScopes)) {
-			return result;
-		}
-
-		return {
-			...result,
-			[bucket.name]: bucketScopes,
-		};
-	});
-};
-
-/**
- * @param {{ cluster: Cluster;connectionInfo: ConnectionInfo; logger: Logger; }} param0
+ * @param {{ cluster: Cluster; connectionInfo: ConnectionInfo; logger: Logger; }} param0
  * @returns {Promise<BucketCollectionNamesData[]>}
  */
 const getDbCollectionsNames = async ({ cluster, connectionInfo, logger }) => {
-	const bucketScopeMap = await getBucketScopeNameMap({
-		cluster,
-		selectedBucket: connectionInfo.couchbase_bucket,
-		logger,
-	});
+	const scopes = await getBucketScopes({ cluster, bucketName: connectionInfo.database, logger });
 
-	return Object.entries(bucketScopeMap).flatMap(([bucketName, scopes]) => {
-		return scopes.map(scope => {
-			const collectionNames = scope.collections.map(collection => collection.name);
+	return scopes.map(scope => {
+		const collectionNames = scope.collections.map(collection => collection.name);
 
-			return prepareBucketCollectionNamesData({
-				bucketName,
-				scopeName: scope.name,
-				collectionNames,
-			});
-		});
+		return prepareBucketCollectionNamesData({ scopeName: scope.name, collectionNames });
 	});
 };
 
@@ -174,16 +142,15 @@ const getErrorMessage = ({ error }) => {
 };
 
 /**
- * @param {{ bucketName: string; scopeName: string; collectionNames?: string[]; status?: STATUS; }} param0
+ * @param {{ scopeName: string; collectionNames?: string[]; status?: STATUS; }} param0
  * @returns {BucketCollectionNamesData}
  */
-const prepareBucketCollectionNamesData = ({ bucketName, scopeName, collectionNames, status }) => {
+const prepareBucketCollectionNamesData = ({ scopeName, collectionNames, status }) => {
 	const hasError = status === STATUS.hasError;
 	const dbCollections = hasError ? [] : uniq(collectionNames);
 	return {
-		scopeName,
 		dbCollections,
-		dbName: bucketName,
+		dbName: scopeName,
 		...(status && { status }),
 		...(hasError && { disabledTooltip: DISABLED_TOOLTIP }),
 	};
@@ -520,7 +487,6 @@ module.exports = {
 	getAllBuckets,
 	createNewBucket,
 	getBucketsForReverse,
-	getBucketScopeNameMap,
 	getDbCollectionsNames,
 	getDbCollectionData,
 	getDocumentsBySelectStatement,

@@ -73,6 +73,42 @@ const testConnection = async (connectionInfo, appLogger, callback, app) => {
  * @param {Callback} callback
  * @param {App} app
  */
+const getDatabases = async (connectionInfo, appLogger, callback, app) => {
+	const logger = logHelper.createLogger({
+		title: 'Retrieving buckets',
+		hiddenKeys: connectionInfo.hiddenKeys,
+		logger: appLogger,
+	});
+
+	try {
+		const cluster = await connectionHelper.connect({ connectionInfo, app });
+		const buckets = await clusterHelper.getBucketsForReverse({ cluster });
+		const bucketNames = buckets.map(bucket => bucket.name);
+
+		callback(null, bucketNames);
+	} catch (error) {
+		logger.error(error);
+		await connectionHelper.disconnect();
+		callback(error);
+	}
+};
+
+/**
+ * @param {ConnectionInfo} connectionInfo
+ * @param {AppLogger} appLogger
+ * @param {Callback} callback
+ * @param {App} app
+ */
+const getDocumentKinds = async (connectionInfo, appLogger, callback, app) => {
+	callback(null, []);
+};
+
+/**
+ * @param {ConnectionInfo} connectionInfo
+ * @param {AppLogger} appLogger
+ * @param {Callback} callback
+ * @param {App} app
+ */
 const getDbCollectionsNames = async (connectionInfo, appLogger, callback, app) => {
 	const logger = logHelper.createLogger({
 		title: 'Retrieving databases and collections information',
@@ -201,8 +237,10 @@ const reFromFile = async (data, appLogger, callback) => {
 
 module.exports = {
 	disconnect,
+	getDatabases,
 	getDbCollectionsNames,
 	getDbCollectionsData,
+	getDocumentKinds,
 	testConnection,
 	reFromFile,
 };
