@@ -36,6 +36,14 @@ const STATUS = {
 	hasError: 'hasError',
 };
 
+/**
+ * @enum {string}
+ */
+const HOSTING = {
+	capella: 'Capella',
+	selfHosted: 'Self-hosted',
+};
+
 const DEFAULT_KEY_NAME = '<key>';
 
 const DEFAULT_LIMIT = 1000;
@@ -61,5 +69,6 @@ module.exports = {
 	GET_META_REGEXP,
 	GET_NODES_REGEXP,
 	GET_PARTITION_HASH_REGEXP,
+	HOSTING,
 	STATUS,
 };
