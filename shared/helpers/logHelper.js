@@ -69,6 +69,14 @@ const createLogger = ({ title, logger, hiddenKeys }) => {
 };
 
 const createError = error => {
+	if (error?.context?.response_body) {
+		const parsedResponseBodyWithErrorMessage = JSON.parse(error.context.response_body);
+		error = {
+			...error,
+			...parsedResponseBodyWithErrorMessage,
+		};
+	}
+
 	return {
 		message: error.cause?.first_error_message || error.message,
 	};
