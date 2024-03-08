@@ -31,18 +31,5 @@
 	},
 	"splitView": {
 		"byAdditionalOptions": ["INCLUDE_SAMPLES"]
-	},
-	"options": [
-		{
-			"name": "Couchbase Script",
-			"keyword": "n1ql",
-			"supportsDeltaModel": true,
-			"fileExtensions": [
-				{
-					"label": "n1ql",
-					"value": "n1ql"
-				}
-			]
-		}
-	]
+	}
 }
