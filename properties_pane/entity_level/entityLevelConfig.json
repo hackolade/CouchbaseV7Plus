@@ -182,6 +182,7 @@ making sure that you maintain a proper JSON format.
 						"parentType": "indexes",
 						"propertyType": "checkbox",
 						"shouldValidate": false,
+						"defaultValue": true,
 						"propertyTooltip": "Deactivated item will be not included in forward-engineering script"
 					},
 					{
