@@ -10,7 +10,7 @@
     "contributes": {
         "target": {
             "applicationTarget": "CouchbaseV7Plus",
-            "title": "Couchbase Scopes&Collections",
+            "title": "Couchbase w/ collections",
             "versions": [
                 "7.x"
             ]
