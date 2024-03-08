@@ -136,7 +136,14 @@ const generateScript = async (connectionInfo, appLogger, callback, app) => {
 			collection: collectionData,
 		});
 
-		callback(null, scriptBuilder.buildScriptConcatenatedWithInsertScripts('\n\n'));
+		const { script, insertScripts } = scriptBuilder.buildScriptSeparateFromInsertScripts();
+		callback(null, [
+			{ title: 'Couchbase script', script },
+			{
+				title: 'Sample data',
+				script: insertScripts,
+			},
+		]);
 	} catch (error) {
 		logger.error(error);
 
