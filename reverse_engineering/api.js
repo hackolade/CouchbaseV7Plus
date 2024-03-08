@@ -148,6 +148,7 @@ const getDbCollectionsData = async (data, appLogger, callback, app) => {
 		const includeEmptyCollection = data.includeEmptyCollection;
 		const bucketName = data.database;
 		const collections = data.collectionData.collections;
+		const modelInfo = connectionHelper.getConnectionInfo();
 		const cluster = await connectionHelper.connect({ connectionInfo, app });
 		const indexes = await indexHelper.getIndexes({ cluster, connectionInfo, logger, app });
 		const indexesByCollectionMap = indexHelper.getIndexesByCollectionMap({ indexes });
@@ -173,7 +174,7 @@ const getDbCollectionsData = async (data, appLogger, callback, app) => {
 		}
 
 		await connectionHelper.disconnect();
-		callback(null, dbCollectionsData);
+		callback(null, dbCollectionsData, modelInfo);
 	} catch (error) {
 		await connectionHelper.disconnect();
 		callback(error);

@@ -6,7 +6,7 @@
  */
 
 const clusterHelper = require('./clusterHelper');
-const { AUTH_TYPE, COUCHBASE_HOST_PREFIX, COUCHBASE_DEFAULT_KV_CONNECTION_PORT } = require('../constants');
+const { AUTH_TYPE, COUCHBASE_HOST_PREFIX, COUCHBASE_DEFAULT_KV_CONNECTION_PORT, HOSTING } = require('../constants');
 
 let cluster = null;
 
@@ -88,7 +88,18 @@ const disconnect = async () => {
 	cluster = null;
 };
 
+const getConnectionInfo = () => {
+	const host = cluster?._connStr || '';
+	const isCloud = isCloudStorage({ connectionInfo: { host } });
+	const hosting = isCloud ? HOSTING.capella : HOSTING.selfHosted;
+
+	return {
+		hosting,
+	};
+};
+
 module.exports = {
 	connect,
 	disconnect,
+	getConnectionInfo,
 };
