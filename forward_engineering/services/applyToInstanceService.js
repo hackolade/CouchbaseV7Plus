@@ -38,7 +38,7 @@ const applyScript = async ({ script, cluster, logger, callback }) => {
 					const applyingProgress = Math.round((appliedStatements / maxNumberStatements) * 100);
 					if (applyingProgress - previousApplyingProgress >= 5) {
 						previousApplyingProgress = applyingProgress;
-						logger.progress({ message: getApplyingScriptPercentMessage(applyingProgress) });
+						logger.progress(getApplyingScriptPercentMessage(applyingProgress));
 					}
 				} catch (err) {
 					if (isIndexAlreadyCreatedError(err)) {

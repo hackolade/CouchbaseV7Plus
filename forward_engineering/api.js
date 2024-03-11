@@ -15,6 +15,7 @@ const {
 	COUCHBASE_APPLY_TO_INSTANCE,
 	CONTAINER_DATA_NOT_FOUND,
 	CONNECTING,
+	THERE_IS_AN_ISSUE_WHILE_CONNECTING_TO_THE_INSTANCE,
 	ERROR_HAS_BEEN_THROWN_WHILE_CONNECTING_TO_BUCKET,
 	ERROR_HAS_BEEN_THROWN_WHILE_CREATING_BUCKET_IN_COUCHBASE_INSTANCE,
 	ERROR_HAS_BEEN_THROWN_WHILE_APPLYING_SCRIPT_TO_COUCHBASE_INSTANCE,
@@ -166,7 +167,15 @@ const applyToInstance = async (connectionInfo, appLogger, callback, app) => {
 
 	logger.info(COUCHBASE_APPLY_TO_INSTANCE);
 	logger.progress(CONNECTING);
-	const cluster = await connectionHelper.connect({ connectionInfo, app });
+
+	let cluster;
+	try {
+		cluster = await connectionHelper.connect({ connectionInfo, app });
+	} catch (err) {
+		logger.error(err);
+		logger.progress(THERE_IS_AN_ISSUE_WHILE_CONNECTING_TO_THE_INSTANCE);
+		return callback(err);
+	}
 
 	const containerData = first(connectionInfo.containerData);
 
@@ -215,6 +224,7 @@ const applyToInstance = async (connectionInfo, appLogger, callback, app) => {
 				numOfAttempts: MAX_APPLY_ATTEMPTS,
 				retry: (err, attemptNumber) => {
 					logApplyScriptAttempt({ attemptNumber, bucketName, logger });
+					return true;
 				},
 				startingDelay: DEFAULT_START_DELAY,
 			},
