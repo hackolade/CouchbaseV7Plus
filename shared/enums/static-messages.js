@@ -10,6 +10,7 @@ module.exports = {
 		'Error has been thrown while applying script to Couchbase instance',
 	CONNECTING: 'Connecting',
 	CONTAINER_DATA_NOT_FOUND: 'Container data not found.',
+	ERROR_HAS_BEEN_THROWN_WHILE_CONNECTING_TO_INSTANCE: 'Error has been thrown while connecting to instance',
 	ERROR_HAS_BEEN_THROWN_WHILE_CONNECTING_TO_BUCKET: 'Error has been thrown while connecting to bucket',
 	ERROR_HAS_BEEN_THROWN_WHILE_CREATING_BUCKET_IN_COUCHBASE_INSTANCE:
 		'Error has been thrown while creating a bucket in Couchbase instance',
