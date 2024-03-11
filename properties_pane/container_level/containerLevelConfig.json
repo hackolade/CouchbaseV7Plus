@@ -181,7 +181,7 @@ making sure that you maintain a proper JSON format.
 				"typeOptions": ["string"],
 				"defaultType": "string",
 				"disabledFieldOption": true,
-				"sampleGen": "&containerName",
+				"sampleGen": "&id",
 				"validation": {
 					"disableNameValidationForReservedWords": true
 				}
