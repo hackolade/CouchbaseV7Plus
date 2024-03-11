@@ -47,7 +47,7 @@ const applyScript = async ({ script, cluster, logger, callback }) => {
 						logger.info(COUCHBASE_APPLY_TO_INSTANCE_ERROR);
 						logger.progress(getApplyingScriptPercentMessage(script));
 					} else {
-						return callback(err);
+						throw err;
 					}
 				}
 			},
