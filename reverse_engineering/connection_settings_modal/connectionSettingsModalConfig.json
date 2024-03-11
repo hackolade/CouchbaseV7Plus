@@ -6,187 +6,107 @@
 				"inputLabel": "Name",
 				"inputKeyword": "name",
 				"inputType": "text",
-				"inputPlaceholder": "Name"
-				
+				"inputPlaceholder": "Name",
+				"description": "Choose a friendly connection name"
 			},
 			{
-				"inputLabel": "Host",
+				"inputLabel": "Address",
 				"inputKeyword": "host",
 				"inputType": "text",
-				"inputPlaceholder": "<cluster-identifier>.cluster-<unique-id>.<region>.docdb.amazonaws.com",
-				"defaultValue": ""
+				"inputPlaceholder": "Address",
+				"description": "Specify host IP address or DNS name of Couchbase server",
+				"validation": {
+					"regex": "([^\\s])"
+				}
 			},
 			{
 				"inputLabel": "Port",
 				"inputKeyword": "port",
-				"inputType": "numeric",
-				"inputPlaceholder": "27017",
-				"defaultValue": ""
+				"inputType": "text",
+				"inputPlaceholder": "8091",
+				"description": "Specify port number of Couchbase server"
+			},
+			{
+				"inputLabel": "Key Value Port",
+				"inputKeyword": "kv_port",
+				"inputType": "text",
+				"inputPlaceholder": "11210",
+				"description": "Specify port number of Couchbase Key Value service"
+			},
+			{
+				"inputLabel": "Specific bucket",
+				"inputType": "label"
+			},
+			{
+				"inputLabel": "Name",
+				"inputKeyword": "couchbase_bucket",
+				"inputType": "text",
+				"inputPlaceholder": "Bucket",
+				"description": "Specify bucket name"
 			}
 		]
 	},
 	{
-		"tab": "Authentication",
+		"tab": "Auth",
 		"structure": [
 			{
+				"inputLabel": "Authentication",
+				"inputKeyword": "authType",
+				"inputType": "select",
+				"defaultValue": "username_password",
+				"options": [
+					{
+						"value": "username_password",
+						"label": "Username / Password"
+					},
+					{
+						"value": "security_certificate",
+						"label": "Security certificate"
+					}
+				]
+			},
+			{
 				"inputLabel": "User Name",
-				"inputKeyword": "username",
+				"inputKeyword": "couchbase_username",
 				"inputType": "text",
-				"inputPlaceholder": "User Name"
-				
+				"inputPlaceholder": "User Name",
+				"inputTooltip": "Provide username/password of either Full Couchbase administrator or Read-Only user (pre-5.x), or of user with proper role (5.0 and up)",
+				"dependency": {
+					"key": "authType",
+					"value": "username_password"
+				}
 			},
 			{
 				"inputLabel": "Password",
-				"inputKeyword": "password",
+				"inputKeyword": "couchbase_password",
 				"inputType": "password",
-				"inputTooltip": "Password",
-				"isHiddenKey": true,
-				"defaultValue": ""
-			}
-		]
-	},
-	{
-		"tab": "SSL",
-		"structure": [
-			{
-				"inputLabel": "SSL",
-				"inputKeyword": "sslType",
-				"inputType": "select",
-				"options": [{
-					"value": "Off", 
-					"label": "Off"
-				},{
-					"value": "UNVALIDATED_SSL",
-					"label": "Unvalidated"
-
-				},{
-					"value": "TRUST_CUSTOM_CA_SIGNED_CERTIFICATES",
-					"label": "Server validation"
-
-				}]
-			},
-			{
-				"inputLabel": "Certificate Authority",
-				"inputKeyword": "certAuthority",
-				"inputType": "file",
-				"inputPlaceholder": "Certificate Authority",
-				"extensions": ["pem", "crt", "key"],
+				"inputPlaceholder": "Password",
 				"dependency": {
-					"key": "sslType",
-					"value": ["TRUST_CUSTOM_CA_SIGNED_CERTIFICATES"]
-				}
-			}
-		]
-	},
-	{
-		"tab": "SSH",
-		"structure": [
-			{
-				"inputLabel": "Use SSH Tunnel",
-				"inputKeyword": "ssh",
-				"inputType": "checkbox",
-				"defaultValue": false
-			},
-			{
-				"inputLabel": "SSH Address",
-				"inputKeyword": "ssh_host",
-				"inputType": "text",
-				"inputPlaceholder": "SSH Address",
-				"disable": {
-					"key": "ssh",
-					"value": false
+					"key": "authType",
+					"value": "username_password"
 				}
 			},
 			{
-				"inputLabel": "Port",
-				"inputKeyword": "ssh_port",
-				"inputType": "numeric",
-				"inputPlaceholder": "Port",
-				"defaultValue": 22,
-				"disable": {
-					"key": "ssh",
-					"value": false
-				}
-			},
-			{
-				"inputLabel": "SSH User Name",
-				"inputKeyword": "ssh_user",
-				"inputType": "text",
-				"inputPlaceholder": "ec2-user",
-				"defaultValue": "ec2-user",
-				"disable": {
-					"key": "ssh",
-					"value": false
-				}
-			},
-			{
-				"inputLabel": "SSH Auth Method",
-				"inputKeyword": "ssh_method",
-				"inputType": "select",
-				"defaultValue": "privateKey",
-				"options": [{
-					"value": "privateKey", 
-					"label": "Private Key"
-				}],
-				"disable": {
-					"key": "ssh",
-					"value": false
-				}
-			},
-			{
-				"inputLabel": "Private Key",
-				"inputKeyword": "ssh_key_file",
-				"inputType": "file",
-				"inputPlaceholder": "Private Key",
-				"extensions": ["*"],
+				"inputLabel": "Security certificate",
+				"inputKeyword": "security_certificate",
+				"inputType": "certificate-file",
+				"inputPlaceholder": "Security certificate",
+				"description": "Specify path to the certificate which should be used for certificate authentication",
 				"dependency": {
-					"key": "ssh_method",
-					"value": ["privateKey", ""]
-				},
-				"disable": {
-					"key": "ssh",
-					"value": false
+					"key": "authType",
+					"value": "security_certificate"
 				}
 			},
 			{
-				"inputLabel": "Passphrase",
-				"inputKeyword": "ssh_key_passphrase",
-				"inputType": "password",
-				"inputPlaceholder": "Passphrase",
-				"isHiddenKey": true,
+				"inputLabel": "Key",
+				"inputKeyword": "security_certificate_key",
+				"inputType": "certificate-file",
+				"inputPlaceholder": "Key",
+				"description": "Specify path to the key which should be used for certificate authentication",
 				"dependency": {
-					"key": "ssh_method",
-					"value": ["privateKey", ""]
-				},
-				"disable": {
-					"key": "ssh",
-					"value": false
+					"key": "authType",
+					"value": "security_certificate"
 				}
-			}
-		]
-	},
-	{
-		"lowerTab": "AWS Access",
-		"structure": [
-			{
-				"inputLabel": "Access Key ID",
-				"inputKeyword": "accessKeyId",
-				"inputType": "text",
-				"inputPlaceholder": "Access Key ID"
-			},
-			{
-				"inputLabel": "Secret Access Key",
-				"inputKeyword": "secretAccessKey",
-				"inputType": "password",
-				"inputPlaceholder": "Secret Access Key",
-				"isHiddenKey": true
-			},
-			{
-				"inputLabel": "Session token",
-				"inputKeyword": "sessionToken",
-				"inputType": "text",
-				"inputPlaceholder": "Optional session token",
-				"isHiddenKey": true
 			}
 		]
 	}

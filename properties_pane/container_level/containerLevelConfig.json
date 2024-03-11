@@ -1,5 +1,5 @@
 /*
-* Copyright © 2016-2019 by IntegrIT S.A. dba Hackolade.  All rights reserved.
+* Copyright © 2016-2024 by IntegrIT S.A. dba Hackolade.  All rights reserved.
 *
 * The copyright to the computer software herein is the property of IntegrIT S.A.
 * The software may be used and/or copied only with the written permission of 
@@ -113,23 +113,21 @@ making sure that you maintain a proper JSON format.
 			}
 
 */
-
 [
 	{
 		"lowerTab": "Details",
-		"containerLevelKeys": [],
 		"structure": [
 			{
 				"propertyKeyword": "name",
 				"validation": {
-					"regex": "^[\\s\\S]{1,63}$",
+					"regex": "^(^\\b_default\\b$|(?!(_|%))[a-zA-Z0-9%_\\-]{1,251})$",
 					"required": true
 				}
 			},
 			{
 				"propertyKeyword": "code",
 				"validation": {
-					"regex": "^[\\s\\S]{1,63}$"
+					"regex": "^(^\\b_default\\b$|(?!(_|%))[a-zA-Z0-9%_\\-]{1,251})$"
 				}
 			},
 			{
@@ -157,18 +155,36 @@ making sure that you maintain a proper JSON format.
 				}
 			},
 			{
-				"propertyName": "If not exist",
-				"propertyKeyword": "ifNotExist",
+				"propertyName": "If not exists",
+				"propertyKeyword": "ifNotExists",
 				"propertyTooltip": "This optional clause enables the statement to complete successfully when the specified scope already exists.",
 				"defaultValue": true,
 				"propertyType": "checkbox"
-				},
+			},
 			{
 				"propertyName": "Comments",
 				"propertyKeyword": "comments",
 				"propertyTooltip": "comments",
 				"propertyType": "details",
 				"template": "textarea"
+			}
+		],
+		"containerLevelKeys": [
+			{
+				"labelName": "Key",
+				"propertyName": "Key",
+				"propertyKeyword": "<key>",
+				"defaultName": "<key>",
+				"propertyPrimaryKey": true,
+				"propertyType": "text",
+				"typeName": "Data type",
+				"typeOptions": ["string"],
+				"defaultType": "string",
+				"disabledFieldOption": true,
+				"sampleGen": "&id",
+				"validation": {
+					"disableNameValidationForReservedWords": true
+				}
 			}
 		]
 	}

@@ -1,5 +1,5 @@
 /*
-* Copyright © 2016-2019 by IntegrIT S.A. dba Hackolade.  All rights reserved.
+* Copyright © 2016-2024 by IntegrIT S.A. dba Hackolade.  All rights reserved.
 *
 * The copyright to the computer software herein is the property of IntegrIT S.A.
 * The software may be used and/or copied only with the written permission of 
@@ -121,14 +121,14 @@ making sure that you maintain a proper JSON format.
 			{
 				"propertyKeyword": "collectionName",
 				"validation": {
-					"regex": "^[\\s\\S]{1,57}$",
+					"regex": "^(^\\b_default\\b$|(?!(_|%))[a-zA-Z0-9%_\\-]{1,251})$",
 					"required": true
 				}
 			},
 			{
 				"propertyKeyword": "code",
 				"validation": {
-					"regex": "^[\\s\\S]{1,57}$"
+					"regex": "^(^\\b_default\\b$|(?!(_|%))[a-zA-Z0-9%_\\-]{1,251})$"
 				}
 			},
 			{
@@ -139,12 +139,12 @@ making sure that you maintain a proper JSON format.
 				"template": "textarea"
 			},
 			{
-				"propertyName": "If not exist",
-				"propertyKeyword": "ifNotExist",
+				"propertyName": "If not exists",
+				"propertyKeyword": "ifNotExists",
 				"propertyTooltip": "This optional clause enables the statement to complete successfully when the specified collection already exists.",
 				"defaultValue": true,
 				"propertyType": "checkbox"
-				},
+			},
 			{
 				"propertyName": "Comments",
 				"propertyKeyword": "comments",
@@ -157,184 +157,264 @@ making sure that you maintain a proper JSON format.
 	},
 	{
 		"lowerTab": "Indexes",
-		"structure": [{
-			"propertyName": "Index",
-			"propertyType": "group",
-			"propertyKeyword": "Indxs",
-			"propertyTooltip": "Click + to add an index",
-			"erdIndexAbbr": "I",
-			"structure": [
-				{
-					"propertyName": "Name",
-					"propertyKeyword": "name",
-					"propertyTooltip": "",
-					"propertyType": "text"
-				},
-				{
-					"propertyName": "Activated",
-					"propertyKeyword": "isActivated",
-					"propertyTooltip": "Deactivated item will be not included in forward-engineering script",
-					"propertyType": "checkbox",
-					"defaultValue": true
-				},
-				{
-					"propertyName": "Keys",
-					"propertyKeyword": "key",
-					"propertyType": "fieldList",
-					"template": "orderedList",
-					"attributeList": [
-						"ascending",
-						"descending",
-						"2DSphere"
-					]
-				},
-				{
-					"propertyName": "Unique",
-					"propertyKeyword": "unique",
-					"propertyType": "checkbox"
-				},
-				{
-					"propertyName": "Sparse",
-					"propertyKeyword": "sparse",
-					"propertyType": "checkbox"
-				},
-				{
-					"propertyName": "Background indexing",
-					"propertyKeyword": "background",
-					"propertyType": "checkbox"
-				},
-				{
-					"propertyName": "Expire after (seconds)",
-					"propertyKeyword": "expireAfterSeconds",
-					"propertyType": "numeric",
-					"valueType": "number",
-					"allowNegative": false
-				},
-				{
-					"propertyName": "2D Sphere",
-					"propertyKeyword": "2dsphere",
-					"propertyType": "block",
-					"propertyTooltip": "",
-					"dependency": {
-						"key": "key.*.type",
-						"value": "2DSphere"
-					},
-					"structure": [
-						{
-							"propertyName": "Index version",
-							"propertyKeyword": "2dsphereIndexVersion",
-							"propertyTooltip": "Select from list of options",
-							"propertyType": "select",
-							"options": [
-								"default",
-								"Version 2",
-								"Version 1"
-							]
+		"structure": [
+			{
+				"propertyName": "indexes",
+				"propertyType": "group",
+				"propertyKeyword": "indexes",
+				"shouldValidate": false,
+				"propertyTooltip": "Click + to add an index",
+				"erdIndexAbbr": "I",
+				"structure": [
+					{
+						"propertyName": "Name",
+						"propertyKeyword": "indxName",
+						"shouldValidate": true,
+						"propertyTooltip": "Index name",
+						"propertyType": "text",
+						"validation": {
+							"regex": "^(?!(_|#))[A-Za-z0-9#_]{1,}"
 						}
-					]
-				},
-				{
-					"propertyName": "Comments",
-					"propertyKeyword": "indexComments",
-					"propertyTooltip": "comments",
-					"addTimestampButton": false,
-					"propertyType": "details",
-					"template": "textarea"
-				}
-			]
-		}]
-	},
-	{
-		"lowerTab": "Functions",
-		"structure": [{
-			"propertyName": "Function",
-			"propertyType": "group",
-			"propertyKeyword": "function",
-			"propertyTooltip": "Click + to add a function",
-			"erdIndexAbbr": "I",
-			"structure": [
-				{
-					"propertyName": "Name",
-					"propertyKeyword": "name",
-					"propertyTooltip": "",
-					"propertyType": "text"
-				},
-				{
-					"propertyName": "Activated",
-					"propertyKeyword": "isActivated",
-					"propertyTooltip": "Deactivated item will be not included in forward-engineering script",
-					"propertyType": "checkbox",
-					"defaultValue": true
-				},
-				{
-					"propertyName": "Or replace",
-					"propertyKeyword": "orReplace",
-					"propertyTooltip": "This optional clause enables you to redefine a user-defined function if it already exists.",
-					"defaultValue": true,
-					"propertyType": "checkbox"
-				},
-				{
-					"propertyName": "Function body",
-					"propertyKeyword": "functionBody",
-					"propertyTooltip": "A string constant defining the function; the meaning depends on the language. It can be an internal function name, the path to an object file, an SQL command, or text in a procedural language.",
-					"propertyType": "details",
-					"template": "textarea",
-					"markdown": false
-				},
-				{
-					"propertyName": "Parameters",
-					"propertyKeyword": "parameters",
-					"propertyTooltip": "Optional listing of parameters for the function.",
-					"propertyType": "details",
-					"template": "textarea",
-					"markdown": false
-				},
-				{
-					"propertyName": "If not exist",
-					"propertyKeyword": "ifNotExist",
-					"propertyTooltip": "This optional clause enables the statement to complete successfully when the specified function already exists.",
-					"defaultValue": true,
-					"propertyType": "checkbox",
-					"dependency": {
-						"key": "orReplace",
-						"value": false
+					},
+					{
+						"propertyName": "Activated",
+						"propertyKeyword": "isActivated",
+						"parentType": "indexes",
+						"propertyType": "checkbox",
+						"shouldValidate": false,
+						"defaultValue": true,
+						"propertyTooltip": "Deactivated item will be not included in forward-engineering script"
+					},
+					{
+						"template": "textarea",
+						"propertyKeyword": "indxDescription",
+						"propertyName": "Description",
+						"propertyTooltip": "description",
+						"propertyType": "details",
+						"parentType": "indexes"
+					},
+					{
+						"options": ["Primary", "Secondary", "Array", "Metadata"],
+						"propertyKeyword": "indxType",
+						"propertyName": "Type",
+						"propertyType": "select",
+						"parentType": "indexes"
+					},
+					{
+						"propertyType": "tagInput",
+
+						"template": "collectiontree",
+						"dependency": {
+							"key": "indxType",
+							"value": "Secondary"
+						},
+						"propertyKeyword": "indxKey",
+						"propertyName": "Keys",
+						"types": ["ascending", "descending"],
+						"isCompositeKey": false,
+						"parentType": "indexes",
+						"templateOptions": {
+							"entityName": false
+						}
+					},
+					{
+						"template": "textarea",
+						"markdown": false,
+						"dependency": {
+							"key": "indxType",
+							"value": "Secondary"
+						},
+						"propertyKeyword": "functionExpr",
+						"propertyName": "Function expression",
+						"propertyType": "details",
+						"parentType": "indexes"
+					},
+					{
+						"template": "textarea",
+						"markdown": false,
+						"dependency": {
+							"key": "indxType",
+							"value": "Array"
+						},
+						"propertyKeyword": "arrayExpr",
+						"propertyName": "Array expression",
+						"propertyTooltip": "Lets you map and filter the elements or attributes of a collection, object, or objects. It evaluates to an array of the operand expression that satisfies the WHEN clause, if specified.",
+						"propertyType": "details",
+						"parentType": "indexes"
+					},
+					{
+						"template": "textarea",
+						"markdown": false,
+						"dependency": {
+							"key": "indxType",
+							"value": "Metadata"
+						},
+						"propertyKeyword": "metadataExpr",
+						"propertyName": "Metadata expression",
+						"propertyTooltip": "Enables you to return the metadata for a keyspace or document. To index a selected metadata field, you must use a nested expression containing the META() function and the required property, for example META().id.",
+						"propertyType": "details",
+						"parentType": "indexes"
+					},
+					{
+						"options": ["", "Keys", "Expression"],
+						"dependency": {
+							"key": "indxType",
+							"value": "Secondary"
+						},
+						"propertyKeyword": "partitionByHash",
+						"propertyName": "Partition by hash",
+						"propertyType": "select",
+						"parentType": "indexes"
+					},
+					{
+						"propertyType": "tagInput",
+
+						"template": "collectiontree",
+						"dependency": {
+							"type": "and",
+							"values": [
+								{
+									"key": "indxType",
+									"value": "Secondary"
+								},
+								{
+									"key": "partitionByHash",
+									"value": "Keys"
+								}
+							]
+						},
+						"propertyKeyword": "partitionByHashKeys",
+						"propertyName": "Partition by hash keys",
+						"isCompositeKey": false,
+						"parentType": "indexes",
+						"templateOptions": {
+							"entityName": false
+						}
+					},
+					{
+						"template": "textarea",
+						"markdown": false,
+						"dependency": {
+							"type": "and",
+							"values": [
+								{
+									"key": "indxType",
+									"value": "Secondary"
+								},
+								{
+									"key": "partitionByHash",
+									"value": "Expression"
+								}
+							]
+						},
+						"propertyKeyword": "partitionByHashExpr",
+						"propertyName": "Partition by hash clause",
+						"propertyTooltip": "A field or an expression over a field representing a partition key. ",
+						"propertyType": "details",
+						"parentType": "indexes"
+					},
+					{
+						"template": "textarea",
+						"markdown": false,
+						"dependency": {
+							"type": "or",
+							"values": [
+								{
+									"key": "indxType",
+									"value": "Secondary"
+								},
+								{
+									"key": "indxType",
+									"value": "Array"
+								}
+							]
+						},
+						"propertyKeyword": "whereClause",
+						"propertyName": "WHERE clause",
+						"propertyTooltip": "Specifies predicates to qualify the subset of documents to include in the index.",
+						"propertyType": "details",
+						"parentType": "indexes"
+					},
+					{
+						"dependency": {
+							"type": "or",
+							"values": [
+								{
+									"key": "indxType",
+									"value": "Primary"
+								},
+								{
+									"key": "indxType",
+									"value": "Secondary"
+								},
+								{
+									"key": "indxType",
+									"value": "Array"
+								}
+							]
+						},
+						"propertyKeyword": "usingGSI",
+						"propertyName": "Using GSI",
+						"propertyTooltip": "In Couchbase Server 6.5 and later, the index type  must be Global Secondary Index (GSI). The USING GSI keywords are optional and may be omitted.",
+						"propertyType": "checkbox",
+						"parentType": "indexes"
+					},
+					{
+						"structure": [
+							{
+								"addAction": "addCollectionGroupItem",
+
+								"structure": [
+									{
+										"inputPlaceholder": "<node_name>:<port_number>",
+										"propertyKeyword": "nodeName",
+										"propertyName": "Node name",
+										"propertyTooltip": "A node name passed to the nodes property must include the cluster administration port, by default 8091.",
+										"propertyType": "text",
+										"parentType": "nodes"
+									}
+								],
+								"propertyKeyword": "nodes",
+								"propertyName": "Nodes",
+								"propertyTooltip": "An array of strings, each of which represents a node name.",
+								"propertyType": "group",
+								"parentType": "withOptions"
+							},
+							{
+								"defaultValue": true,
+								"propertyKeyword": "defer_build",
+								"propertyName": "Defer build",
+								"propertyTooltip": "Deferring building of the index with multiple indexes can optimize the expensive scan operation.",
+								"propertyType": "checkbox",
+								"parentType": "withOptions"
+							},
+							{
+								"valueType": "number",
+								"allowNegative": false,
+								"propertyKeyword": "num_replica",
+								"propertyName": "Nbr of replicas",
+								"propertyTooltip": "Should be less than the number of index nodes in the cluster",
+								"propertyType": "numeric",
+								"parentType": "withOptions"
+							}
+						],
+						"propertyKeyword": "withOptions",
+						"propertyName": "WITH options",
+						"propertyTooltip": "Specifies additional options for index.",
+						"propertyType": "block",
+						"parentType": "indexes"
+					},
+					{
+						"addTimestampButton": false,
+						"template": "textarea",
+						"propertyKeyword": "indxComments",
+						"propertyName": "Comments",
+						"propertyTooltip": "comments",
+						"propertyType": "details",
+						"parentType": "indexes"
 					}
-				},
-				{
-					"propertyName": "Language",
-					"propertyKeyword": "functionLanguage",
-					"propertyTooltip": "The name of the language that the procedure is implemented in.",
-					"propertyType": "select",
-					"defaultValue": "JavaScript",
-					"options": [
-						"JavaScript"
-					]
-				},
-				{
-					"propertyName": "AS object",
-					"propertyKeyword": "ASobject",
-					"propertyTooltip": "The name of the JavaScript function that you want to use for the user-defined function. This parameter is a string and must be wrapped in quotes.",
-					"propertyType": "details",
-					"template": "textarea",
-					"markdown": false
-				},
-				{
-					"propertyName": "AT library",
-					"propertyKeyword": "ATlibrary",
-					"propertyTooltip": "The name of the JavaScript library that contains the function you want to use.",
-					"propertyType": "details",
-					"template": "textarea",
-					"markdown": false
-				},
-				{
-					"propertyName": "Comments",
-					"propertyKeyword": "functionComments",
-					"propertyTooltip": "comments",
-					"addTimestampButton": false,
-					"propertyType": "details",
-					"template": "textarea"
-				}
-			]
-		}]
+				]
+			}
+		]
 	}
 ]

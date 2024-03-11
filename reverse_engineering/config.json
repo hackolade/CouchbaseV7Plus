@@ -5,11 +5,10 @@
 */
 {
 	"errors": {
-		"NO_DATABASES": "There are no clusters in the DocumentDB instance",
-		"WRONG_CONNECTION": "Can not connect to the DocumentDB instance"
+		"NO_DATABASES": "There are no clusters in the Couchbase instance",
+		"WRONG_CONNECTION": "Can not connect to the Couchbase instance"
 	},
 	"excludeDocKind": ["id"],
-	"scenario": "connectToDB",
-	"typeOfSerializer": "bson",
-	"helpUrl": "https://hackolade.com/help/ConnecttoaDocumentDBinstance.html"
+	"scenario": "getDatabases",
+	"helpUrl": "https://hackolade.com/help/ConnecttoaCouchbaseinstance.html"
 }

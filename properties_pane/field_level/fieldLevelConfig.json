@@ -1,5 +1,5 @@
 /*
-* Copyright © 2016-2023 by IntegrIT S.A. dba Hackolade.  All rights reserved.
+* Copyright © 2016-2024 by IntegrIT S.A. dba Hackolade.  All rights reserved.
 *
 * The copyright to the computer software herein is the property of IntegrIT S.A.
 * The software may be used and/or copied only with the written permission of 
@@ -148,7 +148,7 @@ making sure that you maintain a proper JSON format.
 			"sample",
 			"comments"
 		],
-		"numeric": [
+		"number": [
 			{
 				"fieldKeyword": "name",
 				"validation": {
@@ -165,18 +165,6 @@ making sure that you maintain a proper JSON format.
 			"schemaId",
 			"description",
 			"type",
-			{
-				"propertyName": "Subtype",
-				"propertyKeyword": "mode",
-				"propertyTooltip": "Select from list of options",
-				"propertyType": "select",
-				"options": [
-					"",
-					"int32",
-					"int64",
-					"double"
-				]
-			},
 			"minimum",
 			"exclusiveMinimum",
 			"maximum",
