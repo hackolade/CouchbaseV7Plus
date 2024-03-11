@@ -42,7 +42,7 @@
 				"inputKeyword": "couchbase_bucket",
 				"inputType": "text",
 				"inputPlaceholder": "Bucket",
-				"description": "Specify bucket name if it has a password"
+				"description": "Specify bucket name"
 			}
 		]
 	},
