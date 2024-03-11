@@ -78,13 +78,14 @@ const createError = error => {
 	}
 
 	return {
-		message: error.cause?.first_error_message || error.message,
+		message: error.cause?.first_error_message || error.cause?.message || error.message,
 	};
 };
 
 const logHelper = {
 	getSystemInfo,
 	createLogger,
+	createError,
 };
 
 module.exports = logHelper;
