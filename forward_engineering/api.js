@@ -224,6 +224,7 @@ const applyToInstance = async (connectionInfo, appLogger, callback, app) => {
 				numOfAttempts: MAX_APPLY_ATTEMPTS,
 				retry: (err, attemptNumber) => {
 					logApplyScriptAttempt({ attemptNumber, bucketName, logger });
+					return true;
 				},
 				startingDelay: DEFAULT_START_DELAY,
 			},
