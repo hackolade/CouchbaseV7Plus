@@ -63,7 +63,7 @@ const testConnection = async (connectionInfo, appLogger, callback, app) => {
 		callback();
 	} catch (error) {
 		logger.error(error);
-		callback(error);
+		callback(logHelper.createError(error));
 	}
 };
 
@@ -89,7 +89,7 @@ const getDatabases = async (connectionInfo, appLogger, callback, app) => {
 	} catch (error) {
 		logger.error(error);
 		await connectionHelper.disconnect();
-		callback(error);
+		callback(logHelper.createError(error));
 	}
 };
 
@@ -126,7 +126,7 @@ const getDbCollectionsNames = async (connectionInfo, appLogger, callback, app) =
 	} catch (error) {
 		logger.error(error);
 		await connectionHelper.disconnect();
-		callback(error);
+		callback(logHelper.createError(error));
 	}
 };
 
@@ -177,7 +177,7 @@ const getDbCollectionsData = async (data, appLogger, callback, app) => {
 		callback(null, dbCollectionsData, modelInfo);
 	} catch (error) {
 		await connectionHelper.disconnect();
-		callback(error);
+		callback(logHelper.createError(error));
 	}
 };
 
@@ -232,7 +232,7 @@ const reFromFile = async (data, appLogger, callback) => {
 		return callback(null, [...schemas, ...emptySchemas, ...defaultSchemas], {}, [], 'multipleSchema');
 	} catch (error) {
 		logger.error(error);
-		return callback(error);
+		return callback(logHelper.createError(error));
 	}
 };
 

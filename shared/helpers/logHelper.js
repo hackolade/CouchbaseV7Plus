@@ -5,6 +5,7 @@
 
 const os = require('os');
 const packageFile = require('../../package.json');
+const { COUCHBASE_ERROR_CODE } = require('../constants');
 
 const getPluginVersion = () => packageFile.version;
 
@@ -78,13 +79,15 @@ const createError = error => {
 	}
 
 	return {
-		message: error.cause?.first_error_message || error.message,
+		type: error.cause?.code === COUCHBASE_ERROR_CODE.authorizationFailure ? 'simpleError' : '',
+		message: error.cause?.first_error_message || error.cause?.message || error.message,
 	};
 };
 
 const logHelper = {
 	getSystemInfo,
 	createLogger,
+	createError,
 };
 
 module.exports = logHelper;
