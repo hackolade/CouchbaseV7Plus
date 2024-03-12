@@ -85,6 +85,7 @@ const createError = error => {
 const logHelper = {
 	getSystemInfo,
 	createLogger,
+	createError,
 };
 
 module.exports = logHelper;

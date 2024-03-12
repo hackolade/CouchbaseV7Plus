@@ -170,7 +170,7 @@ const applyToInstance = async (connectionInfo, appLogger, callback, app) => {
 	} catch (err) {
 		logger.error(err);
 		logger.progress(THERE_IS_AN_ISSUE_WHILE_CONNECTING_TO_THE_INSTANCE);
-		return callback(err);
+		return callback(logHelper.createError(err));
 	}
 
 	const containerData = first(connectionInfo.containerData);
@@ -199,7 +199,7 @@ const applyToInstance = async (connectionInfo, appLogger, callback, app) => {
 			if (err.context?.response_code !== HTTP_ERROR_CODES.badRequest) {
 				logger.error(err);
 				logger.progress(ERROR_HAS_BEEN_THROWN_WHILE_CREATING_BUCKET_IN_COUCHBASE_INSTANCE);
-				return callback(err);
+				return callback(logHelper.createError(err));
 			}
 
 			logger.error(err);
@@ -218,7 +218,7 @@ const applyToInstance = async (connectionInfo, appLogger, callback, app) => {
 	} catch (err) {
 		logger.error(err);
 		logger.progress(ERROR_HAS_BEEN_THROWN_WHILE_APPLYING_SCRIPT_TO_COUCHBASE_INSTANCE);
-		return callback(err);
+		return callback(logHelper.createError(err));
 	}
 };
 
