@@ -7,7 +7,6 @@
  */
 
 const { get, first } = require('lodash');
-const { backOff } = require('exponential-backoff');
 const connectionHelper = require('../shared/helpers/connectionHelper');
 const clusterHelper = require('../shared/helpers/clusterHelper');
 const logHelper = require('../shared/helpers/logHelper');
@@ -32,9 +31,6 @@ const { HTTP_ERROR_CODES } = require('../shared/enums/http');
 
 const { applyScript, logApplyScriptAttempt } = require('./services/applyToInstanceService');
 const ForwardEngineeringScriptBuilder = require('./services/forwardEngineeringScriptBuilder');
-
-const MAX_APPLY_ATTEMPTS = 5;
-const DEFAULT_START_DELAY = 1000;
 
 const includeSamples = (additionalOptions = []) =>
 	Boolean(additionalOptions.find(option => option.id === 'INCLUDE_SAMPLES' && option.value));
@@ -174,7 +170,7 @@ const applyToInstance = async (connectionInfo, appLogger, callback, app) => {
 	} catch (err) {
 		logger.error(err);
 		logger.progress(THERE_IS_AN_ISSUE_WHILE_CONNECTING_TO_THE_INSTANCE);
-		return callback(err);
+		return callback(logHelper.createError(err));
 	}
 
 	const containerData = first(connectionInfo.containerData);
@@ -203,7 +199,7 @@ const applyToInstance = async (connectionInfo, appLogger, callback, app) => {
 			if (err.context?.response_code !== HTTP_ERROR_CODES.badRequest) {
 				logger.error(err);
 				logger.progress(ERROR_HAS_BEEN_THROWN_WHILE_CREATING_BUCKET_IN_COUCHBASE_INSTANCE);
-				return callback(err);
+				return callback(logHelper.createError(err));
 			}
 
 			logger.error(err);
@@ -212,27 +208,17 @@ const applyToInstance = async (connectionInfo, appLogger, callback, app) => {
 
 	logApplyScriptAttempt({ bucketName, logger });
 	try {
-		await backOff(
-			() =>
-				applyScript({
-					script: scriptWithSamples,
-					logger,
-					callback,
-					cluster,
-				}),
-			{
-				numOfAttempts: MAX_APPLY_ATTEMPTS,
-				retry: (err, attemptNumber) => {
-					logApplyScriptAttempt({ attemptNumber, bucketName, logger });
-					return true;
-				},
-				startingDelay: DEFAULT_START_DELAY,
-			},
-		);
+		applyScript({
+			bucketName,
+			script: scriptWithSamples,
+			logger,
+			callback,
+			cluster,
+		});
 	} catch (err) {
 		logger.error(err);
 		logger.progress(ERROR_HAS_BEEN_THROWN_WHILE_APPLYING_SCRIPT_TO_COUCHBASE_INSTANCE);
-		return callback(err);
+		return callback(logHelper.createError(err));
 	}
 };
 

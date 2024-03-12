@@ -1,5 +1,6 @@
 const { trim } = require('lodash');
 const async = require('async');
+const { backOff } = require('exponential-backoff');
 const clusterHelper = require('../../shared/helpers/clusterHelper');
 const {
 	APPLY_QUERY,
@@ -17,12 +18,15 @@ const {
 } = require('../../shared/enums/dynamic-messages');
 const { COUCHBASE_ERROR_CODE } = require('../../shared/constants');
 
+const MAX_APPLY_ATTEMPTS = 5;
+const DEFAULT_START_DELAY = 1000;
+
 /**
  *
- * @param {{script: string, cluster: object, logger: object, callback: function}} param
+ * @param {{bucketName: string, script: string, cluster: object, logger: object, callback: function}} param
  * @returns {boolean}
  */
-const applyScript = async ({ script, cluster, logger, callback }) => {
+const applyScript = async ({ bucketName, script, cluster, logger, callback }) => {
 	const scripts = script.split(';\n').map(trim).filter(Boolean);
 	const maxNumberStatements = scripts.length;
 	let previousApplyingProgress = 0;
@@ -33,7 +37,14 @@ const applyScript = async ({ script, cluster, logger, callback }) => {
 			async (script, index) => {
 				logger.info(APPLY_QUERY);
 				try {
-					await cluster.query(script);
+					await backOff(async () => cluster.query(script), {
+						numOfAttempts: MAX_APPLY_ATTEMPTS,
+						retry: (err, attemptNumber) => {
+							logApplyScriptAttempt({ attemptNumber, bucketName, logger });
+							return true;
+						},
+						startingDelay: DEFAULT_START_DELAY,
+					});
 					const appliedStatements = index + 1;
 					const applyingProgress = Math.round((appliedStatements / maxNumberStatements) * 100);
 					if (applyingProgress - previousApplyingProgress >= 5) {

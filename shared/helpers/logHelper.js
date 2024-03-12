@@ -79,8 +79,8 @@ const createError = error => {
 	}
 
 	return {
-		type: error.cause?.code === COUCHBASE_ERROR_CODE.authorizationFailure ? 'simpleError' : '',
-		message: error.cause?.first_error_message || error.cause?.message || error.message,
+		type: error?.cause?.code === COUCHBASE_ERROR_CODE.authorizationFailure ? 'simpleError' : '',
+		message: error?.cause?.first_error_message || error.cause?.message || error.message,
 	};
 };
 
