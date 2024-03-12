@@ -29,6 +29,27 @@ class ForwardEngineeringScriptBuilder {
 
 	/**
 	 *
+	 * @param {object[]} collections
+	 * @returns {ForwardEngineeringScriptBuilder}
+	 */
+	addCollectionsScripts(collections) {
+		const collectionsDefinitionsScripts = collections.map(collection => getCollectionScript(collection));
+		const collectionsIndexesScripts = collections.map(collection => getIndexesScript(collection));
+		const primaryIndexesScripts = collectionsIndexesScripts.filter(script =>
+			script.startsWith('CREATE PRIMARY INDEX'),
+		);
+		const restOfIndexes = collectionsIndexesScripts.filter(script => !primaryIndexesScripts.includes(script));
+
+		const collectionsScripts = [...collectionsDefinitionsScripts, ...primaryIndexesScripts, ...restOfIndexes]
+			.filter(Boolean)
+			.join(this.#getDdlStatementsSeparator());
+		this.ddlScript = `${this.ddlScript}${this.#getDdlStatementsSeparator()}${collectionsScripts}`;
+
+		return this;
+	}
+
+	/**
+	 *
 	 * @param {object} collection
 	 * @returns {ForwardEngineeringScriptBuilder}
 	 */

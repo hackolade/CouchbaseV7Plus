@@ -14,7 +14,7 @@ const getCollectionScript = ({ namespace, scopeName, bucketName, collectionName,
 	const fullPath = bucketName && scopeName ? `${fullBucketPath}.${wrapWithBackticks(scopeName)}.` : '';
 	const ifNotExistsClause = ifNotExists ? ' IF NOT EXISTS' : '';
 
-	return `CREATE COLLECTION ${fullPath}${wrapWithBackticks(collectionName)}${ifNotExistsClause};\n\n`;
+	return `CREATE COLLECTION ${fullPath}${wrapWithBackticks(collectionName)}${ifNotExistsClause};`;
 };
 
 module.exports = {

@@ -70,7 +70,7 @@ const generateContainerScript = async (connectionInfo, appLogger, callback, app)
 		}));
 
 		scriptBuilder.addScopeScript(scope);
-		collectionsData.forEach(collection => scriptBuilder.addCollectionScripts(collection));
+		scriptBuilder.addCollectionsScripts(collectionsData);
 
 		if (!includeSamples(additionalOptions)) {
 			const { script } = scriptBuilder.buildScriptSeparateFromInsertScripts();
