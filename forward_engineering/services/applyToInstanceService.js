@@ -23,7 +23,15 @@ const { COUCHBASE_ERROR_CODE } = require('../../shared/constants');
  * @returns {boolean}
  */
 const applyScript = async ({ script, cluster, logger, callback }) => {
-	const scripts = script.split(';\n').map(trim).filter(Boolean);
+	const scripsSanitizeRegExp = new RegExp(/\t+|\n+/g);
+	const scripts = script
+		.split(';\n')
+		.map(script => {
+			const trimmedScript = trim(script);
+
+			return trimmedScript.replace(scripsSanitizeRegExp, ' ');
+		})
+		.filter(Boolean);
 	const maxNumberStatements = scripts.length;
 	let previousApplyingProgress = 0;
 
