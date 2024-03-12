@@ -27,6 +27,7 @@ const COUCHBASE_ERROR_CODE = {
 	collectionDoesNotExist: 12003,
 	indexAlreadyCreated: 4300,
 	duplicateDocumentKey: 12009,
+	authorizationFailure: 6,
 };
 
 /**
