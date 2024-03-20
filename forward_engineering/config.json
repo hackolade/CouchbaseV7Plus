@@ -1,7 +1,7 @@
 {
 	"extension": "n1ql",
-	"namePrefix": "Couchbase Schema",
-	"filterName": "Couchbase Schema",
+	"namePrefix": "Couchbase Script",
+	"filterName": "Couchbase Script",
 	"documentation": true,
 	"applyScriptToInstance": true,
 	"resolvedDefinitions": true,
