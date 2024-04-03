@@ -4,8 +4,8 @@
  * @typedef {import('../../shared/types').NameMap} NameMap
  * @typedef {{ active: 'field' | 'alphabetical' }} FieldInference
  */
-const { isPlainObject, isEmpty, uniq } = require('lodash');
-const { DEFAULT_KEY_NAME, DEFAULT_NAME } = require('../../shared/constants');
+const { isPlainObject, isEmpty, isArray } = require('lodash');
+const { DEFAULT_KEY_NAME } = require('../../shared/constants');
 
 /**
  * @param {{
@@ -68,11 +68,23 @@ const convertInferSchemaToDocuments = ({ inference, bucketName }) => {
 	}
 
 	const documents = Object.keys(inference.properties).reduce((result, propertyName) => {
-		const samples = inference.properties[propertyName]?.samples || [];
+		const property = inference.properties[propertyName];
+
+		if (!property) {
+			return result;
+		}
+
+		const { samples = [], type } = property;
 
 		return samples.reduce((acc, sample, index) => {
+			const sampleType = isArray(type) ? type[index] : type;
 			const document = acc[index] || {};
-			acc[index] = { ...document, [propertyName]: sample };
+
+			acc[index] = {
+				...document,
+				[propertyName]: isArray(sample) && sampleType !== 'array' ? sample[0] : sample,
+			};
+
 			return acc;
 		}, result);
 	}, []);

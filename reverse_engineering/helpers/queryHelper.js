@@ -3,7 +3,7 @@
  * @returns {string}
  */
 const getInferCollectionDocumentsQuery = ({ bucketName, scopeName, collectionName, limit }) => {
-	return `INFER \`${bucketName}\`.\`${scopeName}\`.\`${collectionName}\` WITH {"sample_size":${limit}, "num_sample_values":3};`;
+	return `INFER \`${bucketName}\`.\`${scopeName}\`.\`${collectionName}\` WITH {"sample_size":${limit}, "num_sample_values":${limit}};`;
 };
 
 /**
