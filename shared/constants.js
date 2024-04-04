@@ -50,6 +50,8 @@ const DEFAULT_KEY_NAME = '<key>';
 const DEFAULT_LIMIT = 1000;
 const DEFAULT_NAME = '_default';
 
+const NUM_SAMPLE_VALUES = 3;
+
 const COUCHBASE_DEFAULT_KV_CONNECTION_PORT = 11210;
 
 const DISABLED_TOOLTIP = 'Something went wrong. Please, check logs for more details';
@@ -66,6 +68,7 @@ module.exports = {
 	DEFAULT_KEY_NAME,
 	DEFAULT_LIMIT,
 	DEFAULT_NAME,
+	NUM_SAMPLE_VALUES,
 	DISABLED_TOOLTIP,
 	GET_META_REGEXP,
 	GET_NODES_REGEXP,

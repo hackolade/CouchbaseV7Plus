@@ -1,9 +1,11 @@
+const { NUM_SAMPLE_VALUES } = require('../../shared/constants');
+
 /**
  * @param {{ bucketName: string; scopeName: string; collectionName: string; limit: number }} param0
  * @returns {string}
  */
 const getInferCollectionDocumentsQuery = ({ bucketName, scopeName, collectionName, limit }) => {
-	return `INFER \`${bucketName}\`.\`${scopeName}\`.\`${collectionName}\` WITH {"sample_size":${limit}, "num_sample_values":3};`;
+	return `INFER \`${bucketName}\`.\`${scopeName}\`.\`${collectionName}\` WITH {"sample_size":${limit}, "num_sample_values":${NUM_SAMPLE_VALUES}};`;
 };
 
 /**
