@@ -2,10 +2,11 @@
  * @typedef {import('../../shared/types').DbCollectionData} DbCollectionData
  * @typedef {import('../../shared/types').Document} Document
  * @typedef {import('../../shared/types').NameMap} NameMap
+ * @typedef {import('../../shared/types').InferenceProperty} InferenceProperty
  * @typedef {{ active: 'field' | 'alphabetical' }} FieldInference
  */
 const { isPlainObject, isEmpty, isArray } = require('lodash');
-const { DEFAULT_KEY_NAME } = require('../../shared/constants');
+const { DEFAULT_KEY_NAME, NUM_SAMPLE_VALUES } = require('../../shared/constants');
 
 /**
  * @param {{
@@ -59,6 +60,36 @@ const getDbCollectionData = ({
 };
 
 /**
+ * @param {Array<TValue>} values
+ * @param {number} index
+ * @returns {TValue}
+ */
+const getSafeValueByIndex = (values, index) => {
+	return values.length > index ? values[index] : values[0];
+};
+
+/**
+ * @param {{ property: InferenceProperty; propertyName: string; amountOfSamples: number, result: Document[] }} param0
+ * @returns {Document[]}
+ */
+const reduceSamples = ({ property, propertyName, amountOfSamples, result }) => {
+	const { samples = [], type } = property;
+
+	return [...Array(amountOfSamples).keys()].reduce((acc, index) => {
+		const sample = getSafeValueByIndex(samples, index);
+		const sampleType = isArray(type) ? getSafeValueByIndex(type, index) : type;
+		const document = acc[index] || {};
+
+		acc[index] = {
+			...document,
+			[propertyName]: isArray(sample) && sampleType !== 'array' ? sample[0] : sample,
+		};
+
+		return acc;
+	}, result);
+};
+
+/**
  * @param {{ inference: object; bucketName: string; }} param0
  * @returns {Document[]}
  */
@@ -67,26 +98,11 @@ const convertInferSchemaToDocuments = ({ inference, bucketName }) => {
 		return [];
 	}
 
+	const amountOfSamples = Math.min(NUM_SAMPLE_VALUES, inference['#docs'] ?? 0);
+
 	const documents = Object.keys(inference.properties).reduce((result, propertyName) => {
 		const property = inference.properties[propertyName];
-
-		if (!property) {
-			return result;
-		}
-
-		const { samples = [], type } = property;
-
-		return samples.reduce((acc, sample, index) => {
-			const sampleType = isArray(type) ? type[index] : type;
-			const document = acc[index] || {};
-
-			acc[index] = {
-				...document,
-				[propertyName]: isArray(sample) && sampleType !== 'array' ? sample[0] : sample,
-			};
-
-			return acc;
-		}, result);
+		return property ? reduceSamples({ property, propertyName, amountOfSamples, result }) : result;
 	}, []);
 
 	return documents.map(document => ({

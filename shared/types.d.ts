@@ -105,6 +105,13 @@ type DbCollectionData = {
 	entityLevel: object;
 }
 
+type InferenceProperty = {
+	"#docs": number;
+	"%docs": number;
+	samples?: Array<any>;
+	type: string | Array<string>
+}
+
 export {
 	App,
 	AppLogger,
@@ -124,4 +131,5 @@ export {
 	RecordSamplingSettings,
 	Scope,
 	UUID,
+	InferenceProperty,
 };
