@@ -118,13 +118,6 @@ making sure that you maintain a proper JSON format.
 	"structure": {
 		"string": [
 			{
-				"fieldKeyword": "name",
-				"validation": {
-					"regex": "^(\\$id|\\$ref|\\$db|(?![\\s\\S]*\\.)(?!\\$[\\s\\S]*)([\\s\\S]*))$",
-					"required": true
-				}
-			},
-			{
 				"fieldKeyword": "code",
 				"validation": {
 					"regex": "^(\\$id|\\$ref|\\$db|(?![\\s\\S]*\\.)(?!\\$[\\s\\S]*)([\\s\\S]*))$"
@@ -149,13 +142,6 @@ making sure that you maintain a proper JSON format.
 			"comments"
 		],
 		"number": [
-			{
-				"fieldKeyword": "name",
-				"validation": {
-					"regex": "^(\\$id|\\$ref|\\$db|(?![\\s\\S]*\\.)(?!\\$[\\s\\S]*)([\\s\\S]*))$",
-					"required": true
-				}
-			},
 			{
 				"fieldKeyword": "code",
 				"validation": {
@@ -185,13 +171,6 @@ making sure that you maintain a proper JSON format.
 		],
 		"boolean": [
 			{
-				"fieldKeyword": "name",
-				"validation": {
-					"regex": "^(\\$id|\\$ref|\\$db|(?![\\s\\S]*\\.)(?!\\$[\\s\\S]*)([\\s\\S]*))$",
-					"required": true
-				}
-			},
-			{
 				"fieldKeyword": "code",
 				"validation": {
 					"regex": "^(\\$id|\\$ref|\\$db|(?![\\s\\S]*\\.)(?!\\$[\\s\\S]*)([\\s\\S]*))$"
@@ -207,13 +186,6 @@ making sure that you maintain a proper JSON format.
 			"comments"
 		],
 		"object": [
-			{
-				"fieldKeyword": "name",
-				"validation": {
-					"regex": "^(\\$id|\\$ref|\\$db|(?![\\s\\S]*\\.)(?!\\$[\\s\\S]*)([\\s\\S]*))$",
-					"required": true
-				}
-			},
 			{
 				"fieldKeyword": "code",
 				"validation": {
@@ -232,13 +204,6 @@ making sure that you maintain a proper JSON format.
 		],
 		"array": [
 			{
-				"fieldKeyword": "name",
-				"validation": {
-					"regex": "^(\\$id|\\$ref|\\$db|(?![\\s\\S]*\\.)(?!\\$[\\s\\S]*)([\\s\\S]*))$",
-					"required": true
-				}
-			},
-			{
 				"fieldKeyword": "code",
 				"validation": {
 					"regex": "^(\\$id|\\$ref|\\$db|(?![\\s\\S]*\\.)(?!\\$[\\s\\S]*)([\\s\\S]*))$"
@@ -256,13 +221,6 @@ making sure that you maintain a proper JSON format.
 			"comments"
 		],
 		"null": [
-			{
-				"fieldKeyword": "name",
-				"validation": {
-					"regex": "^(\\$id|\\$ref|\\$db|(?![\\s\\S]*\\.)(?!\\$[\\s\\S]*)([\\s\\S]*))$",
-					"required": true
-				}
-			},
 			{
 				"fieldKeyword": "code",
 				"validation": {
