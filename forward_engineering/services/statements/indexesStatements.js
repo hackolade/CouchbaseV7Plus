@@ -10,7 +10,7 @@ const { INDEX_TYPE } = require('../../../shared/enums/n1ql');
  */
 const getIndexesScript = ({ namespace, bucketName, scopeName, collectionName, indexes, properties }) => {
 	const collectionIndexes = indexes ?? [];
-	const keyIdToName = getIndexKeyIdToKeyNameMap(properties);
+	const keyIdToName = properties ? getIndexKeyIdToKeyNameMap(properties) : {};
 	const indexesKeysWithCorrespondingPropertiesNames = collectionIndexes.map(index =>
 		injectKeysNamesIntoIndexKeys({ index, keyIdToName }),
 	);
