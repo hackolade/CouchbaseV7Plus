@@ -119,13 +119,6 @@ making sure that you maintain a proper JSON format.
 		"lowerTab": "Details",
 		"structure": [
 			{
-				"propertyKeyword": "collectionName",
-				"validation": {
-					"regex": "^(^\\b_default\\b$|(?!(_|%))[a-zA-Z0-9%_\\-]{1,251})$",
-					"required": true
-				}
-			},
-			{
 				"propertyKeyword": "code",
 				"validation": {
 					"regex": "^(^\\b_default\\b$|(?!(_|%))[a-zA-Z0-9%_\\-]{1,251})$"
