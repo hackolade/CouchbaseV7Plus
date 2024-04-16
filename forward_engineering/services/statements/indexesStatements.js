@@ -8,9 +8,9 @@ const { INDEX_TYPE } = require('../../../shared/enums/n1ql');
  * @param {{ namespace: string, bucketName: string, scopeName: string, collectionName: string, indexes: object[], properties: object[] }} collection
  * @returns {string[]}
  */
-const getIndexesScript = ({ namespace, bucketName, scopeName, collectionName, indexes, properties }) => {
+const getIndexesScript = ({ namespace, bucketName, scopeName, collectionName, indexes, properties = {} }) => {
 	const collectionIndexes = indexes ?? [];
-	const keyIdToName = properties ? getIndexKeyIdToKeyNameMap(properties) : {};
+	const keyIdToName = getIndexKeyIdToKeyNameMap(properties);
 	const indexesKeysWithCorrespondingPropertiesNames = collectionIndexes.map(index =>
 		injectKeysNamesIntoIndexKeys({ index, keyIdToName }),
 	);
