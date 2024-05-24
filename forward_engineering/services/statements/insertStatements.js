@@ -35,11 +35,9 @@ const getInsertScriptForCollection = ({ jsonData, collection }) => {
 	);
 
 	const insertionPath = getKeySpaceReference(collection);
-	const isKeyGeneratedWithFakerFunction = collection?.properties?.[keyPropertyName]?.fakerFunction;
 	const parseJsonData = JSON.parse(jsonData);
-	const keyFakedValue = isKeyGeneratedWithFakerFunction ? parseJsonData[keyPropertyName] : '';
 	const { [keyPropertyName]: keyProperty, ...jsonDataBody } = parseJsonData;
-	const sampledKey = getKeyFieldSample(keyFakedValue);
+	const sampledKey = getKeyFieldSample(parseJsonData[keyPropertyName]);
 
 	return `INSERT INTO ${insertionPath} (KEY, VALUE)\n\tVALUES("${sampledKey}",${JSON.stringify(jsonDataBody, null, '\t')});`;
 };
