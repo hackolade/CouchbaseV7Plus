@@ -60,6 +60,16 @@ const GET_META_REGEXP = /\(meta\(\)\.(.*?)\)/;
 const GET_NODES_REGEXP = /"nodes":(\[.*?\])/;
 const GET_PARTITION_HASH_REGEXP = /(HASH|hash)\((.*?)\)$/;
 
+/**
+ * @enum {string}
+ */
+const PK_SEGMENT_TYPE = {
+	constant: 'constant',
+	field: 'field',
+	pattern: 'pattern',
+	separator: 'separator',
+};
+
 module.exports = {
 	AUTH_TYPE,
 	COUCHBASE_ERROR_CODE,
@@ -75,4 +85,5 @@ module.exports = {
 	GET_PARTITION_HASH_REGEXP,
 	HOSTING,
 	STATUS,
+	PK_SEGMENT_TYPE,
 };

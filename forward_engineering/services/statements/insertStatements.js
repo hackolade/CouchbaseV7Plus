@@ -1,5 +1,6 @@
 const uuid = require('uuid');
 const { getKeySpaceReference } = require('./commonStatements');
+const { getPrimaryKeySampleByStructure } = require('./getPrimaryKeySampleByStructure');
 
 /**
  *
@@ -38,20 +39,13 @@ const getInsertScriptForCollection = ({ jsonData, collection }) => {
 	const isKeyGeneratedWithFakerFunction = collection?.properties?.[keyPropertyName]?.fakerFunction;
 	const parseJsonData = JSON.parse(jsonData);
 	const sampleValue = collection?.properties?.[keyPropertyName]?.sample;
-	const keyValue = isKeyGeneratedWithFakerFunction ? parseJsonData[keyPropertyName] : sampleValue;
+	const keySample = isKeyGeneratedWithFakerFunction ? parseJsonData[keyPropertyName] : sampleValue;
 	const { [keyPropertyName]: keyProperty, ...jsonDataBody } = parseJsonData;
-
-	const sampledKey = getKeyFieldSample(keyValue);
+	const pkSample = getPrimaryKeySampleByStructure({ collection, jsonData: parseJsonData });
+	const sampledKey = pkSample || keySample || uuid.v4();
 
 	return `INSERT INTO ${insertionPath} (KEY, VALUE)\n\tVALUES("${sampledKey}",${JSON.stringify(jsonDataBody, null, '\t')});`;
 };
-
-/**
- *
- * @param {string} jsonDataKey
- * @returns {string}
- */
-const getKeyFieldSample = jsonDataKey => jsonDataKey || uuid.v4();
 
 module.exports = {
 	getInsertScripts,
