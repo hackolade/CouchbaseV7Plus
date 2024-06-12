@@ -3,7 +3,6 @@
 .idea
 node_modules
 reverse_engineering/node_modules
-reverse_engineering/antlr/parser
 forward_engineering/node_modules
 build
 release
