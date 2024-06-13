@@ -38,7 +38,7 @@ const getPrimaryKeySampleByStructure = ({ collection, jsonData }) => {
 };
 
 /**
- * @param {{ segment: PkSegment, collection: object, jsonData: object }} param0
+ * @param {{ segment: PkSegment, collection: object, jsonData: object }}
  * @returns {string}
  */
 const getPrimaryKeyStructureFieldValue = ({ segment, collection, jsonData }) => {
@@ -53,7 +53,7 @@ const getPrimaryKeyStructureFieldValue = ({ segment, collection, jsonData }) => 
 };
 
 /**
- * @param {{ segment: PkSegment }} param0
+ * @param {{ segment: PkSegment }}
  * @returns {string}
  */
 const getPrimaryKeyStructurePatternValue = ({ segment }) => {
@@ -67,7 +67,7 @@ const getPrimaryKeyStructurePatternValue = ({ segment }) => {
 };
 
 /**
- * @param {{ collection: object, id: UUID }} param0
+ * @param {{ collection: object, id: UUID }}
  * @returns {string}
  */
 const findFieldNameById = ({ collection, id }) => {
