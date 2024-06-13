@@ -2,8 +2,9 @@
 .vscode
 .idea
 node_modules
+reverse_engineering/antlr
 reverse_engineering/node_modules
-reverse_engineering/antlr/parser
 forward_engineering/node_modules
+shared/types.d.ts
 build
 release
