@@ -3,6 +3,7 @@
  * @typedef {import('../../../shared/types').UUID} UUID
  */
 const RandExp = require('randexp');
+const { isEmpty } = require('lodash');
 const { PK_SEGMENT_TYPE } = require('../../../shared/constants');
 
 /**
@@ -10,7 +11,9 @@ const { PK_SEGMENT_TYPE } = require('../../../shared/constants');
  * @returns {string}
  */
 const getPrimaryKeySampleByStructure = ({ collection, jsonData }) => {
-	const keyField = Object.values(collection.properties || {}).find(field => field.primaryKeyStructure);
+	const keyField = Object.values(collection.properties || {}).find(
+		field => field.primaryKey && !isEmpty(field.primaryKeyStructure),
+	);
 	const primaryKeyStructure = keyField?.primaryKeyStructure;
 
 	if (!Array.isArray(primaryKeyStructure)) {

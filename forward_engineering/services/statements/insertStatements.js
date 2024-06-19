@@ -32,7 +32,7 @@ const getInsertScriptForCollection = ({ jsonData, collection }) => {
 	}
 
 	const keyPropertyName = Object.keys(collection?.properties ?? {}).find(propertyName =>
-		Boolean(collection?.properties?.[propertyName]['<key>']),
+		Boolean(collection?.properties?.[propertyName]?.primaryKey),
 	);
 
 	const insertionPath = getKeySpaceReference(collection);
