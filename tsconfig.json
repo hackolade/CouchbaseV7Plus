@@ -24,8 +24,8 @@
 		"resolveJsonModule": true,
 		"esModuleInterop": true,
 		"forceConsistentCasingInFileNames": true,
-		"typeRoots": ["./node_modules/@types", "./types"],
+		"typeRoots": ["./node_modules/@types", "./types"]
 	},
 	"include": ["reverse_engineering", "forward_engineering"],
-	"exclude": ["**/node_modules/**", "release/**/*"],
+	"exclude": ["**/node_modules/**", "release/**/*"]
 }
