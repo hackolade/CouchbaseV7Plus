@@ -140,6 +140,10 @@ making sure that you maintain a proper JSON format.
 				"propertyKeyword": "primaryKeyStructure",
 				"propertyTooltip": "For user-defined key structure, describe the different segments for the PK",
 				"propertyType": "group",
+				"groupControl": true,
+				"templateOptions": {
+					"hasToggler": true
+				},
 				"structure": [
 					{
 						"propertyName": "Segment type",
@@ -175,6 +179,10 @@ making sure that you maintain a proper JSON format.
 						"propertyType": "fieldList",
 						"template": "orderedList",
 						"parentType": "primaryKeyStructure",
+						"disabledItemStrategy": {
+							"type": "allowTypes",
+							"parameters": ["string", "number"]
+						},
 						"dependency": {
 							"key": "segmentType",
 							"value": "field"
@@ -224,7 +232,7 @@ making sure that you maintain a proper JSON format.
 					}
 				],
 				"dependency": {
-					"key": "containerLevelKey",
+					"key": "primaryKey",
 					"value": true
 				}
 			},
