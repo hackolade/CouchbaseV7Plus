@@ -3,7 +3,7 @@
  * @typedef {import('../../../shared/types').UUID} UUID
  */
 const RandExp = require('randexp');
-const { isEmpty } = require('lodash');
+const { get, isEmpty, isPlainObject } = require('lodash');
 const { PK_SEGMENT_TYPE } = require('../../../shared/constants');
 
 /**
@@ -45,14 +45,11 @@ const getPrimaryKeySampleByStructure = ({ collection, jsonData }) => {
  * @returns {string}
  */
 const getPrimaryKeyStructureFieldValue = ({ segment, collection, jsonData }) => {
-	const fieldNames = (segment.segmentKey || []).map(({ keyId }) => {
-		return findFieldNameById({ collection, id: keyId });
+	const fieldNamePaths = (segment.segmentKey || []).map(({ keyId }) => {
+		return getFieldNamePath({ collection, keyId });
 	});
 
-	return fieldNames
-		.filter(Boolean)
-		.map(fieldName => jsonData[fieldName])
-		.join('');
+	return fieldNamePaths.map(fieldNamePath => get(jsonData, fieldNamePath)).join('');
 };
 
 /**
@@ -70,21 +67,41 @@ const getPrimaryKeyStructurePatternValue = ({ segment }) => {
 };
 
 /**
- * @param {{ collection: object, id: UUID }}
- * @returns {string}
+ * @param {{ collection: object, keyId: UUID }}
+ * @returns {string[]}
  */
-const findFieldNameById = ({ collection, id }) => {
-	return Object.entries(collection.properties || {}).reduce((result, [fieldName, field]) => {
-		if (result) {
-			return result;
+const getFieldNamePath = ({ collection, keyId }) => {
+	const properties = getCollectionProperties({ collection });
+
+	return Object.entries(properties).reduce((result, [fieldName, field]) => {
+		if (field.GUID === keyId) {
+			return [...result, fieldName];
 		}
 
-		if (field.GUID === id) {
-			return fieldName;
-		}
+		const namePath = getFieldNamePath({ collection: field, keyId });
 
-		return findFieldNameById({ collection: field, id });
-	}, '');
+		return namePath.length ? [...result, fieldName, ...namePath] : result;
+	}, []);
+};
+
+/**
+ * @param {{ collection: object }}
+ * @returns {object}
+ */
+const getCollectionProperties = ({ collection }) => {
+	if (collection.properties) {
+		return collection.properties;
+	}
+
+	if (Array.isArray(collection.items)) {
+		return collection.items.reduce((result, item, index) => ({ ...result, [index]: item }), {});
+	}
+
+	if (isPlainObject(collection.items)) {
+		return collection.items;
+	}
+
+	return {};
 };
 
 module.exports = {
