@@ -1,5 +1,5 @@
 import { Cluster, Scope, Bucket } from 'couchbase';
-import { STATUS } from './constants';
+import { PK_SEGMENT_TYPE } from './constants';
 
 type UUID = string;
 
@@ -112,6 +112,16 @@ type InferenceProperty = {
 	type: string | Array<string>
 }
 
+type PkSegment = {
+	segmentType: Values<PK_SEGMENT_TYPE>;
+	segmentValue: string;
+	segmentPattern?: string;
+	segmentSample?: string;
+	segmentMeaning?: string;
+	segmentRegex?: string;
+	segmentKey?: Array<{ keyId: UUID }>;
+};
+
 export {
 	App,
 	AppLogger,
@@ -132,4 +142,5 @@ export {
 	Scope,
 	UUID,
 	InferenceProperty,
+	PkSegment,
 };
