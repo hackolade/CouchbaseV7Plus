@@ -179,10 +179,15 @@ making sure that you maintain a proper JSON format.
 						"propertyType": "fieldList",
 						"template": "orderedList",
 						"parentType": "primaryKeyStructure",
-						"disabledItemStrategy": {
-							"type": "allowTypes",
-							"parameters": ["string", "number"]
-						},
+						"disabledItemStrategy": [
+							{
+								"type": "allowTypes",
+								"parameters": ["string", "number"]
+							},
+							{
+								"type": "primaryKey"
+							}
+						],
 						"dependency": {
 							"key": "segmentType",
 							"value": "field"
