@@ -135,6 +135,112 @@ making sure that you maintain a proper JSON format.
 			"required",
 			"dependencies",
 			"primaryKey",
+			{
+				"propertyName": "PK Structure",
+				"propertyKeyword": "primaryKeyStructure",
+				"propertyTooltip": "For user-defined key structure, describe the different segments for the PK",
+				"propertyType": "group",
+				"groupControl": true,
+				"templateOptions": {
+					"hasToggler": true
+				},
+				"structure": [
+					{
+						"propertyName": "Segment type",
+						"propertyKeyword": "segmentType",
+						"propertyTooltip": "Select from list of options",
+						"propertyType": "select",
+						"parentType": "primaryKeyStructure",
+						"options": ["constant", "separator", "field", "pattern"]
+					},
+					{
+						"propertyName": "Meaning",
+						"propertyKeyword": "segmentMeaning",
+						"propertyTooltip": "Keyword describing the segment",
+						"propertyType": "text",
+						"parentType": "primaryKeyStructure",
+						"dependency": {
+							"type": "or",
+							"values": [
+								{
+									"key": "segmentType",
+									"value": "constant"
+								},
+								{
+									"key": "segmentType",
+									"value": "pattern"
+								}
+							]
+						}
+					},
+					{
+						"propertyName": "Keys",
+						"propertyKeyword": "segmentKey",
+						"propertyType": "fieldList",
+						"template": "orderedList",
+						"parentType": "primaryKeyStructure",
+						"disabledItemStrategy": [
+							{
+								"type": "allowTypes",
+								"parameters": ["string", "number"]
+							},
+							{
+								"type": "primaryKey"
+							}
+						],
+						"dependency": {
+							"key": "segmentType",
+							"value": "field"
+						}
+					},
+					{
+						"propertyName": "Value",
+						"propertyKeyword": "segmentValue",
+						"propertyTooltip": "Value for constants and separators",
+						"propertyType": "text",
+						"parentType": "primaryKeyStructure",
+						"dependency": {
+							"type": "or",
+							"values": [
+								{
+									"key": "segmentType",
+									"value": "constant"
+								},
+								{
+									"key": "segmentType",
+									"value": "separator"
+								}
+							]
+						}
+					},
+					{
+						"propertyName": "Regex",
+						"propertyKeyword": "segmentRegex",
+						"propertyTooltip": "",
+						"propertyType": "text",
+						"parentType": "primaryKeyStructure",
+						"dependency": {
+							"key": "segmentType",
+							"value": "pattern"
+						}
+					},
+					{
+						"propertyName": "Sample",
+						"propertyKeyword": "segmentSample",
+						"propertyTooltip": "",
+						"propertyType": "text",
+						"parentType": "primaryKeyStructure",
+						"dependency": {
+							"key": "segmentType",
+							"value": "pattern"
+						}
+					}
+				],
+				"dependency": {
+					"key": "primaryKey",
+					"value": true
+				}
+			},
 			"foreignCollection",
 			"foreignField",
 			"relationshipType",
