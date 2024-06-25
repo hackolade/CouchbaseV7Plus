@@ -188,7 +188,7 @@ class Visitor extends n1qlVisitor {
 	}
 
 	visitInput(ctx) {
-		return this.visit(ctx.stmt_body());
+		return this.visitIfExists(ctx, 'stmt_body', []);
 	}
 
 	visitStmt_body(ctx) {

@@ -271,6 +271,8 @@ statements:input input*
 
 input: stmt_body opt_trailer
 	| expr_input
+	| block_comment
+	| line_comment
 ;
 
 opt_trailer: 
@@ -1149,3 +1151,6 @@ if_exists: IF EXISTS
 if_not_exists: IF NOT EXISTS
 ;
 
+block_comment: BLOCK_COMMENT;
+
+line_comment: LINE_COMMENT;

@@ -1309,6 +1309,16 @@ class n1qlVisitor extends antlr4.tree.ParseTreeVisitor {
 	visitIf_not_exists(ctx) {
 		return this.visitChildren(ctx);
 	}
+
+	// Visit a parse tree produced by n1qlParser#block_comment.
+	visitBlock_comment(ctx) {
+		return this.visitChildren(ctx);
+	}
+
+	// Visit a parse tree produced by n1qlParser#line_comment.
+	visitLine_comment(ctx) {
+		return this.visitChildren(ctx);
+	}
 }
 
 module.exports = n1qlVisitor;
