@@ -141,6 +141,8 @@ making sure that you maintain a proper JSON format.
 				"propertyTooltip": "For user-defined key structure, describe the different segments for the PK",
 				"propertyType": "group",
 				"groupControl": true,
+				"erdIndexAbbr": "K",
+				"erdIndexSimple": true,
 				"templateOptions": {
 					"hasToggler": true
 				},
@@ -186,6 +188,9 @@ making sure that you maintain a proper JSON format.
 							},
 							{
 								"type": "primaryKey"
+							},
+							{
+								"type": "deactivated"
 							}
 						],
 						"dependency": {
