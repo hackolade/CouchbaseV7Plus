@@ -120,7 +120,7 @@ const getDbCollectionsNames = async (connectionInfo, appLogger, callback, app) =
 
 	try {
 		const cluster = await connectionHelper.connect({ connectionInfo, app });
-		const documents = await clusterHelper.getDbCollectionsNames({ connectionInfo, cluster, logger, app });
+		const documents = await clusterHelper.getDbCollectionsNames({ connectionInfo, cluster, logger });
 
 		callback(null, documents);
 	} catch (error) {
@@ -150,7 +150,7 @@ const getDbCollectionsData = async (data, appLogger, callback, app) => {
 		const collections = data.collectionData.collections;
 		const modelInfo = connectionHelper.getConnectionInfo();
 		const cluster = await connectionHelper.connect({ connectionInfo, app });
-		const indexes = await indexHelper.getIndexes({ cluster, connectionInfo, logger, app });
+		const indexes = await indexHelper.getIndexes({ cluster, connectionInfo, logger });
 		const indexesByCollectionMap = indexHelper.getIndexesByCollectionMap({ indexes });
 		const dbCollectionsData = [];
 
@@ -166,7 +166,6 @@ const getDbCollectionsData = async (data, appLogger, callback, app) => {
 					collectionIndexes,
 					includeEmptyCollection,
 					logger,
-					app,
 				});
 
 				dbCollectionsData.push(dbCollectionData);

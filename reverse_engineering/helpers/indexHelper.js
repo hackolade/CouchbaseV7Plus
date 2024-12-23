@@ -72,7 +72,7 @@ const getKeysAndExpression = index => {
 };
 
 const checkKeySimple = key => {
-	return /^\`.*?\`$/.test(key) || /^\(\`.*?\`\)$/.test(key);
+	return /^`.*?`$/.test(key) || /^\(`.*?`\)$/.test(key);
 };
 
 const getExpression = key => {
@@ -86,7 +86,7 @@ const getExpression = key => {
 const getSimpleKey = key => {
 	const isDescending = key.endsWith('DESC');
 	const keyName = key
-		.replace(/\`/gi, '')
+		.replace(/`/gi, '')
 		.replace(' DESC', '')
 		.replace(/^\s+/, '')
 		.replace(/\s+$/, '')
@@ -109,9 +109,9 @@ const getWhereCondition = index => {
 	}
 };
 
-const getIndexes = async ({ cluster, connectionInfo, logger, app }) => {
+const getIndexes = async ({ cluster, connectionInfo, logger }) => {
 	try {
-		const indexData = await restApiHelper.getIndexes({ connectionInfo, logger, app });
+		const indexData = await restApiHelper.getIndexes({ connectionInfo, logger });
 		const statements = indexData.map(indx => indx.definition).join(';\n');
 
 		if (!statements) {
