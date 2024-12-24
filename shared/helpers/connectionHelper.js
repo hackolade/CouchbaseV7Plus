@@ -73,7 +73,7 @@ const connect = async ({ connectionInfo, app }) => {
 	const buckets = await clusterHelper.getAllBuckets({ cluster });
 	const selectedBucket = connectionInfo.couchbase_bucket;
 
-	if (selectedBucket && !buckets.includes(selectedBucket)) {
+	if (selectedBucket && !buckets?.map(bucket => bucket.name).includes(selectedBucket)) {
 		throw new Error(`Bucket ${selectedBucket} doesn't exist`);
 	}
 
