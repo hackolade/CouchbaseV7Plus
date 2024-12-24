@@ -6,6 +6,7 @@
  */
 
 const { isObject } = require('lodash');
+const { hckFetch } = require('@hackolade/fetch');
 const { DEFAULT_LIMIT } = require('../../shared/constants');
 
 class CustomError extends Error {
@@ -17,16 +18,14 @@ class CustomError extends Error {
 }
 
 class CouchbaseRestApiService {
-	constructor(connectionInfo, httpService) {
-		this.host = connectionInfo.host;
-		this.port = connectionInfo.port;
+	constructor({ host, port, couchbase_username, couchbase_password }) {
+		this.host = host;
+		this.port = port;
 
-		if (connectionInfo?.couchbase_username && connectionInfo?.couchbase_password) {
-			this.password = connectionInfo.couchbase_password;
-			this.username = connectionInfo.couchbase_username;
+		if (couchbase_username && couchbase_password) {
+			this.password = couchbase_password;
+			this.username = couchbase_username;
 		}
-
-		this.httpService = httpService;
 	}
 
 	/**
@@ -49,10 +48,9 @@ class CouchbaseRestApiService {
 				headers: {
 					Authorization: `Basic ${encodedCredentials}`,
 				},
-				useElectronNet: true,
 			};
 
-			return await this.httpService.get(uri, options);
+			return hckFetch(uri, options);
 		} catch (error) {
 			throw new CustomError({
 				message: error.statusText || error.message,
@@ -94,23 +92,19 @@ const safeParse = value => {
 
 const isBinaryFile = obj => isObject(obj) && !!obj.base64 && !!obj.meta;
 
-const createRestApiService = ({ connectionInfo, app }) => {
-	const httpService = app.require('httpService');
-	const httpServiceInstance = httpService.createInstance(connectionInfo);
-	const apiService = new CouchbaseRestApiService(connectionInfo, httpServiceInstance);
-
-	return apiService;
+const createRestApiService = ({ connectionInfo }) => {
+	return new CouchbaseRestApiService(connectionInfo);
 };
 
 /**
- * @param {{ connectionInfo: ConnectionInfo; bucketName: string; scopeName: string; collectionName: string; logger: Logger; app: App }} param0
+ * @param {{ connectionInfo: ConnectionInfo; bucketName: string; scopeName: string; collectionName: string; logger: Logger; }} param0
  * @returns {Promise<Document[]>}
  */
-const getCollectionDocuments = async ({ connectionInfo, bucketName, scopeName, collectionName, logger, app }) => {
+const getCollectionDocuments = async ({ connectionInfo, bucketName, scopeName, collectionName, logger }) => {
 	try {
 		logger.info(`${bucketName}.${scopeName}.${collectionName}: Start getting documents using REST API`);
 
-		const apiService = createRestApiService({ connectionInfo, app });
+		const apiService = createRestApiService({ connectionInfo });
 		const { rows } = await apiService.getCollectionDocuments({
 			bucketName,
 			scopeName,
@@ -131,13 +125,13 @@ const getCollectionDocuments = async ({ connectionInfo, bucketName, scopeName, c
 };
 
 /**
- * @param {{ connectionInfo: ConnectionInfo; logger: Logger; app: App }} param0
+ * @param {{ connectionInfo: ConnectionInfo; logger: Logger; }} param0
  * @returns {Promise<object[]>}
  */
-const getIndexes = async ({ connectionInfo, logger, app }) => {
+const getIndexes = async ({ connectionInfo, logger }) => {
 	logger.info(`Start getting indexes using REST API`);
 
-	const apiService = createRestApiService({ connectionInfo, app });
+	const apiService = createRestApiService({ connectionInfo });
 	const { indexes } = await apiService.getIndexes();
 
 	return indexes;
