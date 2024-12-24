@@ -3,32 +3,41 @@ const restApiHelper = require('./restApiHelper');
 const clusterHelper = require('../../shared/helpers/clusterHelper');
 const parserHelper = require('./parserHelper');
 const { GET_META_REGEXP, GET_PARTITION_HASH_REGEXP, DEFAULT_NAME } = require('../../shared/constants');
+const { INDEX_TYPE } = require('../../shared/enums/indexType');
 
 const handleIndex = index => {
 	const indexData = getHackoladeCompatibleIndex(index);
 	return pickBy(indexData, value => !isUndefined(value));
 };
 
+const getIndexExpression = ({ index }) => {
+	if (index.index_key) {
+		return index.index_key.map(getExpression).join(',');
+	}
+};
+
 const getHackoladeCompatibleIndex = index => {
+	const indexExpression = getIndexExpression({ index });
+
 	if (index.is_primary) {
 		return {
 			indxName: index.name,
-			indxType: 'Primary',
+			indxType: INDEX_TYPE.primary,
 			usingGSI: index.using === 'gsi',
 		};
 	} else if (checkArrayIndex(index)) {
 		return {
 			indxName: index.name,
-			indxType: 'Array',
+			indxType: INDEX_TYPE.array,
 			usingGSI: index.using === 'gsi',
-			arrayExpr: index.index_key.map(getExpression).join(','),
+			arrayExpr: indexExpression,
 			whereClause: getWhereCondition(index),
 		};
 	} else if (checkMetaIndex(index)) {
 		return {
 			indxName: index.name,
-			indxType: 'Metadata',
-			metadataExpr: index.index_key.map(getExpression).join(','),
+			indxType: INDEX_TYPE.metadata,
+			metadataExpr: indexExpression,
 		};
 	} else {
 		const partitionByHash = getPartition(index);
@@ -36,7 +45,7 @@ const getHackoladeCompatibleIndex = index => {
 
 		return {
 			indxName: index.name,
-			indxType: 'Secondary',
+			indxType: INDEX_TYPE.secondary,
 			usingGSI: index.using === 'gsi',
 			indxKey: keys,
 			functionExpr: expression,
@@ -72,7 +81,7 @@ const getKeysAndExpression = index => {
 };
 
 const checkKeySimple = key => {
-	return /^\`.*?\`$/.test(key) || /^\(\`.*?\`\)$/.test(key);
+	return /^`.*?`$/.test(key) || /^\(`.*?`\)$/.test(key);
 };
 
 const getExpression = key => {
@@ -86,7 +95,7 @@ const getExpression = key => {
 const getSimpleKey = key => {
 	const isDescending = key.endsWith('DESC');
 	const keyName = key
-		.replace(/\`/gi, '')
+		.replace(/`/gi, '')
 		.replace(' DESC', '')
 		.replace(/^\s+/, '')
 		.replace(/\s+$/, '')
@@ -162,4 +171,5 @@ const getIndexesByCollectionMap = ({ indexes }) => {
 module.exports = {
 	getIndexes,
 	getIndexesByCollectionMap,
+	getKeysAndExpression,
 };

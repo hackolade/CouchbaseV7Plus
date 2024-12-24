@@ -1,4 +1,6 @@
 const { NUM_SAMPLE_VALUES } = require('../../shared/constants');
+const { INDEX_TYPE } = require('../../shared/enums/indexType');
+const { getKeysAndExpression } = require('./indexHelper');
 
 /**
  * @param {{ bucketName: string; scopeName: string; collectionName: string; limit: number }} param0
@@ -17,12 +19,26 @@ const getSelectBucketDocumentsQuery = ({ bucketName, limit, offset }) => {
 	return getQueryOptions({ query, limit, offset });
 };
 
+const getWhereClauseFromMetaIndexes = ({ collectionIndexes }) => {
+	const metadataIndexes = collectionIndexes.filter(index => index.indxType === INDEX_TYPE.metadata);
+	const expressions = metadataIndexes.map(getKeysAndExpression);
+	return expressions;
+};
+
 /**
  * @param {{ bucketName: string; scopeName: string; collectionName: string; limit: number; offset: number }} param0
  * @returns {string}
  */
-const getSelectCollectionDocumentsQuery = ({ bucketName, scopeName, collectionName, limit, offset }) => {
-	const query = `SELECT *, META().id AS docid FROM \`${bucketName}\`.\`${scopeName}\`.\`${collectionName}\` AS \`${bucketName}\``;
+const getSelectCollectionDocumentsQuery = ({
+	bucketName,
+	scopeName,
+	collectionName,
+	collectionIndexes,
+	limit,
+	offset,
+}) => {
+	const whereClause = getWhereClauseFromMetaIndexes({ collectionIndexes });
+	const query = `SELECT *, META().id AS docid FROM \`${bucketName}\`.\`${scopeName}\`.\`${collectionName}\` AS \`${bucketName}\`${whereClause}`;
 	return getQueryOptions({ query, limit, offset });
 };
 
