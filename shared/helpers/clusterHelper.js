@@ -262,7 +262,6 @@ const getCollectionDocumentsByInfer = async ({ cluster, bucketName, scopeName, c
  * collectionIndexes: object[];
  * includeEmptyCollection: boolean;
  * logger: Logger;
- * app: App;
  *  }} param0
  * @returns {Promise<DbCollectionData>}
  */
@@ -275,7 +274,6 @@ const getDbCollectionData = async ({
 	collectionIndexes,
 	includeEmptyCollection,
 	logger,
-	app,
 }) => {
 	try {
 		const limit = await getCollectionSamplingSize({
@@ -321,7 +319,6 @@ const getDbCollectionData = async ({
 			collectionIndexes,
 			includeEmptyCollection,
 			logger,
-			app,
 		});
 	}
 };
@@ -337,7 +334,6 @@ const getDbCollectionData = async ({
  * collectionIndexes: object[];
  * includeEmptyCollection: boolean;
  * logger: Logger;
- * app: App;
  *  }} param0
  * @returns {Promise<DbCollectionData>}
  */
@@ -351,7 +347,6 @@ const getDbCollectionDataByErrorHandling = async ({
 	collectionIndexes,
 	includeEmptyCollection,
 	logger,
-	app,
 }) => {
 	try {
 		const errorCode = getErrorCode({ error });
@@ -376,7 +371,6 @@ const getDbCollectionDataByErrorHandling = async ({
 					scopeName,
 					collectionName,
 					logger,
-					app,
 				});
 				break;
 		}
