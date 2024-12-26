@@ -10,15 +10,7 @@ const handleIndex = index => {
 	return pickBy(indexData, value => !isUndefined(value));
 };
 
-const getIndexExpression = ({ index }) => {
-	if (index.index_key) {
-		return index.index_key.map(getExpression).join(',');
-	}
-};
-
 const getHackoladeCompatibleIndex = index => {
-	const indexExpression = getIndexExpression({ index });
-
 	if (index.is_primary) {
 		return {
 			indxName: index.name,
@@ -30,14 +22,14 @@ const getHackoladeCompatibleIndex = index => {
 			indxName: index.name,
 			indxType: INDEX_TYPE.array,
 			usingGSI: index.using === 'gsi',
-			arrayExpr: indexExpression,
+			arrayExpr: index.index_key.map(getExpression).join(','),
 			whereClause: getWhereCondition(index),
 		};
 	} else if (checkMetaIndex(index)) {
 		return {
 			indxName: index.name,
 			indxType: INDEX_TYPE.metadata,
-			metadataExpr: indexExpression,
+			metadataExpr: index.index_key.map(getExpression).join(','),
 		};
 	} else {
 		const partitionByHash = getPartition(index);

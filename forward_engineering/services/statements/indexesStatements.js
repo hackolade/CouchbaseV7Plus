@@ -155,7 +155,7 @@ const getWithClause = index => {
 		: '';
 
 	const nodeStatement = joinStatements({
-		statements: index.withOptions.nodes.map(node => `"${node.nodeName}"`),
+		statements: index.withOptions?.nodes?.map(node => `"${node.nodeName}"`),
 		separator: ',',
 	});
 	const nodes = get(index, 'withOptions.nodes', []).length ? `"nodes":[${nodeStatement}]` : '';
