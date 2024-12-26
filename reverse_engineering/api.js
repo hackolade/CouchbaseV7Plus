@@ -144,7 +144,7 @@ const getDbCollectionsData = async (data, appLogger, callback, app) => {
 	});
 
 	try {
-		const connectionInfo = data.connectionInfo;
+		const connectionInfo = data;
 		const includeEmptyCollection = data.includeEmptyCollection;
 		const bucketName = data.database;
 		const collections = data.collectionData.collections;

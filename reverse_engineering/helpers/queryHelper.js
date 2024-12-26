@@ -1,3 +1,4 @@
+const { isEmpty } = require('lodash');
 const { NUM_SAMPLE_VALUES } = require('../../shared/constants');
 const { INDEX_TYPE } = require('../../shared/enums/indexType');
 const { getKeysAndExpression } = require('./indexHelper');
@@ -19,14 +20,30 @@ const getSelectBucketDocumentsQuery = ({ bucketName, limit, offset }) => {
 	return getQueryOptions({ query, limit, offset });
 };
 
-const getWhereClauseFromMetaIndexes = ({ collectionIndexes }) => {
-	const metadataIndexes = collectionIndexes.filter(index => index.indxType === INDEX_TYPE.metadata);
-	const expressions = metadataIndexes.map(getKeysAndExpression);
-	return expressions;
+/**
+ * @param {{ collectionIndexes: object[] }} param0
+ * @returns {string}
+ */
+const getWhereClauseFromIndexes = ({ collectionIndexes }) => {
+	// primary index allows to `select` the document id without extra WHERE clause
+	const primaryIndex = collectionIndexes.find(index => index.indxType === INDEX_TYPE.primary);
+
+	if (isEmpty(collectionIndexes) || primaryIndex) {
+		return '';
+	}
+
+	return `WHERE ${collectionIndexes[0].indxKey[0].name} LIKE '%'`;
 };
 
 /**
- * @param {{ bucketName: string; scopeName: string; collectionName: string; limit: number; offset: number }} param0
+ * @param {{
+ * bucketName: string;
+ * scopeName: string;
+ * collectionName: string;
+ * collectionIndexes: object[];
+ * limit: number;
+ * offset: number
+ * }} param0
  * @returns {string}
  */
 const getSelectCollectionDocumentsQuery = ({
@@ -37,8 +54,8 @@ const getSelectCollectionDocumentsQuery = ({
 	limit,
 	offset,
 }) => {
-	const whereClause = getWhereClauseFromMetaIndexes({ collectionIndexes });
-	const query = `SELECT *, META().id AS docid FROM \`${bucketName}\`.\`${scopeName}\`.\`${collectionName}\` AS \`${bucketName}\`${whereClause}`;
+	const whereClause = getWhereClauseFromIndexes({ collectionIndexes });
+	const query = `SELECT *, META().id AS docid FROM \`${bucketName}\`.\`${scopeName}\`.\`${collectionName}\` AS \`${bucketName}\` ${whereClause}`;
 	return getQueryOptions({ query, limit, offset });
 };
 
