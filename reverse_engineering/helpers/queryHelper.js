@@ -23,7 +23,7 @@ const getSelectBucketDocumentsQuery = ({ bucketName, limit, offset }) => {
  * @param {{ collectionIndexes: object[] }} param0
  * @returns {string}
  */
-const getWhereClauseFromIndexes = ({ collectionIndexes }) => {
+const getWhereClauseFromIndexes = ({ collectionIndexes = [] }) => {
 	// primary index allows to `select` the document id without extra WHERE clause
 	const primaryIndex = collectionIndexes.find(index => index.indxType === INDEX_TYPE.primary);
 
