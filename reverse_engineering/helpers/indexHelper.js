@@ -112,37 +112,37 @@ const getWhereCondition = index => {
 
 const getIndexes = async ({ cluster, connectionInfo, logger }) => {
 	try {
-		const indexData = await restApiHelper.getIndexes({ connectionInfo, logger });
-		const statements = indexData.map(indx => indx.definition).join(';\n');
+		const indexes = await clusterHelper.getIndexes({ cluster, logger });
 
-		if (!statements) {
-			return [];
-		}
+		return indexes
+			.toSorted((a, b) => a.name.localeCompare(b.name))
+			.map(index => {
+				const isDefaultCollectionIndex = !index.bucket_id;
+				const bucketName = isDefaultCollectionIndex ? index.keyspace_id : index.bucket_id;
+				const scopeName = isDefaultCollectionIndex ? DEFAULT_NAME : index.scope_id;
+				const collectionName = isDefaultCollectionIndex ? DEFAULT_NAME : index.keyspace_id;
 
-		const { indexes } = parserHelper.parseN1qlStatements({ statements });
-
-		return indexes;
+				return {
+					index: handleIndex(index),
+					bucketName,
+					scopeName,
+					collectionName,
+				};
+			});
 	} catch (error) {
 		try {
 			logger.error(error);
 
-			const indexes = await clusterHelper.getIndexes({ cluster, logger });
+			const indexData = await restApiHelper.getIndexes({ connectionInfo, logger });
+			const statements = indexData.map(indx => indx.definition).join(';\n');
 
-			return indexes
-				.toSorted((a, b) => a.name.localeCompare(b.name))
-				.map(index => {
-					const isDefaultCollectionIndex = !index.bucket_id;
-					const bucketName = isDefaultCollectionIndex ? index.keyspace_id : index.bucket_id;
-					const scopeName = isDefaultCollectionIndex ? DEFAULT_NAME : index.scope_id;
-					const collectionName = isDefaultCollectionIndex ? DEFAULT_NAME : index.keyspace_id;
+			if (!statements) {
+				return [];
+			}
 
-					return {
-						index: handleIndex(index),
-						bucketName,
-						scopeName,
-						collectionName,
-					};
-				});
+			const { indexes } = parserHelper.parseN1qlStatements({ statements });
+
+			return indexes;
 		} catch (err) {
 			logger.error(err);
 			return [];
