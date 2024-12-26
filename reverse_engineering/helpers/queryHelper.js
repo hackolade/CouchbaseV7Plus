@@ -1,7 +1,6 @@
 const { isEmpty } = require('lodash');
 const { NUM_SAMPLE_VALUES } = require('../../shared/constants');
 const { INDEX_TYPE } = require('../../shared/enums/indexType');
-const { getKeysAndExpression } = require('./indexHelper');
 
 /**
  * @param {{ bucketName: string; scopeName: string; collectionName: string; limit: number }} param0

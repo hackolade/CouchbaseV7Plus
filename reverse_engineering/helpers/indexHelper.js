@@ -171,5 +171,4 @@ const getIndexesByCollectionMap = ({ indexes }) => {
 module.exports = {
 	getIndexes,
 	getIndexesByCollectionMap,
-	getKeysAndExpression,
 };
