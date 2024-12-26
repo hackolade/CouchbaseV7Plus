@@ -3,6 +3,7 @@ const restApiHelper = require('./restApiHelper');
 const clusterHelper = require('../../shared/helpers/clusterHelper');
 const parserHelper = require('./parserHelper');
 const { GET_META_REGEXP, GET_PARTITION_HASH_REGEXP, DEFAULT_NAME } = require('../../shared/constants');
+const { INDEX_TYPE } = require('../../shared/enums/indexType');
 
 const handleIndex = index => {
 	const indexData = getHackoladeCompatibleIndex(index);
@@ -13,13 +14,13 @@ const getHackoladeCompatibleIndex = index => {
 	if (index.is_primary) {
 		return {
 			indxName: index.name,
-			indxType: 'Primary',
+			indxType: INDEX_TYPE.primary,
 			usingGSI: index.using === 'gsi',
 		};
 	} else if (checkArrayIndex(index)) {
 		return {
 			indxName: index.name,
-			indxType: 'Array',
+			indxType: INDEX_TYPE.array,
 			usingGSI: index.using === 'gsi',
 			arrayExpr: index.index_key.map(getExpression).join(','),
 			whereClause: getWhereCondition(index),
@@ -27,7 +28,7 @@ const getHackoladeCompatibleIndex = index => {
 	} else if (checkMetaIndex(index)) {
 		return {
 			indxName: index.name,
-			indxType: 'Metadata',
+			indxType: INDEX_TYPE.metadata,
 			metadataExpr: index.index_key.map(getExpression).join(','),
 		};
 	} else {
@@ -36,7 +37,7 @@ const getHackoladeCompatibleIndex = index => {
 
 		return {
 			indxName: index.name,
-			indxType: 'Secondary',
+			indxType: INDEX_TYPE.secondary,
 			usingGSI: index.using === 'gsi',
 			indxKey: keys,
 			functionExpr: expression,

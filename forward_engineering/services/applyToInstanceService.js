@@ -9,13 +9,13 @@ const {
 	SCRIPT_SUCCESSFULLY_APPLIED,
 	SUCCESSFULLY_APPLIED,
 	ERROR_HAS_BEEN_THROWN_WHILE_APPLYING_SCRIPT_TO_COUCHBASE_INSTANCE,
-} = require('../../shared/enums/static-messages');
+} = require('../../shared/enums/staticMessages');
 const {
 	getApplyingScriptPercentMessage,
 	getRetryAttemptNumberMessage,
 	getApplyingScriptToBucketWithAttemptNumberMessage,
 	getApplyingScriptMessage,
-} = require('../../shared/enums/dynamic-messages');
+} = require('../../shared/enums/dynamicMessages');
 const { COUCHBASE_ERROR_CODE } = require('../../shared/constants');
 
 const MAX_APPLY_ATTEMPTS = 5;

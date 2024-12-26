@@ -1,7 +1,7 @@
 const { filter, get, isEmpty } = require('lodash');
 const { getIndexKeyIdToKeyNameMap, injectKeysNamesIntoIndexKeys } = require('../../utils/indexes');
 const { wrapWithBackticks, getKeySpaceReference, joinStatements } = require('./commonStatements');
-const { INDEX_TYPE } = require('../../../shared/enums/n1ql');
+const { INDEX_TYPE } = require('../../../shared/enums/indexType');
 
 /**
  *
@@ -85,7 +85,7 @@ const getKeys = index => {
 	switch (index.indxType) {
 		case INDEX_TYPE.primary:
 			return { script: '', canHaveIndex: true };
-		case INDEX_TYPE.secondary:
+		case INDEX_TYPE.secondary: {
 			const keys = index.indxKey?.map(key => ({ ...key, name: wrapWithBackticks(key.name) }));
 
 			const keysNames = joinStatements({
@@ -96,6 +96,7 @@ const getKeys = index => {
 			});
 
 			return { script: `(${keysNames})`, canHaveIndex: Boolean(keysNames.length) };
+		}
 		case INDEX_TYPE.array:
 			return { script: `(${index.arrayExpr})`, canHaveIndex: true };
 		case INDEX_TYPE.metadata:
@@ -148,13 +149,19 @@ const getWhereClause = index => {
  */
 const getWithClause = index => {
 	const deferBuild = get(index, 'withOptions.defer_build') ? `"defer_build":true` : '';
+
 	const numReplica = !isEmpty(get(index, 'withOptions.num_replica'))
 		? `"num_replica":${index.withOptions.num_replica}`
 		: '';
-	const nodes = get(index, 'withOptions.nodes', []).length
-		? `"nodes":[${joinStatements({ statements: index.withOptions.nodes.map(node => `"${node.nodeName}"`), separator: ',' })}]`
-		: '';
+
+	const nodeStatement = joinStatements({
+		statements: index.withOptions?.nodes?.map(node => `"${node.nodeName}"`),
+		separator: ',',
+	});
+	const nodes = get(index, 'withOptions.nodes', []).length ? `"nodes":[${nodeStatement}]` : '';
+
 	const hasWithClosure = deferBuild || numReplica || nodes;
+
 	const withClosure = joinStatements({ statements: [deferBuild, numReplica, nodes], separator: ',' });
 
 	return hasWithClosure ? `WITH{${withClosure}}` : '';
@@ -190,13 +197,14 @@ const getOrder = order => {
  */
 const getPartitionByHashClause = index => {
 	switch (index.partitionByHash) {
-		case 'Keys':
+		case 'Keys': {
 			const keysNames = joinStatements({
 				statements: index.partitionByHashKeys.map(key => wrapWithBackticks(key.name)),
 				separator: ',',
 			});
 
 			return `PARTITION BY HASH(${keysNames})`;
+		}
 		case 'Expression':
 			return `PARTITION BY HASH(${index.partitionByHashExpr})`;
 		default:
@@ -209,8 +217,13 @@ const getPartitionByHashClause = index => {
  * @param {string} statement
  * @returns {string}
  */
-const commentStatement = statement =>
-	`/*\n${joinStatements({ statements: statement.split('\n').map(line => ` * ${line}`), separator: '\n' })}\n */`;
+const commentStatement = statement => {
+	const joinedStatement = joinStatements({
+		statements: statement.split('\n').map(line => ` * ${line}`),
+		separator: '\n',
+	});
+	return `/*\n${joinedStatement}\n */`;
+};
 
 module.exports = {
 	getIndexesScript,

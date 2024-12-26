@@ -49,8 +49,8 @@ class CouchbaseRestApiService {
 					Authorization: `Basic ${encodedCredentials}`,
 				},
 			};
-
-			return hckFetch(uri, options);
+			const response = await hckFetch(uri, options);
+			return await response.json();
 		} catch (error) {
 			throw new CustomError({
 				message: error.statusText || error.message,

@@ -10,7 +10,7 @@ const wrapWithBackticks = str => `\`${str}\``;
  * @param {{statements: string[], separator: string}} param
  * @returns {string}
  */
-const joinStatements = ({ statements, separator = '\n\t' }) => `${statements.filter(Boolean).join(separator)}`;
+const joinStatements = ({ statements = [], separator = '\n\t' }) => `${statements.filter(Boolean).join(separator)}`;
 
 /**
  *

@@ -1,4 +1,6 @@
+const { isEmpty } = require('lodash');
 const { NUM_SAMPLE_VALUES } = require('../../shared/constants');
+const { INDEX_TYPE } = require('../../shared/enums/indexType');
 
 /**
  * @param {{ bucketName: string; scopeName: string; collectionName: string; limit: number }} param0
@@ -18,11 +20,41 @@ const getSelectBucketDocumentsQuery = ({ bucketName, limit, offset }) => {
 };
 
 /**
- * @param {{ bucketName: string; scopeName: string; collectionName: string; limit: number; offset: number }} param0
+ * @param {{ collectionIndexes: object[] }} param0
  * @returns {string}
  */
-const getSelectCollectionDocumentsQuery = ({ bucketName, scopeName, collectionName, limit, offset }) => {
-	const query = `SELECT *, META().id AS docid FROM \`${bucketName}\`.\`${scopeName}\`.\`${collectionName}\` AS \`${bucketName}\``;
+const getWhereClauseFromIndexes = ({ collectionIndexes = [] }) => {
+	// primary index allows to `select` the document id without extra WHERE clause
+	const primaryIndex = collectionIndexes.find(index => index.indxType === INDEX_TYPE.primary);
+
+	if (isEmpty(collectionIndexes) || primaryIndex) {
+		return '';
+	}
+
+	return `WHERE ${collectionIndexes[0].indxKey[0].name} LIKE '%'`;
+};
+
+/**
+ * @param {{
+ * bucketName: string;
+ * scopeName: string;
+ * collectionName: string;
+ * collectionIndexes: object[];
+ * limit: number;
+ * offset: number
+ * }} param0
+ * @returns {string}
+ */
+const getSelectCollectionDocumentsQuery = ({
+	bucketName,
+	scopeName,
+	collectionName,
+	collectionIndexes,
+	limit,
+	offset,
+}) => {
+	const whereClause = getWhereClauseFromIndexes({ collectionIndexes });
+	const query = `SELECT *, META().id AS docid FROM \`${bucketName}\`.\`${scopeName}\`.\`${collectionName}\` AS \`${bucketName}\` ${whereClause}`;
 	return getQueryOptions({ query, limit, offset });
 };
 

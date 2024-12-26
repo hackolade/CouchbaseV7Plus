@@ -57,7 +57,7 @@ const COUCHBASE_DEFAULT_KV_CONNECTION_PORT = 11210;
 const DISABLED_TOOLTIP = 'Something went wrong. Please, check logs for more details';
 
 const GET_META_REGEXP = /\(meta\(\)\.(.*?)\)/;
-const GET_NODES_REGEXP = /"nodes":(\[.*?\])/;
+const GET_NODES_REGEXP = /"nodes":(\[.*?])/;
 const GET_PARTITION_HASH_REGEXP = /(HASH|hash)\((.*?)\)$/;
 
 /**

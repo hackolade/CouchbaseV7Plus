@@ -285,7 +285,12 @@ const getDbCollectionData = async ({
 			logger,
 		});
 		const options = { limit, pagination: data.pagination, bucketName, scopeName, collectionName };
-		const query = queryHelper.getSelectCollectionDocumentsQuery({ bucketName, scopeName, collectionName });
+		const query = queryHelper.getSelectCollectionDocumentsQuery({
+			bucketName,
+			scopeName,
+			collectionName,
+			collectionIndexes,
+		});
 		const documents = await getPaginatedQuery({ cluster, options, query, logger });
 		const standardDocument = await getCollectionDocumentByDocumentId({
 			cluster,

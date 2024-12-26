@@ -21,13 +21,13 @@ const {
 	GENERATING_CONTAINER_SCRIPT,
 	GENERATING_ENTITY_SCRIPT,
 	CREATING_A_BUCKET,
-} = require('../shared/enums/static-messages');
+} = require('../shared/enums/staticMessages');
 const {
 	getCheckBucketExistsMessage,
 	getCreatingBucketMessage,
 	getSuccessfullyCreatedBucketMessage,
-} = require('../shared/enums/dynamic-messages');
-const { HTTP_ERROR_CODES } = require('../shared/enums/http');
+} = require('../shared/enums/dynamicMessages');
+const { HTTP_ERROR_CODES } = require('../shared/enums/httpCodes');
 
 const { applyScript, logApplyScriptAttempt } = require('./services/applyToInstanceService');
 const ForwardEngineeringScriptBuilder = require('./services/forwardEngineeringScriptBuilder');
