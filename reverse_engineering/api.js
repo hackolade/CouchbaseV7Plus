@@ -83,7 +83,10 @@ const getDatabases = async (connectionInfo, appLogger, callback, app) => {
 	try {
 		const cluster = await connectionHelper.connect({ connectionInfo, app });
 		const buckets = await clusterHelper.getBucketsForReverse({ cluster });
-		const bucketNames = buckets.map(bucket => bucket.name);
+		const selectedBucket = connectionInfo.couchbase_bucket;
+		const bucketNames = buckets
+			.map(bucket => bucket.name)
+			.filter(bucketName => !selectedBucket || bucketName === selectedBucket);
 
 		callback(null, bucketNames);
 	} catch (error) {
