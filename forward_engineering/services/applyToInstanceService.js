@@ -2,6 +2,7 @@ const { trim } = require('lodash');
 const async = require('async');
 const { backOff } = require('exponential-backoff');
 const clusterHelper = require('../../shared/helpers/clusterHelper');
+const logHelper = require('../../shared/helpers/logHelper');
 const {
 	APPLY_QUERY,
 	COUCHBASE_APPLY_TO_INSTANCE_SKIPPED_ERROR,
@@ -31,48 +32,45 @@ const applyScript = async ({ bucketName, script, cluster, logger, callback }) =>
 	const maxNumberStatements = scripts.length;
 	let previousApplyingProgress = 0;
 
-	try {
-		async.eachOfSeries(
-			scripts,
-			async (script, index) => {
-				logger.info(APPLY_QUERY);
-				try {
-					await backOff(async () => cluster.query(script), {
-						numOfAttempts: MAX_APPLY_ATTEMPTS,
-						retry: (err, attemptNumber) => {
-							logApplyScriptAttempt({ attemptNumber, bucketName, logger });
-							return true;
-						},
-						startingDelay: DEFAULT_START_DELAY,
-					});
-					const appliedStatements = index + 1;
-					const applyingProgress = Math.round((appliedStatements / maxNumberStatements) * 100);
-					if (applyingProgress - previousApplyingProgress >= 5) {
-						previousApplyingProgress = applyingProgress;
-						logger.progress(getApplyingScriptPercentMessage(applyingProgress));
-					}
-				} catch (err) {
-					if (isIndexAlreadyCreatedError(err)) {
-						logger.info(COUCHBASE_APPLY_TO_INSTANCE_SKIPPED_ERROR);
-					} else if (isDuplicateDocumentKeyError(err)) {
-						logger.info(COUCHBASE_APPLY_TO_INSTANCE_ERROR);
-						logger.progress(getApplyingScriptPercentMessage(script));
-					} else {
-						throw err;
-					}
+	async.eachOfSeries(
+		scripts,
+		async (script, index) => {
+			logger.info(APPLY_QUERY);
+			try {
+				await backOff(async () => cluster.query(script), {
+					numOfAttempts: MAX_APPLY_ATTEMPTS,
+					retry: (err, attemptNumber) => {
+						logApplyScriptAttempt({ attemptNumber, bucketName, logger });
+						return true;
+					},
+					startingDelay: DEFAULT_START_DELAY,
+				});
+				const appliedStatements = index + 1;
+				const applyingProgress = Math.round((appliedStatements / maxNumberStatements) * 100);
+				if (applyingProgress - previousApplyingProgress >= 5) {
+					previousApplyingProgress = applyingProgress;
+					logger.progress(getApplyingScriptPercentMessage(applyingProgress));
 				}
-			},
-			() => {
-				logger.info(SCRIPT_SUCCESSFULLY_APPLIED);
-				logger.progress(SUCCESSFULLY_APPLIED);
-				callback();
-			},
-		);
-	} catch (err) {
-		logger.error(err);
-		logger.progress(ERROR_HAS_BEEN_THROWN_WHILE_APPLYING_SCRIPT_TO_COUCHBASE_INSTANCE);
-		return callback(err);
-	}
+			} catch (err) {
+				if (isIndexAlreadyCreatedError(err)) {
+					logger.info(COUCHBASE_APPLY_TO_INSTANCE_SKIPPED_ERROR);
+				} else {
+					throw err;
+				}
+			}
+		},
+		error => {
+			if (error) {
+				logger.error(error);
+				logger.progress(ERROR_HAS_BEEN_THROWN_WHILE_APPLYING_SCRIPT_TO_COUCHBASE_INSTANCE);
+				return callback(logHelper.createError(error));
+			}
+
+			logger.info(SCRIPT_SUCCESSFULLY_APPLIED);
+			logger.progress(SUCCESSFULLY_APPLIED);
+			callback();
+		},
+	);
 };
 
 /**
@@ -85,18 +83,6 @@ const isIndexAlreadyCreatedError = err => {
 	const errorMessage = clusterHelper.getErrorMessage({ error: err });
 
 	return errorCode === COUCHBASE_ERROR_CODE.indexAlreadyCreated || errorMessage.includes('already exist');
-};
-
-/**
- *
- * @param {object} err
- * @returns {boolean}
- */
-const isDuplicateDocumentKeyError = err => {
-	const errorCode = clusterHelper.getErrorCode({ error: err });
-	const errorMessage = clusterHelper.getErrorMessage({ error: err });
-
-	return errorCode === COUCHBASE_ERROR_CODE.duplicateDocumentKey && errorMessage.includes('Duplicate Key');
 };
 
 /**
