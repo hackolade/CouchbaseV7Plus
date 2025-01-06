@@ -17,7 +17,7 @@ const {
 	getApplyingScriptToBucketWithAttemptNumberMessage,
 	getApplyingScriptMessage,
 } = require('../../shared/enums/dynamicMessages');
-const { COUCHBASE_ERROR_CODE } = require('../../shared/constants');
+const { COUCHBASE_ERROR_CODE, ERROR_SIMPLE_TYPE } = require('../../shared/constants');
 
 const MAX_APPLY_ATTEMPTS = 5;
 const DEFAULT_START_DELAY = 1000;
@@ -30,6 +30,11 @@ const DEFAULT_START_DELAY = 1000;
 const applyScript = async ({ bucketName, script, cluster, logger, callback }) => {
 	const scripts = script.split(';\n').map(trim).filter(Boolean);
 	const maxNumberStatements = scripts.length;
+	const errorCodesToEarlyExit = new Set([
+		COUCHBASE_ERROR_CODE.collectionAlreadyExists,
+		COUCHBASE_ERROR_CODE.scopeAlreadyExists,
+	]);
+
 	let previousApplyingProgress = 0;
 
 	async.eachOfSeries(
@@ -37,14 +42,25 @@ const applyScript = async ({ bucketName, script, cluster, logger, callback }) =>
 		async (script, index) => {
 			logger.info(APPLY_QUERY);
 			try {
-				await backOff(async () => cluster.query(script), {
-					numOfAttempts: MAX_APPLY_ATTEMPTS,
-					retry: (err, attemptNumber) => {
-						logApplyScriptAttempt({ attemptNumber, bucketName, logger });
-						return true;
-					},
+				const runQuery = () => cluster.query(script);
+
+				const retry = (err, attemptNumber) => {
+					const errorCode = clusterHelper.getErrorCode({ error: err });
+					if (errorCodesToEarlyExit.has(errorCode)) {
+						err.type = ERROR_SIMPLE_TYPE;
+						return false;
+					}
+
+					logApplyScriptAttempt({ attemptNumber, bucketName, logger });
+					return true;
+				};
+
+				await backOff(runQuery, {
 					startingDelay: DEFAULT_START_DELAY,
+					numOfAttempts: MAX_APPLY_ATTEMPTS,
+					retry,
 				});
+
 				const appliedStatements = index + 1;
 				const applyingProgress = Math.round((appliedStatements / maxNumberStatements) * 100);
 				if (applyingProgress - previousApplyingProgress >= 5) {
@@ -82,7 +98,12 @@ const isIndexAlreadyCreatedError = err => {
 	const errorCode = clusterHelper.getErrorCode({ error: err });
 	const errorMessage = clusterHelper.getErrorMessage({ error: err });
 
-	return errorCode === COUCHBASE_ERROR_CODE.indexAlreadyCreated || errorMessage.includes('already exist');
+	const existingIndexRelatedErrorCodes = [
+		COUCHBASE_ERROR_CODE.internalError,
+		COUCHBASE_ERROR_CODE.indexAlreadyCreated,
+	];
+
+	return existingIndexRelatedErrorCodes.includes(errorCode) && errorMessage.includes('already exist');
 };
 
 /**

@@ -27,7 +27,7 @@ const getAllBuckets = async ({ cluster }) => {
 
 /**
  *
- * @param {{bucketName: string, cluster: Cluster}} param
+ * @param {{bucketName: string, cluster: Cluster}} param0
  * @returns {Promise<Bucket>}
  */
 const createNewBucket = async ({ bucketName, cluster }) => {
@@ -37,7 +37,7 @@ const createNewBucket = async ({ bucketName, cluster }) => {
 };
 
 /**
- * @param {{ cluster: Cluster; selectedBucket: string }} selectedBucket
+ * @param {{ cluster: Cluster; selectedBucket: string }} param0
  * @returns {Promise<Bucket[]>}
  */
 const getBucketsForReverse = async ({ cluster, selectedBucket }) => {
@@ -135,7 +135,7 @@ const getErrorMessage = ({ error }) => {
 		case COUCHBASE_ERROR_CODE.inferMethodIsNotSupport:
 			return 'Infer method is not supported.';
 		case COUCHBASE_ERROR_CODE.userDoesNotHaveAccessToPrivilegeCluster:
-			return 'User doesn`t have credentials for privileged cluster.';
+			return "User doesn't have credentials for privileged cluster.";
 		default:
 			return error?.cause?.first_error_message || error?.message || '';
 	}

@@ -5,7 +5,7 @@
 
 const os = require('os');
 const packageFile = require('../../package.json');
-const { COUCHBASE_ERROR_CODE } = require('../constants');
+const { COUCHBASE_ERROR_CODE, ERROR_SIMPLE_TYPE } = require('../constants');
 
 const getPluginVersion = () => packageFile.version;
 
@@ -49,6 +49,18 @@ const toTime = number => {
 	return Math.floor(number / 3600) + ':' + prefixZero(parseInt((number / 3600 - Math.floor(number / 3600)) * 60));
 };
 
+const prettifyMessage = ({ error = {} }) => {
+	if (error.cause?.first_error_message) {
+		const [reason, context] = error.cause.first_error_message.split(' - cause: ');
+		if (!reason || !context) {
+			return error.cause.first_error_message;
+		}
+		return `${reason.trim()}:\n${context.trim()}`;
+	}
+
+	return error.cause?.message || error.message;
+};
+
 /**
  * @param {{ title: string; logger: AppLogger; hiddenKeys: string[] }} param0
  * @returns {Logger}
@@ -78,10 +90,10 @@ const createError = error => {
 		};
 	}
 
-	return {
-		type: error?.cause?.code === COUCHBASE_ERROR_CODE.authorizationFailure ? 'simpleError' : '',
-		message: error?.cause?.first_error_message || error.cause?.message || error.message,
-	};
+	const type = error?.cause?.code === COUCHBASE_ERROR_CODE.authorizationFailure ? ERROR_SIMPLE_TYPE : error.type;
+	const message = prettifyMessage({ error });
+
+	return { type, message };
 };
 
 const logHelper = {
