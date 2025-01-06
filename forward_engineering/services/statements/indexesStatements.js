@@ -14,20 +14,21 @@ const getIndexesScript = ({ namespace, bucketName, scopeName, collectionName, in
 	const indexesKeysWithCorrespondingPropertiesNames = collectionIndexes.map(index =>
 		injectKeysNamesIntoIndexKeys({ index, keyIdToName }),
 	);
+	const statements = indexesKeysWithCorrespondingPropertiesNames.map(index => {
+		const indexData = {
+			...index,
+			namespace,
+			bucketName,
+			scopeName,
+			collectionName,
+		};
+		const indexStatement = getIndexScript(indexData);
+
+		return indexData.isActivated ? indexStatement : commentStatement(indexStatement);
+	});
 
 	return joinStatements({
-		statements: indexesKeysWithCorrespondingPropertiesNames.map(index => {
-			const indexData = {
-				...index,
-				namespace,
-				bucketName,
-				scopeName,
-				collectionName,
-			};
-			const indexStatement = getIndexScript(indexData);
-
-			return indexData.isActivated ? indexStatement : commentStatement(indexStatement);
-		}),
+		statements,
 		separator: '\n\n',
 	});
 };
@@ -82,12 +83,16 @@ const wrapCreateIndexStatementWithIfNotExistsClause = ({ ifNotExists, createStat
  * @returns {{script: string, canHaveIndex: boolean}}
  */
 const getKeys = index => {
+	const rawIndex = { script: '', canHaveIndex: true };
+
 	switch (index.indxType) {
 		case INDEX_TYPE.primary:
-			return { script: '', canHaveIndex: true };
+			return rawIndex;
 		case INDEX_TYPE.secondary: {
 			const keys = index.indxKey?.map(key => ({ ...key, name: wrapWithBackticks(key.name) }));
-
+			if (!keys) {
+				return { script: '', canHaveIndex: false };
+			}
 			const keysNames = joinStatements({
 				statements: keys
 					.map(key => joinStatements({ statements: filter([key.name, getOrder(key.type)]), separator: ' ' }))
@@ -102,7 +107,7 @@ const getKeys = index => {
 		case INDEX_TYPE.metadata:
 			return { script: `(${index.metadataExpr})`, canHaveIndex: true };
 		default:
-			return { script: '', canHaveIndex: true };
+			return rawIndex;
 	}
 };
 
