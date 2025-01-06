@@ -22,14 +22,29 @@ const { COUCHBASE_ERROR_CODE, ERROR_SIMPLE_TYPE } = require('../../shared/consta
 const MAX_APPLY_ATTEMPTS = 5;
 const DEFAULT_START_DELAY = 1000;
 
+const scriptReducer = (scripts, script) => {
+	let adjusted = script.trim();
+	if (adjusted.startsWith('*/')) {
+		adjusted = adjusted.slice(2, adjusted.length);
+	}
+
+	if (adjusted) {
+		scripts.push(adjusted);
+	}
+
+	return scripts;
+};
+
 /**
  *
- * @param {{bucketName: string, script: string, cluster: object, logger: object, callback: function}} param
+ * @param {{bucketName: string, script: string, cluster: object, logger: object, callback: function}} param0
  * @returns {boolean}
  */
 const applyScript = async ({ bucketName, script, cluster, logger, callback }) => {
-	const scripts = script.split(';\n').map(trim).filter(Boolean);
+	const scripts = script.split(';\n').reduce(scriptReducer, []);
+
 	const maxNumberStatements = scripts.length;
+
 	const errorCodesToEarlyExit = new Set([
 		COUCHBASE_ERROR_CODE.collectionAlreadyExists,
 		COUCHBASE_ERROR_CODE.scopeAlreadyExists,
@@ -50,6 +65,10 @@ const applyScript = async ({ bucketName, script, cluster, logger, callback }) =>
 						err.type = ERROR_SIMPLE_TYPE;
 						return false;
 					}
+					if (errorCode === COUCHBASE_ERROR_CODE.parseSyntaxError && isCommentedStatement({ error: err })) {
+						err.skipError = true;
+						return false;
+					}
 
 					logApplyScriptAttempt({ attemptNumber, bucketName, logger });
 					return true;
@@ -68,7 +87,7 @@ const applyScript = async ({ bucketName, script, cluster, logger, callback }) =>
 					logger.progress(getApplyingScriptPercentMessage(applyingProgress));
 				}
 			} catch (err) {
-				if (isIndexAlreadyCreatedError(err)) {
+				if (isIndexAlreadyCreatedError(err) || err.skipError) {
 					logger.info(COUCHBASE_APPLY_TO_INSTANCE_SKIPPED_ERROR);
 				} else {
 					throw err;
@@ -108,7 +127,16 @@ const isIndexAlreadyCreatedError = err => {
 
 /**
  *
- * @param {{attemptNumber: number, bucketName: string, logger: object}} param
+ * @param {{error: object }} param0
+ * @returns {boolean}
+ */
+const isCommentedStatement = ({ error }) => {
+	return error.cause?.statement?.trim().startsWith('/*');
+};
+
+/**
+ *
+ * @param {{attemptNumber: number, bucketName: string, logger: object}} param0
  * @returns {void}
  */
 const logApplyScriptAttempt = ({ attemptNumber, bucketName, logger }) => {
