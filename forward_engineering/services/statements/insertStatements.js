@@ -26,7 +26,7 @@ const getInsertScripts = ({ jsonData, collections = [] }) => {
  * @param {jsonData: object, collection: object} param0
  * @returns {string}
  */
-const getInsertScriptForCollection = ({ jsonData, collection }) => {
+const getInsertScriptForCollection = ({ jsonData, collection, useUpsert = true }) => {
 	if (collection.isActivated === false) {
 		return '';
 	}
@@ -40,11 +40,13 @@ const getInsertScriptForCollection = ({ jsonData, collection }) => {
 	const parseJsonData = JSON.parse(jsonData);
 	const sampleValue = collection?.properties?.[keyPropertyName]?.sample;
 	const keySample = isKeyGeneratedWithFakerFunction ? parseJsonData[keyPropertyName] : sampleValue;
-	const { [keyPropertyName]: keyProperty, ...jsonDataBody } = parseJsonData;
+	const { [keyPropertyName]: _keyProperty, ...jsonDataBody } = parseJsonData;
 	const pkSample = getPrimaryKeySampleByStructure({ collection, jsonData: parseJsonData });
 	const sampledKey = pkSample || keySample || uuid.v4();
+	const values = JSON.stringify(jsonDataBody, null, '\t');
+	const mutationClause = useUpsert ? 'UPSERT' : 'INSERT';
 
-	return `INSERT INTO ${insertionPath} (KEY, VALUE)\n\tVALUES("${sampledKey}",${JSON.stringify(jsonDataBody, null, '\t')});`;
+	return `${mutationClause} INTO ${insertionPath} (KEY, VALUE)\n\tVALUES("${sampledKey}",${values});`;
 };
 
 module.exports = {
