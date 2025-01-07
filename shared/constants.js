@@ -19,15 +19,18 @@ const COUCHBASE_HOST_PREFIX = {
  */
 const COUCHBASE_ERROR_CODE = {
 	bucketIsEmpty: 0,
-	primaryIndexDoesNotExist: 4000,
-	n1qlMethodsAreNotSupported: 19,
-	userDoesNotHaveAccessToPrivilegeCluster: 13014,
-	parseSyntaxError: 3000,
-	inferMethodIsNotSupport: 16003,
-	collectionDoesNotExist: 12003,
-	indexAlreadyCreated: 4300,
-	duplicateDocumentKey: 12009,
 	authorizationFailure: 6,
+	n1qlMethodsAreNotSupported: 19,
+	parseSyntaxError: 3000,
+	primaryIndexDoesNotExist: 4000,
+	indexAlreadyCreated: 4300,
+	internalError: 5000,
+	collectionDoesNotExist: 12003,
+	duplicateDocumentKey: 12009,
+	scopeAlreadyExists: 12025,
+	collectionAlreadyExists: 12027,
+	userDoesNotHaveAccessToPrivilegeCluster: 13014,
+	inferMethodIsNotSupport: 16003,
 };
 
 /**
@@ -70,6 +73,8 @@ const PK_SEGMENT_TYPE = {
 	separator: 'separator',
 };
 
+const ERROR_SIMPLE_TYPE = 'simpleError';
+
 module.exports = {
 	AUTH_TYPE,
 	COUCHBASE_ERROR_CODE,
@@ -86,4 +91,5 @@ module.exports = {
 	HOSTING,
 	STATUS,
 	PK_SEGMENT_TYPE,
+	ERROR_SIMPLE_TYPE,
 };
