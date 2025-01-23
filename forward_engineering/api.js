@@ -6,7 +6,7 @@
  * @typedef {import('../shared/types').Callback} Callback
  */
 
-const { get, first } = require('lodash');
+const { first } = require('lodash');
 const connectionHelper = require('../shared/helpers/connectionHelper');
 const clusterHelper = require('../shared/helpers/clusterHelper');
 const logHelper = require('../shared/helpers/logHelper');
@@ -18,8 +18,6 @@ const {
 	ERROR_HAS_BEEN_THROWN_WHILE_CONNECTING_TO_BUCKET,
 	ERROR_HAS_BEEN_THROWN_WHILE_CREATING_BUCKET_IN_COUCHBASE_INSTANCE,
 	ERROR_HAS_BEEN_THROWN_WHILE_APPLYING_SCRIPT_TO_COUCHBASE_INSTANCE,
-	GENERATING_CONTAINER_SCRIPT,
-	GENERATING_ENTITY_SCRIPT,
 	CREATING_A_BUCKET,
 } = require('../shared/enums/staticMessages');
 const {
@@ -28,125 +26,9 @@ const {
 	getSuccessfullyCreatedBucketMessage,
 } = require('../shared/enums/dynamicMessages');
 const { HTTP_ERROR_CODES } = require('../shared/enums/httpCodes');
-
 const { applyScript, logApplyScriptAttempt } = require('./services/applyToInstanceService');
-const ForwardEngineeringScriptBuilder = require('./services/forwardEngineeringScriptBuilder');
-
-const includeSamples = (additionalOptions = []) =>
-	Boolean(additionalOptions.find(option => option.id === 'INCLUDE_SAMPLES' && option.value));
-
-/**
- * @param {ConnectionInfo} connectionInfo
- * @param {AppLogger} appLogger
- * @param {Callback} callback
- * @param {App} app
- */
-const generateContainerScript = async (connectionInfo, appLogger, callback, app) => {
-	const logger = logHelper.createLogger({
-		title: GENERATING_CONTAINER_SCRIPT,
-		hiddenKeys: connectionInfo.hiddenKeys,
-		logger: appLogger,
-	});
-
-	try {
-		const scriptBuilder = new ForwardEngineeringScriptBuilder();
-
-		const { jsonData, collections, options } = connectionInfo;
-		const { origin, additionalOptions } = options;
-		const rawScope = get(connectionInfo.containerData, '[0]', {});
-		const scope = {
-			...rawScope,
-			bucketName: rawScope?.bucket ?? '',
-		};
-		const collectionsData = collections.map(schema => ({
-			...JSON.parse(schema),
-			namespace: scope?.namespace,
-			bucketName: scope?.bucketName,
-			scopeName: scope?.name,
-		}));
-
-		scriptBuilder.addScopeScript(scope);
-		collectionsData.forEach(collection => scriptBuilder.addCollectionScripts(collection));
-
-		if (!includeSamples(additionalOptions)) {
-			const { script } = scriptBuilder.buildScriptSeparateFromInsertScripts();
-			return callback(null, script);
-		}
-
-		scriptBuilder.addContainerInsertScripts({ collections: collectionsData, jsonData });
-
-		if (origin !== 'ui') {
-			return callback(null, scriptBuilder.buildScriptConcatenatedWithInsertScripts('\n\n'));
-		}
-
-		const { script, insertScripts } = scriptBuilder.buildScriptSeparateFromInsertScripts();
-		callback(null, [
-			{ title: 'Couchbase script', script },
-			{
-				title: 'Sample data',
-				script: insertScripts,
-			},
-		]);
-	} catch (error) {
-		logger.error(error);
-
-		callback({ message: error.message, stack: error.stack });
-	}
-};
-
-/**
- * @param {ConnectionInfo} connectionInfo
- * @param {AppLogger} appLogger
- * @param {Callback} callback
- * @param {App} app
- */
-const generateScript = async (connectionInfo, appLogger, callback, app) => {
-	const logger = logHelper.createLogger({
-		title: GENERATING_ENTITY_SCRIPT,
-		hiddenKeys: connectionInfo.hiddenKeys,
-		logger: appLogger,
-	});
-
-	try {
-		const scriptBuilder = new ForwardEngineeringScriptBuilder();
-
-		const { jsonData, jsonSchema, containerData, options } = connectionInfo;
-		const { additionalOptions } = options;
-		const scope = get(containerData, '[0]', {});
-		const rawCollectionData = JSON.parse(jsonSchema);
-		const collectionData = {
-			...rawCollectionData,
-			namespace: scope?.namespace,
-			bucketName: scope?.bucket,
-			scopeName: scope?.name,
-			collectionName: rawCollectionData.title,
-		};
-
-		scriptBuilder.addCollectionScripts(collectionData);
-		if (!includeSamples(additionalOptions)) {
-			const { script } = scriptBuilder.buildScriptSeparateFromInsertScripts();
-			return callback(null, script);
-		}
-
-		scriptBuilder.addCollectionInsertScripts({
-			jsonData,
-			collection: collectionData,
-		});
-
-		const { script, insertScripts } = scriptBuilder.buildScriptSeparateFromInsertScripts();
-		callback(null, [
-			{ title: 'Couchbase script', script },
-			{
-				title: 'Sample data',
-				script: insertScripts,
-			},
-		]);
-	} catch (error) {
-		logger.error(error);
-
-		callback({ message: error.message, stack: error.stack });
-	}
-};
+const { generateContainerScript } = require('./generateContainerScript');
+const { generateScript } = require('./generateScript');
 
 /**
  * @param {ConnectionInfo} connectionInfo
