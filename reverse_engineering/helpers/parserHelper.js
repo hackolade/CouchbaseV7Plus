@@ -36,14 +36,14 @@ const parseN1qlStatements = ({ statements }) => {
  * @returns {ParsedResult}
  */
 const mapParsedResult = ({ result, statements }) => {
-	const scopes = result.flatMap(({ scopes }) => scopes);
-	const collections = result.flatMap(({ collections }) => collections);
+	const scopes = result.flatMap(({ scopes }) => scopes).filter(Boolean);
+	const collections = result.flatMap(({ collections }) => collections).filter(Boolean);
 	const indexes = result.flatMap(({ indexes }) => indexes);
 
 	return {
 		scopes,
 		collections,
-		indexes: mapIndexes({ indexes, statements }),
+		indexes: mapIndexes({ indexes, statements }).filter(Boolean),
 	};
 };
 
