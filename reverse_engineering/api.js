@@ -1,3 +1,5 @@
+'use strict';
+
 /**
  * @typedef {import('../shared/types').App} App
  * @typedef {import('../shared/types').AppLogger} AppLogger
