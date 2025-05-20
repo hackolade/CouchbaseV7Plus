@@ -7,6 +7,7 @@
 
 const clusterHelper = require('./clusterHelper');
 const { AUTH_TYPE, COUCHBASE_HOST_PREFIX, COUCHBASE_DEFAULT_KV_CONNECTION_PORT, HOSTING } = require('../constants');
+const { escapeV6IpForURL } = require('./escapeV6IPForURL');
 
 let cluster = null;
 
@@ -29,7 +30,7 @@ const generateUrl = ({ connectionInfo }) => {
 
 	const keyValuePort = connectionInfo.kv_port || COUCHBASE_DEFAULT_KV_CONNECTION_PORT;
 
-	return `${COUCHBASE_HOST_PREFIX.selfHosted}${connectionInfo.host}:${keyValuePort}`;
+	return `${COUCHBASE_HOST_PREFIX.selfHosted}${escapeV6IpForURL({ host: connectionInfo.host })}:${keyValuePort}`;
 };
 
 /**
