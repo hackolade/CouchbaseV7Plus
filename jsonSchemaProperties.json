@@ -1,4 +1,4 @@
 {
-	"unneededFieldProps": ["collectionName", "name", "users", "collectionUsers", "additionalProperties"],
+	"unneededFieldProps": ["collectionName", "name", "users", "collectionUsers"],
 	"removeIfPropsNegative": ["partitionKey", "sortKey"]
 }
