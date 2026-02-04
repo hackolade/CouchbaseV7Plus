@@ -34,6 +34,12 @@ esbuild
 					to: [path.join('node_modules', 'lodash')],
 				},
 			}),
+			copy({
+				assets: {
+					from: [path.join('node_modules', '@webpod', 'ip', '**', '*')],
+					to: [path.join('node_modules', '@webpod', 'ip')],
+				},
+			}),
 			copyFolderFiles({
 				fromPath: __dirname,
 				targetFolderPath: RELEASE_FOLDER_PATH,
