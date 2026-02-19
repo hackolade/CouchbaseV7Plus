@@ -20,18 +20,16 @@
         }
     },
     "description": "Hackolade plugin for Couchbase with scopes and collections",
-    "lint-staged": {
-        "*.{js,json}": "prettier --write"
-    },
     "simple-git-hooks": {
-        "pre-commit": "npm run package && npx lint-staged",
+        "pre-commit": "npm run package && npx lint-staged --config lint-staged.config.js",
         "pre-push": "npm run lint"
     },
     "scripts": {
         "lint": "oxlint . || true",
         "package": "node esbuild.package.js",
         "postinstall": "npx simple-git-hooks",
-        "lint:check": "oxlint --type-aware --type-check . || true"
+        "lint:check": "oxlint --type-aware --type-check . || true",
+        "format": "prettier --write ."
     },
     "dependencies": {
         "@hackolade/fetch": "1.1.0",
