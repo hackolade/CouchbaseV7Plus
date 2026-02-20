@@ -1,5 +1,5 @@
-import { Cluster, Scope, Bucket } from 'couchbase';
-import { PK_SEGMENT_TYPE } from './constants';
+import type { Cluster, Scope, Bucket } from 'couchbase';
+import { PK_SEGMENT_TYPE } from './constants.js';
 
 type UUID = string;
 
