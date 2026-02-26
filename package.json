@@ -16,7 +16,8 @@
         },
         "features": {
             "enableForwardEngineering": true,
-            "enableArrayCollections": false
+            "enableArrayCollections": false,
+            "restrictNestedFieldsAsPrimaryKey": false
         }
     },
     "description": "Hackolade plugin for Couchbase with scopes and collections",
