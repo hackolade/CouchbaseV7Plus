@@ -9,6 +9,7 @@ const injectKeysNamesIntoIndexKeys = ({ index, keyIdToName = {} }) => ({
 	indxName: index.indxName,
 	indxType: index.indxType,
 	isActivated: index.isActivated,
+	ifNotExists: index.ifNotExists,
 	partitionByHash: index.partitionByHash,
 	functionExpr: index.functionExpr,
 	usingGSI: index.usingGSI,
@@ -30,10 +31,8 @@ const injectKeysNamesIntoIndexKeys = ({ index, keyIdToName = {} }) => ({
  */
 const getIndexKeyIdToKeyNameMap = collectionProperties =>
 	Object.entries(collectionProperties).reduce((keyIdToNameMap, [propertyName, propertyData]) => {
-		return {
-			...keyIdToNameMap,
-			[propertyData.GUID]: propertyName,
-		};
+		keyIdToNameMap[propertyData.GUID] = propertyName;
+		return keyIdToNameMap;
 	}, {});
 
 module.exports = {

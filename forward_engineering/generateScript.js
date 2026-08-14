@@ -2,15 +2,16 @@ const { get } = require('lodash');
 const logHelper = require('../shared/helpers/logHelper');
 const { GENERATING_ENTITY_SCRIPT } = require('../shared/enums/staticMessages');
 const ForwardEngineeringScriptBuilder = require('./services/forwardEngineeringScriptBuilder');
+const { buildAlterScript } = require('./services/alterScriptBuilder');
 const { includeSamples } = require('./utils/includeSamples');
 
 /**
  * @param {ConnectionInfo} connectionInfo
  * @param {AppLogger} appLogger
  * @param {Callback} callback
- * @param {App} app
+ * @param {App} _app
  */
-const generateScript = async (connectionInfo, appLogger, callback, app) => {
+const generateScript = async (connectionInfo, appLogger, callback, _app) => {
 	const logger = logHelper.createLogger({
 		title: GENERATING_ENTITY_SCRIPT,
 		hiddenKeys: connectionInfo.hiddenKeys,
@@ -18,6 +19,10 @@ const generateScript = async (connectionInfo, appLogger, callback, app) => {
 	});
 
 	try {
+		if (connectionInfo.isUpdateScript) {
+			return callback(null, buildAlterScript({ connectionInfo }));
+		}
+
 		const scriptBuilder = new ForwardEngineeringScriptBuilder();
 
 		const { jsonData, jsonSchema, containerData, options } = connectionInfo;

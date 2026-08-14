@@ -8,6 +8,7 @@
 	"MAIN_MENU___INSERT_FIELD": "Insert Field",
 	"MAIN_MENU___APPEND_FIELD": "Append Field",
 	"MAIN_MENU___REVERSE_DB_COLLECTIONS": "Couchbase collections...",
+	"MAIN_MENU___FORWARD_CHANGE_COLLECTIONS": "Couchbase Alter Script",
 	"TOOLBAR___ADD_BUCKET": "Add Scope",
 	"TOOLBAR___ADD_COLLECTION": "Add Collection",
 	"TOOLBAR___ADD_VIEW": "Add View",

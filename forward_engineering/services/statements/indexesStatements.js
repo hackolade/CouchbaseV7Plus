@@ -100,7 +100,7 @@ const getKeys = index => {
 				separator: ',',
 			});
 
-			return { script: `(${keysNames})`, canHaveIndex: Boolean(keysNames.length) };
+			return { script: `(${keysNames})`, canHaveIndex: keysNames.length > 0 };
 		}
 		case INDEX_TYPE.array:
 			return { script: `(${index.arrayExpr})`, canHaveIndex: true };
@@ -132,7 +132,6 @@ const getAdditionalOptionsFunctions = index => {
 			return [getPartitionByHashClause, getWhereClause, getUsingGSI, getWithClause];
 		case INDEX_TYPE.array:
 			return [getWhereClause, getUsingGSI, getWithClause];
-		case INDEX_TYPE.metadata:
 		default:
 			return [];
 	}
@@ -155,15 +154,14 @@ const getWhereClause = index => {
 const getWithClause = index => {
 	const deferBuild = get(index, 'withOptions.defer_build') ? `"defer_build":true` : '';
 
-	const numReplica = !isEmpty(get(index, 'withOptions.num_replica'))
-		? `"num_replica":${index.withOptions.num_replica}`
-		: '';
+	const numReplicaValue = get(index, 'withOptions.num_replica');
+	const numReplica = isEmpty(numReplicaValue) ? '' : `"num_replica":${numReplicaValue}`;
 
 	const nodeStatement = joinStatements({
 		statements: index.withOptions?.nodes?.map(node => `"${node.nodeName}"`),
 		separator: ',',
 	});
-	const nodes = get(index, 'withOptions.nodes', []).length ? `"nodes":[${nodeStatement}]` : '';
+	const nodes = get(index, 'withOptions.nodes', []).length > 0 ? `"nodes":[${nodeStatement}]` : '';
 
 	const hasWithClosure = deferBuild || numReplica || nodes;
 
@@ -230,6 +228,103 @@ const commentStatement = statement => {
 	return `/*\n${joinedStatement}\n */`;
 };
 
+/**
+ *
+ * @param {{
+ *   namespace: string,
+ *   bucketName: string,
+ *   scopeName: string,
+ *   collectionName: string,
+ *   indxName: string,
+ *   usingGSI?: boolean,
+ * }} index
+ * @returns {string}
+ */
+const getDropIndexScript = ({ namespace, bucketName, scopeName, collectionName, indxName, usingGSI }) => {
+	if (!indxName || !collectionName) {
+		return '';
+	}
+
+	const keySpaceRefStatement = getKeySpaceReference({ namespace, bucketName, scopeName, collectionName });
+	const usingGsiClause = usingGSI ? ' USING GSI' : '';
+
+	return `DROP INDEX ${wrapWithBackticks(indxName)} IF EXISTS ON ${keySpaceRefStatement}${usingGsiClause};`;
+};
+
+/**
+ *
+ * @param {{
+ *   action: 'move' | 'replica_count',
+ *   nodes?: Array<{ nodeName?: string } | string>,
+ *   num_replica?: number
+ * }} params
+ * @returns {string}
+ */
+const getAlterIndexWithClause = ({ action, nodes = [], num_replica } = {}) => {
+	if (action === 'move') {
+		const nodeStatement = joinStatements({
+			statements: nodes.map(node => `"${typeof node === 'string' ? node : node.nodeName}"`),
+			separator: ',',
+		});
+
+		if (!nodeStatement) {
+			return '';
+		}
+
+		return `{"action":"move","nodes":[${nodeStatement}]}`;
+	}
+
+	if (action === 'replica_count' && num_replica !== undefined && num_replica !== null && num_replica !== '') {
+		return `{"action":"replica_count","num_replica":${num_replica}}`;
+	}
+
+	return '';
+};
+
+/**
+ *
+ * @param {{
+ *   namespace: string,
+ *   bucketName: string,
+ *   scopeName: string,
+ *   collectionName: string,
+ *   indxName: string,
+ *   usingGSI?: boolean,
+ *   action: 'move' | 'replica_count',
+ *   nodes?: Array<{ nodeName?: string } | string>,
+ *   num_replica?: number,
+ * }} index
+ * @returns {string}
+ */
+const getAlterIndexScript = ({
+	namespace,
+	bucketName,
+	scopeName,
+	collectionName,
+	indxName,
+	usingGSI,
+	action,
+	nodes = [],
+	num_replica,
+}) => {
+	if (!indxName || !collectionName || !action) {
+		return '';
+	}
+
+	const keySpaceRefStatement = getKeySpaceReference({ namespace, bucketName, scopeName, collectionName });
+	const usingGsiClause = usingGSI ? ' USING GSI' : '';
+	const withClause = getAlterIndexWithClause({ action, nodes, num_replica });
+
+	if (!withClause) {
+		return '';
+	}
+
+	return `ALTER INDEX ${wrapWithBackticks(indxName)} ON ${keySpaceRefStatement}${usingGsiClause} WITH ${withClause};`;
+};
+
 module.exports = {
 	getIndexesScript,
+	getIndexScript,
+	getDropIndexScript,
+	getAlterIndexScript,
 };
