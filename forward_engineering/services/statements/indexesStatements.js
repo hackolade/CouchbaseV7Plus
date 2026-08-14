@@ -274,7 +274,7 @@ const getAlterIndexWithClause = ({ action, nodes = [], num_replica } = {}) => {
 		return `{"action":"move","nodes":[${nodeStatement}]}`;
 	}
 
-	if (action === 'replica_count' && num_replica !== undefined && num_replica !== null && num_replica !== '') {
+	if (action === 'replica_count' && !isEmpty(num_replica)) {
 		return `{"action":"replica_count","num_replica":${num_replica}}`;
 	}
 
