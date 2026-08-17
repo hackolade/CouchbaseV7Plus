@@ -17,6 +17,30 @@ const getCollectionScript = ({ namespace, scopeName, bucketName, collectionName,
 	return `CREATE COLLECTION ${fullPath}${wrapWithBackticks(collectionName)}${ifNotExistsClause};\n\n`;
 };
 
+/**
+ *
+ * @param {{
+ *   namespace: string,
+ *   scopeName: string,
+ *   bucketName: string,
+ *   collectionName: string,
+ *   ifExists?: boolean
+ * }} collection
+ * @returns {string}
+ */
+const getDropCollectionScript = ({ namespace, scopeName, bucketName, collectionName, ifExists }) => {
+	if (!collectionName) {
+		return '';
+	}
+
+	const fullBucketPath = getFullBucketPath({ namespace, bucketName });
+	const fullPath = bucketName && scopeName ? `${fullBucketPath}.${wrapWithBackticks(scopeName)}.` : '';
+	const ifExistsClause = ifExists ? ' IF EXISTS' : '';
+
+	return `DROP COLLECTION ${fullPath}${wrapWithBackticks(collectionName)}${ifExistsClause};`;
+};
+
 module.exports = {
 	getCollectionScript,
+	getDropCollectionScript,
 };

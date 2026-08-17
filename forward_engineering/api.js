@@ -27,8 +27,18 @@ const {
 } = require('../shared/enums/dynamicMessages');
 const { HTTP_ERROR_CODES } = require('../shared/enums/httpCodes');
 const { applyScript, logApplyScriptAttempt } = require('./services/applyToInstanceService');
+const { hasDropStatements } = require('./services/alterScriptBuilder');
 const { generateContainerScript } = require('./generateContainerScript');
 const { generateScript } = require('./generateScript');
+
+/**
+ * @param {ConnectionInfo} connectionInfo
+ * @param {AppLogger} _logger
+ * @param {Callback} callback
+ */
+const isDropInStatements = (connectionInfo, _logger, callback) => {
+	callback(null, hasDropStatements({ connectionInfo }));
+};
 
 /**
  * @param {ConnectionInfo} connectionInfo
@@ -106,7 +116,7 @@ const applyToInstance = async (connectionInfo, appLogger, callback, app) => {
 
 /**
  * @param {ConnectionInfo} connectionInfo
- * @param {AppLogger} logger
+ * @param {AppLogger} appLogger
  * @param {Callback} callback
  * @param {App} app
  */
@@ -131,6 +141,7 @@ const testConnection = async (connectionInfo, appLogger, callback, app) => {
 module.exports = {
 	generateContainerScript,
 	generateScript,
+	isDropInStatements,
 	applyToInstance,
 	testConnection,
 };

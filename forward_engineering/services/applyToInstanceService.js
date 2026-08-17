@@ -37,7 +37,13 @@ const scriptReducer = (scripts, script) => {
 
 /**
  *
- * @param {{bucketName: string, script: string, cluster: object, logger: object, callback: function}} param0
+ * @param {{
+ *   bucketName: string,
+ *   script: string,
+ *   cluster: object,
+ *   logger: object,
+ *   callback: function
+ * }} params
  * @returns {boolean}
  */
 const applyScript = async ({ bucketName, script, cluster, logger, callback }) => {
@@ -127,7 +133,7 @@ const isIndexAlreadyCreatedError = err => {
 
 /**
  *
- * @param {{error: object }} param0
+ * @param {{ error: object }} params
  * @returns {boolean}
  */
 const isCommentedStatement = ({ error }) => {
@@ -136,7 +142,11 @@ const isCommentedStatement = ({ error }) => {
 
 /**
  *
- * @param {{attemptNumber: number, bucketName: string, logger: object}} param0
+ * @param {{
+ *   attemptNumber: number,
+ *   bucketName: string,
+ *   logger: object
+ * }} params
  * @returns {void}
  */
 const logApplyScriptAttempt = ({ attemptNumber, bucketName, logger }) => {

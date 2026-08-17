@@ -23,7 +23,7 @@ const getInsertScripts = ({ jsonData, collections = [] }) => {
 
 /**
  *
- * @param {jsonData: object, collection: object} param0
+ * @param {{ jsonData: object, collection: object }} params
  * @returns {string}
  */
 const getInsertScriptForCollection = ({ jsonData, collection, useUpsert = true }) => {

@@ -1,6 +1,7 @@
 const { get } = require('lodash');
 const logHelper = require('../shared/helpers/logHelper');
 const ForwardEngineeringScriptBuilder = require('./services/forwardEngineeringScriptBuilder');
+const { buildAlterScript } = require('./services/alterScriptBuilder');
 const { GENERATING_CONTAINER_SCRIPT } = require('../shared/enums/staticMessages');
 const { includeSamples } = require('./utils/includeSamples');
 
@@ -8,9 +9,9 @@ const { includeSamples } = require('./utils/includeSamples');
  * @param {ConnectionInfo} connectionInfo
  * @param {AppLogger} appLogger
  * @param {Callback} callback
- * @param {App} app
+ * @param {App} _app
  */
-const generateContainerScript = async (connectionInfo, appLogger, callback, app) => {
+const generateContainerScript = async (connectionInfo, appLogger, callback, _app) => {
 	const logger = logHelper.createLogger({
 		title: GENERATING_CONTAINER_SCRIPT,
 		hiddenKeys: connectionInfo.hiddenKeys,
@@ -18,6 +19,10 @@ const generateContainerScript = async (connectionInfo, appLogger, callback, app)
 	});
 
 	try {
+		if (connectionInfo.isUpdateScript) {
+			return callback(null, buildAlterScript({ connectionInfo }));
+		}
+
 		const scriptBuilder = new ForwardEngineeringScriptBuilder();
 
 		const { jsonData, collections, options } = connectionInfo;
@@ -27,12 +32,15 @@ const generateContainerScript = async (connectionInfo, appLogger, callback, app)
 			...rawScope,
 			bucketName: rawScope?.bucket ?? '',
 		};
-		const collectionsData = collections.map(schema => ({
+
+		const getCollectionData = ({ schema, scope }) => ({
 			...JSON.parse(schema),
 			namespace: scope?.namespace,
 			bucketName: scope?.bucketName,
 			scopeName: scope?.name,
-		}));
+		});
+
+		const collectionsData = collections.map(schema => getCollectionData({ schema, scope }));
 
 		scriptBuilder.addScopeScript(scope);
 		collectionsData.forEach(collection => scriptBuilder.addCollectionScripts(collection));
