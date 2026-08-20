@@ -34,8 +34,22 @@ const getDeltaItems = ({ schema = {}, nameProperty, modify } = {}) =>
 	[schema.properties?.[nameProperty]?.properties?.[modify]?.items]
 		.flat()
 		.filter(Boolean)
-		.map(item => Object.values(item.properties || {})[0])
+		.flatMap(item => Object.values(item.properties || {}))
 		.filter(Boolean);
+
+/**
+ * @param {{ properties: object | object[] }} params
+ * @returns {object}
+ */
+const normalizeProperties = ({ properties } = {}) => {
+	if (!Array.isArray(properties)) {
+		return properties || {};
+	}
+
+	return Object.fromEntries(
+		properties.map(property => [property?.code || property?.name, property]).filter(([name]) => name),
+	);
+};
 
 /**
  * @param {{ connectionInfo: object }} params
@@ -47,5 +61,6 @@ const shouldApplyDropStatements = ({ connectionInfo = {} } = {}) =>
 module.exports = {
 	getDeltaSchema,
 	getDeltaItems,
+	normalizeProperties,
 	shouldApplyDropStatements,
 };

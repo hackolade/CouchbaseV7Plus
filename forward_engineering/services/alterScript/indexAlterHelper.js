@@ -3,8 +3,16 @@ const { getIndexKeyIdToKeyNameMap, injectKeysNamesIntoIndexKeys } = require('../
 const { getIndexScript, getDropIndexScript, getAlterIndexScript } = require('../statements/indexesStatements');
 const { commentStatement } = require('./commentHelper');
 const { AlterScriptDto } = require('./AlterScriptDto');
-const { getDeltaItems } = require('./deltaSchemaHelper');
-const { getCollectionContext, getCollectionName, getCompMod } = require('./collectionAlterHelper');
+const { getDeltaItems, normalizeProperties } = require('./deltaSchemaHelper');
+const {
+	getCollectionContext,
+	getCollectionName,
+	getCompMod,
+	getEntityRole,
+	isCollectionCreated,
+	isCollectionDeleted,
+	isCollectionRenamed,
+} = require('./collectionAlterHelper');
 
 const NON_STRUCTURAL_INDEX_FIELDS = ['indxComments', 'indxDescription', 'id', 'GUID'];
 
@@ -12,17 +20,12 @@ const NON_STRUCTURAL_INDEX_FIELDS = ['indxComments', 'indxDescription', 'id', 'G
  * @param {{ entity: object }} params
  * @returns {object}
  */
-const getEntityRole = ({ entity = {} } = {}) => entity.role || entity;
-
-/**
- * @param {{ entity: object }} params
- * @returns {object}
- */
 const getEntityProperties = ({ entity = {} } = {}) => {
 	const role = getEntityRole({ entity });
+
 	return {
-		...entity.properties,
-		...role.properties,
+		...normalizeProperties({ properties: entity.properties }),
+		...normalizeProperties({ properties: role.properties }),
 	};
 };
 
@@ -335,21 +338,9 @@ const getIndexChangeDtos = ({ entity, collectionName, oldIndexes = [], newIndexe
 
 /**
  * @param {{ entity: object }} params
- * @returns {boolean}
- */
-const isCollectionRenamed = ({ entity } = {}) => {
-	const compMod = getCompMod({ entity });
-	const oldName = compMod.code?.old || compMod.collectionName?.old;
-	const newName = compMod.code?.new || compMod.collectionName?.new;
-
-	return Boolean(oldName && newName && oldName !== newName);
-};
-
-/**
- * @param {{ entity: object }} params
  * @returns {AlterScriptDto[]}
  */
-const getAddedEntityIndexDtos = ({ entity } = {}) => {
+const getCreatedCollectionIndexDtos = ({ entity } = {}) => {
 	const role = getEntityRole({ entity });
 	const collectionName = getCollectionName({ entity, nameType: 'new' }) || getCollectionName({ entity });
 
@@ -365,7 +356,7 @@ const getAddedEntityIndexDtos = ({ entity } = {}) => {
  * @param {{ entity: object }} params
  * @returns {AlterScriptDto[]}
  */
-const getDeletedEntityIndexDtos = ({ entity } = {}) => {
+const getDeletedCollectionIndexDtos = ({ entity } = {}) => {
 	const role = getEntityRole({ entity });
 	const collectionName = getCollectionName({ entity, nameType: 'old' }) || getCollectionName({ entity });
 
@@ -381,31 +372,46 @@ const getDeletedEntityIndexDtos = ({ entity } = {}) => {
  * @param {{ entity: object }} params
  * @returns {AlterScriptDto[]}
  */
-const getModifiedEntityIndexDtos = ({ entity } = {}) => {
+const getRenamedCollectionIndexDtos = ({ entity } = {}) => {
 	const role = getEntityRole({ entity });
 	const compMod = getCompMod({ entity });
 	const oldCollectionName = getCollectionName({ entity, nameType: 'old' }) || getCollectionName({ entity });
 	const newCollectionName = getCollectionName({ entity, nameType: 'new' }) || getCollectionName({ entity });
 
-	if (isCollectionRenamed({ entity })) {
-		const oldIndexes = compMod.indexes?.old || role.indexes || [];
-		const newIndexes = compMod.indexes?.new || role.indexes || [];
+	return [
+		...getDropIndexDtos({
+			entity,
+			collectionName: oldCollectionName,
+			indexes: compMod.indexes?.old || role.indexes || [],
+			nameType: 'old',
+		}),
+		...getCreateIndexDtos({
+			entity,
+			collectionName: newCollectionName,
+			indexes: compMod.indexes?.new || role.indexes || [],
+			nameType: 'new',
+		}),
+	];
+};
 
-		return [
-			...getDropIndexDtos({
-				entity,
-				collectionName: oldCollectionName,
-				indexes: oldIndexes,
-				nameType: 'old',
-			}),
-			...getCreateIndexDtos({
-				entity,
-				collectionName: newCollectionName,
-				indexes: newIndexes,
-				nameType: 'new',
-			}),
-		];
+/**
+ * @param {{ entity: object }} params
+ * @returns {AlterScriptDto[]}
+ */
+const getEntityIndexDtos = ({ entity } = {}) => {
+	if (isCollectionCreated({ entity })) {
+		return getCreatedCollectionIndexDtos({ entity });
 	}
+
+	if (isCollectionDeleted({ entity })) {
+		return getDeletedCollectionIndexDtos({ entity });
+	}
+
+	if (isCollectionRenamed({ entity })) {
+		return getRenamedCollectionIndexDtos({ entity });
+	}
+
+	const compMod = getCompMod({ entity });
 
 	if (!compMod.indexes) {
 		return [];
@@ -413,7 +419,7 @@ const getModifiedEntityIndexDtos = ({ entity } = {}) => {
 
 	return getIndexChangeDtos({
 		entity,
-		collectionName: newCollectionName,
+		collectionName: getCollectionName({ entity, nameType: 'new' }) || getCollectionName({ entity }),
 		oldIndexes: compMod.indexes.old || [],
 		newIndexes: compMod.indexes.new || [],
 	});
@@ -428,11 +434,9 @@ const getIndexAlterScriptDtos = ({ schema } = {}) => {
 	const modifiedEntities = getDeltaItems({ schema, nameProperty: 'entities', modify: 'modified' });
 	const deletedEntities = getDeltaItems({ schema, nameProperty: 'entities', modify: 'deleted' });
 
-	return [
-		...deletedEntities.flatMap(entity => getDeletedEntityIndexDtos({ entity })),
-		...modifiedEntities.flatMap(entity => getModifiedEntityIndexDtos({ entity })),
-		...addedEntities.flatMap(entity => getAddedEntityIndexDtos({ entity })),
-	].filter(Boolean);
+	return [...deletedEntities, ...modifiedEntities, ...addedEntities]
+		.flatMap(entity => getEntityIndexDtos({ entity }))
+		.filter(Boolean);
 };
 
 module.exports = {

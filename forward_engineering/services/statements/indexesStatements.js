@@ -252,6 +252,13 @@ const getDropIndexScript = ({ namespace, bucketName, scopeName, collectionName, 
 };
 
 /**
+ * @param {{ num_replica?: number }} params
+ * @returns {boolean}
+ */
+const isReplicaCountSet = ({ num_replica } = {}) =>
+	num_replica !== undefined && num_replica !== null && num_replica !== '';
+
+/**
  *
  * @param {{
  *   action: 'move' | 'replica_count',
@@ -274,7 +281,7 @@ const getAlterIndexWithClause = ({ action, nodes = [], num_replica } = {}) => {
 		return `{"action":"move","nodes":[${nodeStatement}]}`;
 	}
 
-	if (action === 'replica_count' && !isEmpty(num_replica)) {
+	if (action === 'replica_count' && isReplicaCountSet({ num_replica })) {
 		return `{"action":"replica_count","num_replica":${num_replica}}`;
 	}
 
