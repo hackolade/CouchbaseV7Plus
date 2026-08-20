@@ -98,9 +98,25 @@ const isCollectionRenamed = ({ entity } = {}) => {
 
 /**
  * @param {{ entity: object }} params
+ * @returns {boolean}
+ */
+const isCollectionCreated = ({ entity } = {}) => getCompMod({ entity }).created === true;
+
+/**
+ * @param {{ entity: object }} params
+ * @returns {boolean}
+ */
+const isCollectionDeleted = ({ entity } = {}) => getCompMod({ entity }).deleted === true;
+
+/**
+ * @param {{ entity: object }} params
  * @returns {AlterScriptDto[]}
  */
 const getAddedCollectionDtos = ({ entity } = {}) => {
+	if (!isCollectionCreated({ entity })) {
+		return [];
+	}
+
 	const collectionName = getCollectionName({ entity, nameType: 'new' }) || getCollectionName({ entity });
 	return [getCreateCollectionDto({ entity, collectionName })].filter(Boolean);
 };
@@ -110,6 +126,10 @@ const getAddedCollectionDtos = ({ entity } = {}) => {
  * @returns {AlterScriptDto[]}
  */
 const getDeletedCollectionDtos = ({ entity } = {}) => {
+	if (!isCollectionDeleted({ entity })) {
+		return [];
+	}
+
 	const collectionName = getCollectionName({ entity, nameType: 'old' }) || getCollectionName({ entity });
 	return [getDropCollectionDto({ entity, collectionName })].filter(Boolean);
 };
@@ -153,4 +173,8 @@ module.exports = {
 	getCollectionContext,
 	getCollectionName,
 	getCompMod,
+	getEntityRole,
+	isCollectionCreated,
+	isCollectionDeleted,
+	isCollectionRenamed,
 };
