@@ -1,7 +1,8 @@
-const { filter, get, isEmpty } = require('lodash');
+const { filter, get } = require('lodash');
 const { getIndexKeyIdToKeyNameMap, injectKeysNamesIntoIndexKeys } = require('../../utils/indexes');
 const { wrapWithBackticks, getKeySpaceReference, joinStatements } = require('./commonStatements');
 const { INDEX_TYPE } = require('../../../shared/enums/indexType');
+const { DEFAULT_PRIMARY_INDEX_NAME } = require('../../../shared/constants');
 
 /**
  *
@@ -39,7 +40,9 @@ const getIndexesScript = ({ namespace, bucketName, scopeName, collectionName, in
  * @returns {string}
  */
 const getIndexScript = index => {
-	if (!index.indxName) {
+	const isPrimary = index.indxType === INDEX_TYPE.primary;
+
+	if (!index.indxName && !isPrimary) {
 		return '';
 	}
 
@@ -51,10 +54,10 @@ const getIndexScript = index => {
 
 	const keySpaceRefStatement = getKeySpaceReference(index);
 	const additionalOptions = getAdditionalOptions(index);
-	const isPrimary = index.indxType === INDEX_TYPE.primary;
+	const indexNameStatement = index.indxName ? ` ${wrapWithBackticks(index.indxName)}` : '';
 	const createIndexScript = isPrimary
-		? `CREATE PRIMARY INDEX ${wrapWithBackticks(index.indxName)}`
-		: `CREATE INDEX ${wrapWithBackticks(index.indxName)}`;
+		? `CREATE PRIMARY INDEX${indexNameStatement}`
+		: `CREATE INDEX${indexNameStatement}`;
 	const bucketWithKeysScript = `ON ${keySpaceRefStatement}${keysScript}`;
 
 	return `${joinStatements({
@@ -127,11 +130,11 @@ const getAdditionalOptions = index =>
 const getAdditionalOptionsFunctions = index => {
 	switch (index.indxType) {
 		case INDEX_TYPE.primary:
-			return [getUsingGSI, getWithClause];
+			return [getPartitionByHashClause, getUsingGSI, getWithClause];
 		case INDEX_TYPE.secondary:
-			return [getPartitionByHashClause, getWhereClause, getUsingGSI, getWithClause];
 		case INDEX_TYPE.array:
-			return [getWhereClause, getUsingGSI, getWithClause];
+		case INDEX_TYPE.metadata:
+			return [getPartitionByHashClause, getWhereClause, getUsingGSI, getWithClause];
 		default:
 			return [];
 	}
@@ -147,6 +150,24 @@ const getWhereClause = index => {
 };
 
 /**
+ * @param {{ num_replica?: number | string }} params
+ * @returns {boolean}
+ */
+const isReplicaCountSet = ({ num_replica } = {}) => {
+	if (typeof num_replica === 'string' && num_replica.trim() === '') {
+		return false;
+	}
+
+	if (typeof num_replica !== 'number' && typeof num_replica !== 'string') {
+		return false;
+	}
+
+	const value = Number(num_replica);
+
+	return Number.isInteger(value) && value >= 0;
+};
+
+/**
  *
  * @param {object} index
  * @returns {string}
@@ -155,7 +176,9 @@ const getWithClause = index => {
 	const deferBuild = get(index, 'withOptions.defer_build') ? `"defer_build":true` : '';
 
 	const numReplicaValue = get(index, 'withOptions.num_replica');
-	const numReplica = isEmpty(numReplicaValue) ? '' : `"num_replica":${numReplicaValue}`;
+	const numReplica = isReplicaCountSet({ num_replica: numReplicaValue })
+		? `"num_replica":${Number(numReplicaValue)}`
+		: '';
 
 	const nodeStatement = joinStatements({
 		statements: index.withOptions?.nodes?.map(node => `"${node.nodeName}"`),
@@ -202,14 +225,16 @@ const getPartitionByHashClause = index => {
 	switch (index.partitionByHash) {
 		case 'Keys': {
 			const keysNames = joinStatements({
-				statements: index.partitionByHashKeys.map(key => wrapWithBackticks(key.name)),
+				statements: (index.partitionByHashKeys ?? [])
+					.filter(key => key.name)
+					.map(key => wrapWithBackticks(key.name)),
 				separator: ',',
 			});
 
-			return `PARTITION BY HASH(${keysNames})`;
+			return keysNames ? `PARTITION BY HASH(${keysNames})` : '';
 		}
 		case 'Expression':
-			return `PARTITION BY HASH(${index.partitionByHashExpr})`;
+			return index.partitionByHashExpr ? `PARTITION BY HASH(${index.partitionByHashExpr})` : '';
 		default:
 			return '';
 	}
@@ -229,6 +254,13 @@ const commentStatement = statement => {
 };
 
 /**
+ * @param {{ indxName?: string, indxType?: string }} index
+ * @returns {string}
+ */
+const getIndexIdentifier = ({ indxName, indxType } = {}) =>
+	indxName || (indxType === INDEX_TYPE.primary ? DEFAULT_PRIMARY_INDEX_NAME : '');
+
+/**
  *
  * @param {{
  *   namespace: string,
@@ -236,27 +268,25 @@ const commentStatement = statement => {
  *   scopeName: string,
  *   collectionName: string,
  *   indxName: string,
+ *   indxType?: string,
  *   usingGSI?: boolean,
  * }} index
  * @returns {string}
  */
-const getDropIndexScript = ({ namespace, bucketName, scopeName, collectionName, indxName, usingGSI }) => {
-	if (!indxName || !collectionName) {
+const getDropIndexScript = ({ namespace, bucketName, scopeName, collectionName, indxName, indxType, usingGSI }) => {
+	if (!getIndexIdentifier({ indxName, indxType }) || !collectionName) {
 		return '';
 	}
 
 	const keySpaceRefStatement = getKeySpaceReference({ namespace, bucketName, scopeName, collectionName });
 	const usingGsiClause = usingGSI ? ' USING GSI' : '';
 
+	if (!indxName) {
+		return `DROP PRIMARY INDEX IF EXISTS ON ${keySpaceRefStatement}${usingGsiClause};`;
+	}
+
 	return `DROP INDEX ${wrapWithBackticks(indxName)} IF EXISTS ON ${keySpaceRefStatement}${usingGsiClause};`;
 };
-
-/**
- * @param {{ num_replica?: number }} params
- * @returns {boolean}
- */
-const isReplicaCountSet = ({ num_replica } = {}) =>
-	num_replica !== undefined && num_replica !== null && num_replica !== '';
 
 /**
  *
@@ -282,7 +312,7 @@ const getAlterIndexWithClause = ({ action, nodes = [], num_replica } = {}) => {
 	}
 
 	if (action === 'replica_count' && isReplicaCountSet({ num_replica })) {
-		return `{"action":"replica_count","num_replica":${num_replica}}`;
+		return `{"action":"replica_count","num_replica":${Number(num_replica)}}`;
 	}
 
 	return '';
@@ -296,6 +326,7 @@ const getAlterIndexWithClause = ({ action, nodes = [], num_replica } = {}) => {
  *   scopeName: string,
  *   collectionName: string,
  *   indxName: string,
+ *   indxType?: string,
  *   usingGSI?: boolean,
  *   action: 'move' | 'replica_count',
  *   nodes?: Array<{ nodeName?: string } | string>,
@@ -309,12 +340,15 @@ const getAlterIndexScript = ({
 	scopeName,
 	collectionName,
 	indxName,
+	indxType,
 	usingGSI,
 	action,
 	nodes = [],
 	num_replica,
 }) => {
-	if (!indxName || !collectionName || !action) {
+	const indexIdentifier = getIndexIdentifier({ indxName, indxType });
+
+	if (!indexIdentifier || !collectionName || !action) {
 		return '';
 	}
 
@@ -326,7 +360,7 @@ const getAlterIndexScript = ({
 		return '';
 	}
 
-	return `ALTER INDEX ${wrapWithBackticks(indxName)} ON ${keySpaceRefStatement}${usingGsiClause} WITH ${withClause};`;
+	return `ALTER INDEX ${wrapWithBackticks(indexIdentifier)} ON ${keySpaceRefStatement}${usingGsiClause} WITH ${withClause};`;
 };
 
 module.exports = {
@@ -334,4 +368,6 @@ module.exports = {
 	getIndexScript,
 	getDropIndexScript,
 	getAlterIndexScript,
+	getIndexIdentifier,
+	isReplicaCountSet,
 };

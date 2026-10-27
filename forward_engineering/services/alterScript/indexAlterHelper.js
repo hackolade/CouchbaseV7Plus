@@ -1,6 +1,12 @@
 const { isEqual, omit, isEmpty } = require('lodash');
 const { getIndexKeyIdToKeyNameMap, injectKeysNamesIntoIndexKeys } = require('../../utils/indexes');
-const { getIndexScript, getDropIndexScript, getAlterIndexScript } = require('../statements/indexesStatements');
+const {
+	getIndexScript,
+	getDropIndexScript,
+	getAlterIndexScript,
+	getIndexIdentifier,
+	isReplicaCountSet,
+} = require('../statements/indexesStatements');
 const { commentStatement } = require('./commentHelper');
 const { AlterScriptDto } = require('./AlterScriptDto');
 const { getDeltaItems, normalizeProperties } = require('./deltaSchemaHelper');
@@ -69,6 +75,13 @@ const normalizeNodes = ({ nodes = [] } = {}) =>
 	nodes.map(node => (typeof node === 'string' ? node : node?.nodeName)).filter(Boolean);
 
 /**
+ * @param {{ num_replica?: number | string }} params
+ * @returns {number | undefined}
+ */
+const normalizeReplicaCount = ({ num_replica } = {}) =>
+	isReplicaCountSet({ num_replica }) ? Number(num_replica) : undefined;
+
+/**
  * @param {{ index: object }} params
  * @returns {object}
  */
@@ -81,7 +94,7 @@ const getComparableIndex = ({ index = {} } = {}) => {
 		partitionByHashKeys: normalizeIndexKeys({ keys: index.partitionByHashKeys }),
 		withOptions: {
 			defer_build: Boolean(index.withOptions?.defer_build),
-			num_replica: index.withOptions?.num_replica,
+			num_replica: normalizeReplicaCount({ num_replica: index.withOptions?.num_replica }),
 			nodes: normalizeNodes({ nodes: index.withOptions?.nodes }),
 		},
 	};
@@ -119,7 +132,9 @@ const classifyIndexChange = ({ oldIndex, newIndex } = {}) => {
 		normalizeNodes({ nodes: oldOptions.nodes }),
 		normalizeNodes({ nodes: newOptions.nodes }),
 	);
-	const replicaChanged = !isEqual(oldOptions.num_replica, newOptions.num_replica);
+	const oldReplicaCount = normalizeReplicaCount({ num_replica: oldOptions.num_replica });
+	const newReplicaCount = normalizeReplicaCount({ num_replica: newOptions.num_replica });
+	const replicaChanged = oldReplicaCount !== newReplicaCount;
 	const deferBuildChanged = Boolean(oldOptions.defer_build) !== Boolean(newOptions.defer_build);
 
 	if (deferBuildChanged || (nodesChanged && replicaChanged)) {
@@ -135,11 +150,11 @@ const classifyIndexChange = ({ oldIndex, newIndex } = {}) => {
 	}
 
 	if (replicaChanged) {
-		if (newOptions.num_replica === undefined || newOptions.num_replica === null || newOptions.num_replica === '') {
+		if (newReplicaCount === undefined) {
 			return { type: 'recreate' };
 		}
 
-		return { type: 'alter', action: 'replica_count', num_replica: newOptions.num_replica };
+		return { type: 'alter', action: 'replica_count', num_replica: newReplicaCount };
 	}
 
 	return { type: 'recreate' };
@@ -238,7 +253,7 @@ const getAlterIndexDto = ({ entity, collectionName, index, action, nodes, num_re
  */
 const getPreparedIndexes = ({ entity, indexes = [], nameType = 'new' } = {}) => {
 	const keyIdToName = getKeyIdToNameMap({ entity, nameType });
-	return indexes.map(index => prepareIndex({ index, keyIdToName })).filter(index => index.indxName);
+	return indexes.map(index => prepareIndex({ index, keyIdToName })).filter(index => getIndexIdentifier(index));
 };
 
 /**
@@ -276,7 +291,7 @@ const getDropIndexDtos = ({ entity, collectionName, indexes = [], nameType = 'ol
  * @returns {Map<string, object>}
  */
 const getIndexesByName = ({ indexes = [] } = {}) =>
-	new Map(indexes.filter(index => index.indxName).map(index => [index.indxName, index]));
+	new Map(indexes.filter(index => getIndexIdentifier(index)).map(index => [getIndexIdentifier(index), index]));
 
 /**
  * @param {{

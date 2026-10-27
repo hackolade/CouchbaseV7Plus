@@ -2,7 +2,12 @@ const { pickBy, isUndefined, get, set } = require('lodash');
 const restApiHelper = require('./restApiHelper');
 const clusterHelper = require('../../shared/helpers/clusterHelper');
 const parserHelper = require('./parserHelper');
-const { GET_META_REGEXP, GET_PARTITION_HASH_REGEXP, DEFAULT_NAME } = require('../../shared/constants');
+const {
+	GET_META_REGEXP,
+	GET_PARTITION_HASH_REGEXP,
+	DEFAULT_NAME,
+	DEFAULT_PRIMARY_INDEX_NAME,
+} = require('../../shared/constants');
 const { INDEX_TYPE } = require('../../shared/enums/indexType');
 
 const handleIndex = index => {
@@ -11,11 +16,15 @@ const handleIndex = index => {
 };
 
 const getHackoladeCompatibleIndex = index => {
+	const partitionByHash = getPartition(index);
+
 	if (index.is_primary) {
 		return {
-			indxName: index.name,
+			indxName: index.name === DEFAULT_PRIMARY_INDEX_NAME ? '' : index.name,
 			indxType: INDEX_TYPE.primary,
 			usingGSI: index.using === 'gsi',
+			partitionByHash: partitionByHash.type,
+			partitionByHashExpr: partitionByHash.expression,
 		};
 	} else if (checkArrayIndex(index)) {
 		return {
@@ -24,15 +33,20 @@ const getHackoladeCompatibleIndex = index => {
 			usingGSI: index.using === 'gsi',
 			arrayExpr: index.index_key.map(getExpression).join(','),
 			whereClause: getWhereCondition(index),
+			partitionByHash: partitionByHash.type,
+			partitionByHashExpr: partitionByHash.expression,
 		};
 	} else if (checkMetaIndex(index)) {
 		return {
 			indxName: index.name,
 			indxType: INDEX_TYPE.metadata,
+			usingGSI: index.using === 'gsi',
 			metadataExpr: index.index_key.map(getExpression).join(','),
+			whereClause: getWhereCondition(index),
+			partitionByHash: partitionByHash.type,
+			partitionByHashExpr: partitionByHash.expression,
 		};
 	} else {
-		const partitionByHash = getPartition(index);
 		const { expression, keys } = getKeysAndExpression(index);
 
 		return {
