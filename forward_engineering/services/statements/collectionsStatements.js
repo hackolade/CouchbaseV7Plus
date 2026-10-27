@@ -7,7 +7,7 @@ const { wrapWithBackticks, getFullBucketPath } = require('./commonStatements');
  * @returns {string}
  */
 const getMaxTTLClause = ({ maxTTL }) => {
-	const value = maxTTL === '' || maxTTL === null ? NaN : Number(maxTTL);
+	const value = typeof maxTTL === 'string' && maxTTL.trim() ? Number(maxTTL) : maxTTL;
 
 	if (!Number.isInteger(value) || value === 0) {
 		return '';
