@@ -16,15 +16,12 @@ const handleIndex = index => {
 };
 
 const getHackoladeCompatibleIndex = index => {
-	const partitionByHash = getPartition(index);
-
 	if (index.is_primary) {
 		return {
 			indxName: index.name === DEFAULT_PRIMARY_INDEX_NAME ? '' : index.name,
 			indxType: INDEX_TYPE.primary,
 			usingGSI: index.using === 'gsi',
-			partitionByHash: partitionByHash.type,
-			partitionByHashExpr: partitionByHash.expression,
+			...getPartitionProperties(index),
 		};
 	} else if (checkArrayIndex(index)) {
 		return {
@@ -33,8 +30,7 @@ const getHackoladeCompatibleIndex = index => {
 			usingGSI: index.using === 'gsi',
 			arrayExpr: index.index_key.map(getExpression).join(','),
 			whereClause: getWhereCondition(index),
-			partitionByHash: partitionByHash.type,
-			partitionByHashExpr: partitionByHash.expression,
+			...getPartitionProperties(index),
 		};
 	} else if (checkMetaIndex(index)) {
 		return {
@@ -43,10 +39,10 @@ const getHackoladeCompatibleIndex = index => {
 			usingGSI: index.using === 'gsi',
 			metadataExpr: index.index_key.map(getExpression).join(','),
 			whereClause: getWhereCondition(index),
-			partitionByHash: partitionByHash.type,
-			partitionByHashExpr: partitionByHash.expression,
+			...getPartitionProperties(index),
 		};
 	} else {
+		const partitionByHash = getPartition(index);
 		const { expression, keys } = getKeysAndExpression(index);
 
 		return {
@@ -116,6 +112,12 @@ const getPartition = index => {
 	}
 
 	return { type: '' };
+};
+
+const getPartitionProperties = index => {
+	const { type, expression } = getPartition(index);
+
+	return type ? { partitionByHash: type, partitionByHashExpr: expression } : {};
 };
 
 const getWhereCondition = index => {

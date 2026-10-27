@@ -78,7 +78,6 @@ class Visitor extends n1qlVisitor {
 			index: {
 				indxName,
 				indxType: 'Primary',
-				partitionByHash: '',
 				usingGSI,
 				withOptions,
 				...getPartitionByHashExpression({ partitionByHashExpr }),

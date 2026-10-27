@@ -17,6 +17,19 @@ describe('DDL reverse-engineering of indexes', () => {
 		assert.equal(parseIndex('CREATE PRIMARY INDEX ON `b`.`s`.`c`').indxName, '');
 	});
 
+	test('Primary, Array and Metadata indexes without partition have no partition properties', () => {
+		const indexes = [
+			parseIndex('CREATE PRIMARY INDEX `p` ON `b`.`s`.`c` USING GSI'),
+			parseIndex('CREATE INDEX `a` ON `b`.`s`.`c`(DISTINCT ARRAY t FOR t IN tags END)'),
+			parseIndex('CREATE INDEX `m` ON `b`.`s`.`c`(META().id)'),
+		];
+
+		for (const index of indexes) {
+			assert.ok(!('partitionByHash' in index), index.indxType);
+			assert.ok(!('partitionByHashExpr' in index), index.indxType);
+		}
+	});
+
 	test('#primary index gets an empty name', () => {
 		assert.equal(parseIndex('CREATE PRIMARY INDEX `#primary` ON `b`.`s`.`c`').indxName, '');
 	});
@@ -52,6 +65,48 @@ describe('DDL reverse-engineering of indexes', () => {
 		assert.equal(index.partitionByHash, 'Expression');
 		assert.equal(index.partitionByHashExpr, 'name');
 		assert.deepEqual(index.withOptions, { num_replica: 2 });
+	});
+});
+
+describe('instance reverse-engineering of indexes without partition', () => {
+	const keyspace = { using: 'gsi', bucket_id: 'inventory', scope_id: 'inventory', keyspace_id: 'route' };
+
+	test('Primary index has no partition properties', async () => {
+		const index = await getInstanceIndex({ ...keyspace, name: 'def_inventory_route_primary', is_primary: true });
+
+		assert.deepEqual(index, { indxName: 'def_inventory_route_primary', indxType: 'Primary', usingGSI: true });
+	});
+
+	test('Array index has no partition properties', async () => {
+		const index = await getInstanceIndex({
+			...keyspace,
+			name: 'def_inventory_route_schedule_utc',
+			index_key: ['array (`s`.`utc`) for `s` in `schedule` end'],
+		});
+
+		assert.deepEqual(index, {
+			indxName: 'def_inventory_route_schedule_utc',
+			indxType: 'Array',
+			usingGSI: true,
+			arrayExpr: 'array (`s`.`utc`) for `s` in `schedule` end',
+		});
+	});
+
+	test('Metadata index has no partition properties', async () => {
+		const index = await getInstanceIndex({ ...keyspace, name: 'm', index_key: ['(meta().`id`)'] });
+
+		assert.ok(!('partitionByHash' in index));
+		assert.ok(!('partitionByHashExpr' in index));
+	});
+
+	test('Secondary index keeps an empty partitionByHash', async () => {
+		const index = await getInstanceIndex({
+			...keyspace,
+			name: 'def_inventory_route_sourceairport',
+			index_key: ['`sourceairport`'],
+		});
+
+		assert.equal(index.partitionByHash, '');
 	});
 });
 
