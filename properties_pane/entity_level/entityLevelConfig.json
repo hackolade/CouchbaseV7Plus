@@ -163,10 +163,10 @@ making sure that you maintain a proper JSON format.
 						"propertyName": "Name",
 						"propertyKeyword": "indxName",
 						"shouldValidate": true,
-						"propertyTooltip": "Index name",
+						"propertyTooltip": "Index name. Must start with a letter and contain only letters, digits, # and _. Optional for a Primary index: an unnamed primary index is named #primary by Couchbase.",
 						"propertyType": "text",
 						"validation": {
-							"regex": "^(?!(_|#))[A-Za-z0-9#_]{1,}"
+							"regex": "^$|^[A-Za-z][A-Za-z0-9#_]*$"
 						}
 					},
 					{
@@ -250,10 +250,6 @@ making sure that you maintain a proper JSON format.
 					},
 					{
 						"options": ["", "Keys", "Expression"],
-						"dependency": {
-							"key": "indxType",
-							"value": "Secondary"
-						},
 						"propertyKeyword": "partitionByHash",
 						"propertyName": "Partition by hash",
 						"propertyType": "select",
@@ -264,17 +260,8 @@ making sure that you maintain a proper JSON format.
 
 						"template": "collectiontree",
 						"dependency": {
-							"type": "and",
-							"values": [
-								{
-									"key": "indxType",
-									"value": "Secondary"
-								},
-								{
-									"key": "partitionByHash",
-									"value": "Keys"
-								}
-							]
+							"key": "partitionByHash",
+							"value": "Keys"
 						},
 						"propertyKeyword": "partitionByHashKeys",
 						"propertyName": "Partition by hash keys",
@@ -288,17 +275,8 @@ making sure that you maintain a proper JSON format.
 						"template": "textarea",
 						"markdown": false,
 						"dependency": {
-							"type": "and",
-							"values": [
-								{
-									"key": "indxType",
-									"value": "Secondary"
-								},
-								{
-									"key": "partitionByHash",
-									"value": "Expression"
-								}
-							]
+							"key": "partitionByHash",
+							"value": "Expression"
 						},
 						"propertyKeyword": "partitionByHashExpr",
 						"propertyName": "Partition by hash clause",
@@ -319,6 +297,10 @@ making sure that you maintain a proper JSON format.
 								{
 									"key": "indxType",
 									"value": "Array"
+								},
+								{
+									"key": "indxType",
+									"value": "Metadata"
 								}
 							]
 						},
@@ -329,23 +311,6 @@ making sure that you maintain a proper JSON format.
 						"parentType": "indexes"
 					},
 					{
-						"dependency": {
-							"type": "or",
-							"values": [
-								{
-									"key": "indxType",
-									"value": "Primary"
-								},
-								{
-									"key": "indxType",
-									"value": "Secondary"
-								},
-								{
-									"key": "indxType",
-									"value": "Array"
-								}
-							]
-						},
 						"propertyKeyword": "usingGSI",
 						"propertyName": "Using GSI",
 						"propertyTooltip": "In Couchbase Server 6.5 and later, the index type  must be Global Secondary Index (GSI). The USING GSI keywords are optional and may be omitted.",
@@ -382,8 +347,10 @@ making sure that you maintain a proper JSON format.
 								"parentType": "withOptions"
 							},
 							{
-								"valueType": "number",
+								"valueType": "integer",
 								"allowNegative": false,
+								"minValue": 0,
+								"step": 1,
 								"propertyKeyword": "num_replica",
 								"propertyName": "Nbr of replicas",
 								"propertyTooltip": "Should be less than the number of index nodes in the cluster",

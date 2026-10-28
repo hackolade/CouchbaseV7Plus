@@ -1,5 +1,5 @@
 const n1qlVisitor = require('./parser/n1qlVisitor');
-const { DEFAULT_NAME } = require('../../shared/constants');
+const { DEFAULT_NAME, DEFAULT_PRIMARY_INDEX_NAME } = require('../../shared/constants');
 
 class Visitor extends n1qlVisitor {
 	visitCreate_index(ctx) {
@@ -10,11 +10,16 @@ class Visitor extends n1qlVisitor {
 		const partitionByHashExpr = this.visitIfExists(ctx, 'index_partition', '');
 		const whereClause = this.visitIfExists(ctx, 'index_where', '');
 		const withOptions = this.visitIfExists(ctx, 'opt_index_with', {});
+		const partition = getPartitionByHashExpression({ partitionByHashExpr });
 		if (isMetaIndex(indexKeys)) {
 			return {
 				index: {
 					indxName,
 					indxType: 'Metadata',
+					usingGSI,
+					whereClause,
+					withOptions,
+					...partition,
 				},
 				bucketName,
 				scopeName,
@@ -32,6 +37,7 @@ class Visitor extends n1qlVisitor {
 					usingGSI,
 					whereClause,
 					withOptions,
+					...partition,
 				},
 				bucketName,
 				scopeName,
@@ -49,7 +55,7 @@ class Visitor extends n1qlVisitor {
 					usingGSI,
 					whereClause,
 					withOptions,
-					...(partitionByHashExpr && { partitionByHash: 'Expression', partitionByHashExpr }),
+					...partition,
 				},
 				bucketName,
 				scopeName,
@@ -62,17 +68,19 @@ class Visitor extends n1qlVisitor {
 		}
 	}
 	visitCreate_primary_index(ctx) {
-		const indxName = this.visit(ctx.opt_primary_name());
+		const primaryName = this.visit(ctx.opt_primary_name());
+		const indxName = primaryName === DEFAULT_PRIMARY_INDEX_NAME ? '' : primaryName;
 		const usingGSI = this.visitIfExists(ctx, 'opt_index_using', false);
 		const { bucketName, scopeName, collectionName } = this.visit(ctx.named_keyspace_ref());
+		const partitionByHashExpr = this.visitIfExists(ctx, 'index_partition', '');
 		const withOptions = this.visitIfExists(ctx, 'opt_index_with', {});
 		return {
 			index: {
 				indxName,
 				indxType: 'Primary',
-				partitionByHash: '',
 				usingGSI,
 				withOptions,
+				...getPartitionByHashExpression({ partitionByHashExpr }),
 			},
 			bucketName,
 			scopeName,
@@ -272,6 +280,9 @@ const isMetaIndex = indexKeys => {
 const isArrayIndex = indexKeys => {
 	return indexKeys.map(key => key.name).some(key => /^\(?(ALLARRAY|DISTINCTARRAY|DISTINCT|ARRAY)/i.test(key));
 };
+
+const getPartitionByHashExpression = ({ partitionByHashExpr }) =>
+	partitionByHashExpr ? { partitionByHash: 'Expression', partitionByHashExpr } : {};
 
 const getName = context => {
 	if (!context) {

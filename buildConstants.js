@@ -22,6 +22,7 @@ const EXCLUDED_FILES = [
 	'node_modules',
 	'prettier.config.js',
 	'lint-staged.config.js',
+	'test',
 ];
 
 module.exports = {
