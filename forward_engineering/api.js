@@ -22,9 +22,11 @@ const {
 	getCheckBucketExistsMessage,
 	getCreatingBucketMessage,
 	getSuccessfullyCreatedBucketMessage,
+	getKeyspaceWithoutBucketMessage,
 } = require('../shared/enums/dynamicMessages');
 const { HTTP_ERROR_CODES } = require('../shared/enums/httpCodes');
-const { applyScript, logApplyScriptAttempt } = require('./services/applyToInstanceService');
+const { ERROR_SIMPLE_TYPE } = require('../shared/constants');
+const { applyScript, getKeyspaceWithoutBucket, logApplyScriptAttempt } = require('./services/applyToInstanceService');
 const { hasDropStatements } = require('./services/alterScriptBuilder');
 const { generateContainerScript } = require('./generateContainerScript');
 const { generateScript } = require('./generateScript');
@@ -79,6 +81,16 @@ const applyToInstance = async (connectionInfo, appLogger, callback, app) => {
 	});
 
 	logger.info(COUCHBASE_APPLY_TO_INSTANCE);
+
+	const keyspaceWithoutBucket = getKeyspaceWithoutBucket({ script: connectionInfo.script });
+	if (keyspaceWithoutBucket) {
+		const err = new Error(getKeyspaceWithoutBucketMessage(keyspaceWithoutBucket));
+		err.type = ERROR_SIMPLE_TYPE;
+		logger.error(err);
+		logger.progress(ERROR_HAS_BEEN_THROWN_WHILE_APPLYING_SCRIPT_TO_COUCHBASE_INSTANCE);
+		return callback(logHelper.createError(err));
+	}
+
 	logger.progress(CONNECTING);
 
 	let cluster;
@@ -90,8 +102,8 @@ const applyToInstance = async (connectionInfo, appLogger, callback, app) => {
 		return callback(logHelper.createError(err));
 	}
 
-	// An alter script from a Delta Model comes without container data. Its statements
-	// use fully qualified keyspaces, so they can run without a target bucket.
+	// An alter script from a Delta Model comes without container data,
+	// but each of its statements already names its bucket.
 	const bucketName = first(connectionInfo.containerData)?.bucket;
 	const scriptWithSamples = connectionInfo.script;
 

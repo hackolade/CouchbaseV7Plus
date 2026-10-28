@@ -7,4 +7,6 @@ module.exports = {
 		`Applying script to ${bucketName} bucket.${attemptNumberMessage}`,
 	getApplyingScriptMessage: attemptNumberMessage => `Applying script ${attemptNumberMessage}`,
 	getCheckBucketExistsMessage: bucketName => `Check bucket ${bucketName} exists`,
+	getKeyspaceWithoutBucketMessage: keyspace =>
+		`The script refers to ${keyspace} without its bucket and scope. Make sure the collection is in a container (scope) that has a bucket, then generate the script again.`,
 };
