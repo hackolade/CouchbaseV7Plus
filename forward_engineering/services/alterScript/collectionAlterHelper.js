@@ -35,7 +35,7 @@ const getCollectionName = ({ entity = {}, nameType = 'current' } = {}) => {
 
 /**
  * @param {{ entity: object }} params
- * @returns {{ namespace: string, bucketName: string, scopeName: string, ifNotExists: boolean }}
+ * @returns {{ namespace: string, bucketName: string, scopeName: string, ifNotExists: boolean, maxTTL?: number }}
  */
 const getCollectionContext = ({ entity = {} } = {}) => {
 	const role = getEntityRole({ entity });
@@ -47,6 +47,7 @@ const getCollectionContext = ({ entity = {} } = {}) => {
 		bucketName: bucketProperties.bucket,
 		scopeName: compMod.keyspaceName || bucketProperties.code || bucketProperties.name,
 		ifNotExists: Boolean(role.ifNotExists),
+		maxTTL: role.maxTTL,
 	};
 };
 

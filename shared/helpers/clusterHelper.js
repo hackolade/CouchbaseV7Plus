@@ -102,6 +102,21 @@ const getDbCollectionsNames = async ({ cluster, connectionInfo, logger }) => {
 };
 
 /**
+ * @param {{ cluster: Cluster; bucketName: string; logger: Logger }} param0
+ * @returns {Promise<NameMap>} scopeName -> collectionName -> maxExpiry in seconds
+ */
+const getCollectionsMaxExpiryMap = async ({ cluster, bucketName, logger }) => {
+	const scopes = await getBucketScopes({ cluster, bucketName, logger });
+
+	return Object.fromEntries(
+		scopes.map(scope => [
+			scope.name,
+			Object.fromEntries(scope.collections.map(collection => [collection.name, collection.maxExpiry])),
+		]),
+	);
+};
+
+/**
  * @param {{ cluster: Cluster; bucketName: string; limit: number }} param0
  * @returns {Promise<Document[]>}
  */
@@ -456,6 +471,7 @@ module.exports = {
 	getAllBuckets,
 	createNewBucket,
 	getBucketsForReverse,
+	getCollectionsMaxExpiryMap,
 	getDbCollectionsNames,
 	getDbCollectionData,
 	getDocumentsBySelectStatement,

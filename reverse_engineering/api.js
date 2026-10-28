@@ -155,6 +155,11 @@ const getDbCollectionsData = async (data, appLogger, callback, app) => {
 		const cluster = await connectionHelper.connect({ connectionInfo, app });
 		const indexes = await indexHelper.getIndexes({ cluster, connectionInfo, logger });
 		const indexesByCollectionMap = indexHelper.getIndexesByCollectionMap({ indexes });
+		const maxExpiryByCollectionMap = await clusterHelper.getCollectionsMaxExpiryMap({
+			cluster,
+			bucketName,
+			logger,
+		});
 		const dbCollectionsData = [];
 
 		for (const scopeName in collections) {
@@ -171,7 +176,12 @@ const getDbCollectionsData = async (data, appLogger, callback, app) => {
 					logger,
 				});
 
-				dbCollectionsData.push(dbCollectionData);
+				dbCollectionsData.push(
+					schemaHelper.addMaxTTLToDbCollectionData({
+						dbCollectionData,
+						maxExpiry: maxExpiryByCollectionMap[scopeName]?.[collectionName],
+					}),
+				);
 			}
 		}
 

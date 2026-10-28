@@ -60,6 +60,26 @@ const getDbCollectionData = ({
 };
 
 /**
+ * maxExpiry 0 means "inherit from the bucket", so it is not kept in the model.
+ *
+ * @param {{ dbCollectionData: DbCollectionData; maxExpiry?: number }} param0
+ * @returns {DbCollectionData}
+ */
+const addMaxTTLToDbCollectionData = ({ dbCollectionData, maxExpiry }) => {
+	if (!Number.isInteger(maxExpiry) || maxExpiry === 0) {
+		return dbCollectionData;
+	}
+
+	return {
+		...dbCollectionData,
+		entityLevel: {
+			...dbCollectionData.entityLevel,
+			maxTTL: maxExpiry,
+		},
+	};
+};
+
+/**
  * @param {Array<TValue>} values
  * @param {number} index
  * @returns {TValue}
@@ -151,6 +171,7 @@ const typeOf = obj => {
 };
 
 module.exports = {
+	addMaxTTLToDbCollectionData,
 	getDbCollectionData,
 	convertInferSchemaToDocuments,
 	mapParsedResultToMultipleSchema,

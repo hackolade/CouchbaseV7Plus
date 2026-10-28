@@ -139,6 +139,15 @@ making sure that you maintain a proper JSON format.
 				"propertyType": "checkbox"
 			},
 			{
+				"propertyName": "Max TTL",
+				"propertyKeyword": "maxTTL",
+				"propertyTooltip": "Maximum time-to-live in seconds for items in the collection. Empty or 0: inherits the bucket setting. -1: items never expire. Requires Couchbase Server 7.6 or later, Enterprise Edition only.",
+				"propertyType": "numeric",
+				"valueType": "number",
+				"minValue": -1,
+				"step": 1
+			},
+			{
 				"propertyName": "Comments",
 				"propertyKeyword": "comments",
 				"propertyTooltip": "comments",
