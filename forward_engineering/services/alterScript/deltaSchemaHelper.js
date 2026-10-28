@@ -38,33 +38,6 @@ const getDeltaItems = ({ schema = {}, nameProperty, modify } = {}) =>
 		.filter(Boolean);
 
 /**
- * @param {{ schema: object, nameProperty: string }} params
- * @returns {object[]}
- */
-const getAllDeltaItems = ({ schema, nameProperty }) =>
-	['added', 'modified', 'deleted'].flatMap(modify => getDeltaItems({ schema, nameProperty, modify }));
-
-/**
- * @param {{ schema: object }} params
- * @returns {string[]}
- */
-const getDeltaBucketNames = ({ schema = {} } = {}) => {
-	const scopeBuckets = getAllDeltaItems({ schema, nameProperty: 'containers' }).flatMap(container => {
-		const role = container.role || container;
-		const compMod = role.compMod || container.compMod || {};
-
-		return [compMod.bucket?.new, compMod.bucket?.old, role.bucket];
-	});
-	const collectionBuckets = getAllDeltaItems({ schema, nameProperty: 'entities' }).map(entity => {
-		const compMod = entity.role?.compMod || entity.compMod || {};
-
-		return compMod.bucketProperties?.bucket;
-	});
-
-	return [...new Set([...scopeBuckets, ...collectionBuckets].filter(Boolean))];
-};
-
-/**
  * @param {{ properties: object | object[] }} params
  * @returns {object}
  */
@@ -88,7 +61,6 @@ const shouldApplyDropStatements = ({ connectionInfo = {} } = {}) =>
 module.exports = {
 	getDeltaSchema,
 	getDeltaItems,
-	getDeltaBucketNames,
 	normalizeProperties,
 	shouldApplyDropStatements,
 };

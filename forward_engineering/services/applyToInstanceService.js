@@ -151,7 +151,11 @@ const isCommentedStatement = ({ error }) => {
  */
 const logApplyScriptAttempt = ({ attemptNumber, bucketName, logger }) => {
 	const attemptNumberMessage = attemptNumber ? getRetryAttemptNumberMessage(attemptNumber + 1) : '';
-	logger.info(getApplyingScriptToBucketWithAttemptNumberMessage(bucketName, attemptNumberMessage));
+	logger.info(
+		bucketName
+			? getApplyingScriptToBucketWithAttemptNumberMessage(bucketName, attemptNumberMessage)
+			: getApplyingScriptMessage(attemptNumberMessage),
+	);
 	logger.progress(getApplyingScriptMessage(attemptNumberMessage));
 };
 

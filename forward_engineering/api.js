@@ -12,10 +12,8 @@ const clusterHelper = require('../shared/helpers/clusterHelper');
 const logHelper = require('../shared/helpers/logHelper');
 const {
 	COUCHBASE_APPLY_TO_INSTANCE,
-	CONTAINER_DATA_NOT_FOUND,
 	CONNECTING,
 	THERE_IS_AN_ISSUE_WHILE_CONNECTING_TO_THE_INSTANCE,
-	ERROR_HAS_BEEN_THROWN_WHILE_CONNECTING_TO_BUCKET,
 	ERROR_HAS_BEEN_THROWN_WHILE_CREATING_BUCKET_IN_COUCHBASE_INSTANCE,
 	ERROR_HAS_BEEN_THROWN_WHILE_APPLYING_SCRIPT_TO_COUCHBASE_INSTANCE,
 	CREATING_A_BUCKET,
@@ -28,7 +26,6 @@ const {
 const { HTTP_ERROR_CODES } = require('../shared/enums/httpCodes');
 const { applyScript, logApplyScriptAttempt } = require('./services/applyToInstanceService');
 const { hasDropStatements } = require('./services/alterScriptBuilder');
-const { getDeltaBucketNames, getDeltaSchema } = require('./services/alterScript/deltaSchemaHelper');
 const { generateContainerScript } = require('./generateContainerScript');
 const { generateScript } = require('./generateScript');
 
@@ -42,29 +39,13 @@ const isDropInStatements = (connectionInfo, _logger, callback) => {
 };
 
 /**
- * An alter script generated from a Delta Model has no container data:
- * its buckets come from the delta schema.
- *
- * @param {{ connectionInfo: ConnectionInfo }} params
- * @returns {string[]}
- */
-const getTargetBucketNames = ({ connectionInfo }) => {
-	const containerBucket = first(connectionInfo.containerData)?.bucket;
-
-	if (containerBucket) {
-		return [containerBucket];
-	}
-
-	return getDeltaBucketNames({ schema: getDeltaSchema({ connectionInfo }) });
-};
-
-/**
- * @param {{ bucketName: string, buckets: object[], cluster: object, logger: Logger }} params
+ * @param {{ bucketName: string, cluster: object, logger: Logger }} params
  * @returns {Promise<Error | undefined>}
  */
-const ensureBucketExists = async ({ bucketName, buckets, cluster, logger }) => {
+const ensureBucketExists = async ({ bucketName, cluster, logger }) => {
 	logger.progress(getCheckBucketExistsMessage(bucketName));
 
+	const buckets = await clusterHelper.getAllBuckets({ cluster });
 	if (buckets.some(bucket => bucket.name === bucketName)) {
 		return;
 	}
@@ -109,28 +90,18 @@ const applyToInstance = async (connectionInfo, appLogger, callback, app) => {
 		return callback(logHelper.createError(err));
 	}
 
-	const bucketNames = getTargetBucketNames({ connectionInfo });
-
-	if (bucketNames.length === 0) {
-		const err = new Error(CONTAINER_DATA_NOT_FOUND);
-		logger.error(err);
-		logger.progress(ERROR_HAS_BEEN_THROWN_WHILE_CONNECTING_TO_BUCKET);
-		return callback(err);
-	}
-
+	// An alter script from a Delta Model comes without container data. Its statements
+	// use fully qualified keyspaces, so they can run without a target bucket.
+	const bucketName = first(connectionInfo.containerData)?.bucket;
 	const scriptWithSamples = connectionInfo.script;
-	const buckets = await clusterHelper.getAllBuckets({ cluster });
 
-	const bucketErrors = await Promise.all(
-		bucketNames.map(bucketName => ensureBucketExists({ bucketName, buckets, cluster, logger })),
-	);
-	const bucketError = bucketErrors.find(Boolean);
-
-	if (bucketError) {
-		return callback(logHelper.createError(bucketError));
+	if (bucketName) {
+		const bucketError = await ensureBucketExists({ bucketName, cluster, logger });
+		if (bucketError) {
+			return callback(logHelper.createError(bucketError));
+		}
 	}
 
-	const bucketName = bucketNames.join(', ');
 	logApplyScriptAttempt({ bucketName, logger });
 	try {
 		applyScript({
