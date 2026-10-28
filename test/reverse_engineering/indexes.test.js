@@ -95,7 +95,6 @@ describe('instance reverse-engineering of indexes without partition', () => {
 			indxName: 'def_inventory_route_primary',
 			indxType: 'Primary',
 			usingGSI: true,
-			withOptions: { defer_build: false },
 		});
 	});
 
@@ -111,7 +110,6 @@ describe('instance reverse-engineering of indexes without partition', () => {
 			indxType: 'Array',
 			usingGSI: true,
 			arrayExpr: 'array (`s`.`utc`) for `s` in `schedule` end',
-			withOptions: { defer_build: false },
 		});
 	});
 
@@ -212,10 +210,10 @@ describe('instance reverse-engineering of index WITH options', () => {
 		assert.deepEqual(index.withOptions, { defer_build: true });
 	});
 
-	test('online index without options keeps defer_build explicitly false', async () => {
+	test('online index without options has no WITH options', async () => {
 		const index = await getInstanceIndex(systemIndex, [buildIndexStatus()]);
 
-		assert.deepEqual(index.withOptions, { defer_build: false });
+		assert.equal(index.withOptions, undefined);
 	});
 
 	test('num_replica is set only when greater than 0', async () => {
@@ -224,19 +222,21 @@ describe('instance reverse-engineering of index WITH options', () => {
 			buildIndexStatus({ numReplica: 2, replicaId: 1 }),
 		]);
 
-		assert.deepEqual(index.withOptions, { defer_build: false, num_replica: 2 });
+		assert.deepEqual(index.withOptions, { num_replica: 2 });
 	});
 
 	test('nodes are never reverse-engineered', async () => {
-		const index = await getInstanceIndex(systemIndex, [buildIndexStatus({ hosts: ['n1:8091', 'n2:8091'] })]);
+		const index = await getInstanceIndex(systemIndex, [
+			buildIndexStatus({ hosts: ['n1:8091', 'n2:8091'], numReplica: 1 }),
+		]);
 
-		assert.ok(!('nodes' in index.withOptions));
+		assert.deepEqual(index.withOptions, { num_replica: 1 });
 	});
 
 	test('index status of another collection is ignored', async () => {
 		const index = await getInstanceIndex(systemIndex, [buildIndexStatus({ collection: 'other', numReplica: 1 })]);
 
-		assert.deepEqual(index.withOptions, { defer_build: false });
+		assert.equal(index.withOptions, undefined);
 	});
 
 	test('default collection index is matched with its index status', async () => {
@@ -245,7 +245,7 @@ describe('instance reverse-engineering of index WITH options', () => {
 			[buildIndexStatus({ scope: '_default', collection: '_default', numReplica: 1 })],
 		);
 
-		assert.deepEqual(index.withOptions, { defer_build: false, num_replica: 1 });
+		assert.deepEqual(index.withOptions, { num_replica: 1 });
 	});
 
 	test('failing /indexStatus does not break the reverse-engineering', async () => {

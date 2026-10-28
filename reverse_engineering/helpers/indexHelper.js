@@ -1,4 +1,4 @@
-const { pickBy, isUndefined, get, set } = require('lodash');
+const { pickBy, isUndefined, isEmpty, get, set } = require('lodash');
 const restApiHelper = require('./restApiHelper');
 const clusterHelper = require('../../shared/helpers/clusterHelper');
 const parserHelper = require('./parserHelper');
@@ -27,11 +27,12 @@ const handleIndex = ({ index, indexStatus }) => {
 const getWithOptions = ({ index, indexStatus }) => {
 	const deferBuild = index.state === 'deferred' || DEFER_BUILD_REGEXP.test(indexStatus?.definition ?? '');
 	const numReplica = Number(indexStatus?.numReplica);
-
-	return {
-		defer_build: deferBuild,
+	const withOptions = {
+		...(deferBuild && { defer_build: true }),
 		...(numReplica > 0 && { num_replica: numReplica }),
 	};
+
+	return isEmpty(withOptions) ? undefined : withOptions;
 };
 
 const getIndexKey = ({ bucketName, scopeName, collectionName, indexName }) =>
