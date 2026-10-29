@@ -20,6 +20,18 @@ const getSelectBucketDocumentsQuery = ({ bucketName, limit, offset }) => {
 };
 
 /**
+ * Index key names are stored without backticks, with nested fields joined by dots.
+ *
+ * @param {string} keyName
+ * @returns {string}
+ */
+const escapeFieldPath = keyName =>
+	keyName
+		.split('.')
+		.map(name => `\`${name}\``)
+		.join('.');
+
+/**
  * @param {{ collectionIndexes: object[] }} param0
  * @returns {string}
  */
@@ -31,7 +43,14 @@ const getWhereClauseFromIndexes = ({ collectionIndexes = [] }) => {
 		return '';
 	}
 
-	return `WHERE ${collectionIndexes[0].indxKey[0].name} LIKE '%'`;
+	// the leading key of an index is the one that lets the query use it
+	const leadingKeyName = collectionIndexes.map(index => index.indxKey?.[0]?.name).find(Boolean);
+
+	if (!leadingKeyName) {
+		return '';
+	}
+
+	return `WHERE ${escapeFieldPath(leadingKeyName)} LIKE '%'`;
 };
 
 /**
