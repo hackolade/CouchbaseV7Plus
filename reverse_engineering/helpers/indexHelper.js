@@ -1,4 +1,4 @@
-const { pickBy, isUndefined, get, set } = require('lodash');
+const { pickBy, isUndefined, isEmpty, get, set } = require('lodash');
 const restApiHelper = require('./restApiHelper');
 const clusterHelper = require('../../shared/helpers/clusterHelper');
 const parserHelper = require('./parserHelper');
@@ -10,9 +10,52 @@ const {
 } = require('../../shared/constants');
 const { INDEX_TYPE } = require('../../shared/enums/indexType');
 
-const handleIndex = index => {
-	const indexData = getHackoladeCompatibleIndex(index);
+const DEFER_BUILD_REGEXP = /"defer_build"\s*:\s*true/i;
+
+const handleIndex = ({ index, indexStatus }) => {
+	const indexData = {
+		...getHackoladeCompatibleIndex(index),
+		withOptions: getWithOptions({ index, indexStatus }),
+	};
 	return pickBy(indexData, value => !isUndefined(value));
+};
+
+/**
+ * Nodes are not reverse-engineered: /indexStatus always reports the hosts of an index,
+ * even when no nodes were specified at creation.
+ */
+const getWithOptions = ({ index, indexStatus }) => {
+	const deferBuild = index.state === 'deferred' || DEFER_BUILD_REGEXP.test(indexStatus?.definition ?? '');
+	const numReplica = Number(indexStatus?.numReplica);
+	const withOptions = {
+		...(deferBuild && { defer_build: true }),
+		...(numReplica > 0 && { num_replica: numReplica }),
+	};
+
+	return isEmpty(withOptions) ? undefined : withOptions;
+};
+
+const getIndexKey = ({ bucketName, scopeName, collectionName, indexName }) =>
+	[bucketName, scopeName, collectionName, indexName].join('.');
+
+const getIndexStatusMap = async ({ connectionInfo, logger }) => {
+	try {
+		const indexStatuses = await restApiHelper.getIndexes({ connectionInfo, logger });
+
+		return (indexStatuses ?? []).reduce((result, indexStatus) => {
+			const key = getIndexKey({
+				bucketName: indexStatus.bucket,
+				scopeName: indexStatus.scope ?? DEFAULT_NAME,
+				collectionName: indexStatus.collection ?? DEFAULT_NAME,
+				indexName: indexStatus.indexName ?? indexStatus.index,
+			});
+
+			return result.has(key) ? result : result.set(key, indexStatus);
+		}, new Map());
+	} catch (error) {
+		logger.error(error);
+		return new Map();
+	}
 };
 
 const getHackoladeCompatibleIndex = index => {
@@ -129,6 +172,7 @@ const getWhereCondition = index => {
 const getIndexes = async ({ cluster, connectionInfo, logger }) => {
 	try {
 		const indexes = await clusterHelper.getIndexes({ cluster, logger });
+		const indexStatusMap = indexes.length ? await getIndexStatusMap({ connectionInfo, logger }) : new Map();
 
 		return indexes
 			.toSorted((a, b) => a.name.localeCompare(b.name))
@@ -138,8 +182,12 @@ const getIndexes = async ({ cluster, connectionInfo, logger }) => {
 				const scopeName = isDefaultCollectionIndex ? DEFAULT_NAME : index.scope_id;
 				const collectionName = isDefaultCollectionIndex ? DEFAULT_NAME : index.keyspace_id;
 
+				const indexStatus = indexStatusMap.get(
+					getIndexKey({ bucketName, scopeName, collectionName, indexName: index.name }),
+				);
+
 				return {
-					index: handleIndex(index),
+					index: handleIndex({ index, indexStatus }),
 					bucketName,
 					scopeName,
 					collectionName,

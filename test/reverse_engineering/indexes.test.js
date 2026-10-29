@@ -1,16 +1,33 @@
-const { describe, test } = require('node:test');
+const { describe, test, mock, afterEach } = require('node:test');
 const assert = require('node:assert/strict');
 const { parseN1qlStatements } = require('../../reverse_engineering/helpers/parserHelper');
 const { getIndexes } = require('../../reverse_engineering/helpers/indexHelper');
+const restApiHelper = require('../../reverse_engineering/helpers/restApiHelper');
 
 const parseIndex = statement => parseN1qlStatements({ statements: `${statement};` }).indexes[0].index;
 
-const getInstanceIndex = async systemIndex => {
+const mockIndexStatus = getIndexStatus => mock.method(restApiHelper, 'getIndexes', getIndexStatus);
+
+const getInstanceIndex = async (systemIndex, indexStatuses = []) => {
+	mockIndexStatus(async () => indexStatuses);
 	const cluster = { query: async () => ({ rows: [{ indexes: systemIndex }] }) };
 	const [indexData] = await getIndexes({ cluster, connectionInfo: {}, logger: { error() {} } });
 
 	return indexData.index;
 };
+
+const buildIndexStatus = props => ({
+	bucket: 'b',
+	scope: 's',
+	collection: 'c',
+	indexName: 'idx',
+	definition: 'CREATE INDEX `idx` ON `b`.`s`.`c`(`name`) WITH {  "num_partition":8 }',
+	numReplica: 0,
+	hosts: ['127.0.0.1:8091'],
+	...props,
+});
+
+afterEach(() => mock.restoreAll());
 
 describe('DDL reverse-engineering of indexes', () => {
 	test('unnamed Primary index gets an empty name', () => {
@@ -74,7 +91,11 @@ describe('instance reverse-engineering of indexes without partition', () => {
 	test('Primary index has no partition properties', async () => {
 		const index = await getInstanceIndex({ ...keyspace, name: 'def_inventory_route_primary', is_primary: true });
 
-		assert.deepEqual(index, { indxName: 'def_inventory_route_primary', indxType: 'Primary', usingGSI: true });
+		assert.deepEqual(index, {
+			indxName: 'def_inventory_route_primary',
+			indxType: 'Primary',
+			usingGSI: true,
+		});
 	});
 
 	test('Array index has no partition properties', async () => {
@@ -159,5 +180,84 @@ describe('instance reverse-engineering of indexes', () => {
 		assert.equal(index.indxType, 'Array');
 		assert.equal(index.partitionByHash, 'Expression');
 		assert.equal(index.partitionByHashExpr, '`name`');
+	});
+});
+
+describe('instance reverse-engineering of index WITH options', () => {
+	const systemIndex = {
+		name: 'idx',
+		using: 'gsi',
+		bucket_id: 'b',
+		scope_id: 's',
+		keyspace_id: 'c',
+		index_key: ['`name`'],
+		state: 'online',
+	};
+
+	test('deferred state sets defer_build', async () => {
+		const index = await getInstanceIndex({ ...systemIndex, state: 'deferred' });
+
+		assert.deepEqual(index.withOptions, { defer_build: true });
+	});
+
+	test('defer_build in the definition sets defer_build on a built index', async () => {
+		const index = await getInstanceIndex(systemIndex, [
+			buildIndexStatus({
+				definition: 'CREATE INDEX `idx` ON `b`.`s`.`c`(`name`) WITH {  "defer_build":true, "num_partition":8 }',
+			}),
+		]);
+
+		assert.deepEqual(index.withOptions, { defer_build: true });
+	});
+
+	test('online index without options has no WITH options', async () => {
+		const index = await getInstanceIndex(systemIndex, [buildIndexStatus()]);
+
+		assert.equal(index.withOptions, undefined);
+	});
+
+	test('num_replica is set only when greater than 0', async () => {
+		const index = await getInstanceIndex(systemIndex, [
+			buildIndexStatus({ numReplica: 2, replicaId: 0 }),
+			buildIndexStatus({ numReplica: 2, replicaId: 1 }),
+		]);
+
+		assert.deepEqual(index.withOptions, { num_replica: 2 });
+	});
+
+	test('nodes are never reverse-engineered', async () => {
+		const index = await getInstanceIndex(systemIndex, [
+			buildIndexStatus({ hosts: ['n1:8091', 'n2:8091'], numReplica: 1 }),
+		]);
+
+		assert.deepEqual(index.withOptions, { num_replica: 1 });
+	});
+
+	test('index status of another collection is ignored', async () => {
+		const index = await getInstanceIndex(systemIndex, [buildIndexStatus({ collection: 'other', numReplica: 1 })]);
+
+		assert.equal(index.withOptions, undefined);
+	});
+
+	test('default collection index is matched with its index status', async () => {
+		const index = await getInstanceIndex(
+			{ ...systemIndex, bucket_id: undefined, scope_id: undefined, keyspace_id: 'b' },
+			[buildIndexStatus({ scope: '_default', collection: '_default', numReplica: 1 })],
+		);
+
+		assert.deepEqual(index.withOptions, { num_replica: 1 });
+	});
+
+	test('failing /indexStatus does not break the reverse-engineering', async () => {
+		mockIndexStatus(async () => {
+			throw new Error('Unauthorized');
+		});
+		const errors = [];
+		const cluster = { query: async () => ({ rows: [{ indexes: { ...systemIndex, state: 'deferred' } }] }) };
+		const [indexData] = await getIndexes({ cluster, connectionInfo: {}, logger: { error: e => errors.push(e) } });
+
+		assert.equal(indexData.index.indxName, 'idx');
+		assert.deepEqual(indexData.index.withOptions, { defer_build: true });
+		assert.equal(errors.length, 1);
 	});
 });
