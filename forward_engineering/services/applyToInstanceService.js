@@ -21,6 +21,28 @@ const { COUCHBASE_ERROR_CODE, ERROR_SIMPLE_TYPE } = require('../../shared/consta
 
 const MAX_APPLY_ATTEMPTS = 5;
 const DEFAULT_START_DELAY = 1000;
+const COMMENT_REGEXP = /\/\*[\s\S]*?\*\//gu;
+const KEYSPACE_REFERENCE_REGEXP = /\b(?:SCOPE|COLLECTION|ON|INTO)\s+((?:[\w-]+:)?`[^`]*`(?:\.`[^`]*`)*)/gu;
+const BACKTICKED_NAME_REGEXP = /`([^`]*)`/gu;
+
+/**
+ * Without a bucket, the generated statements reference only the collection name,
+ * which Couchbase would read as a bucket name.
+ *
+ * @param {{ script: string }} params
+ * @returns {string | undefined} the first keyspace that doesn't start with a bucket and a scope
+ */
+const getKeyspaceWithoutBucket = ({ script = '' }) => {
+	const activeStatements = script.replace(COMMENT_REGEXP, '');
+
+	for (const [, keyspace] of activeStatements.matchAll(KEYSPACE_REFERENCE_REGEXP)) {
+		const names = [...keyspace.matchAll(BACKTICKED_NAME_REGEXP)].map(([, name]) => name);
+
+		if (names.length < 2 || !names[0]) {
+			return keyspace;
+		}
+	}
+};
 
 const scriptReducer = (scripts, script) => {
 	let adjusted = script.trim();
@@ -151,11 +173,16 @@ const isCommentedStatement = ({ error }) => {
  */
 const logApplyScriptAttempt = ({ attemptNumber, bucketName, logger }) => {
 	const attemptNumberMessage = attemptNumber ? getRetryAttemptNumberMessage(attemptNumber + 1) : '';
-	logger.info(getApplyingScriptToBucketWithAttemptNumberMessage(bucketName, attemptNumberMessage));
+	logger.info(
+		bucketName
+			? getApplyingScriptToBucketWithAttemptNumberMessage(bucketName, attemptNumberMessage)
+			: getApplyingScriptMessage(attemptNumberMessage),
+	);
 	logger.progress(getApplyingScriptMessage(attemptNumberMessage));
 };
 
 module.exports = {
 	applyScript,
+	getKeyspaceWithoutBucket,
 	logApplyScriptAttempt,
 };

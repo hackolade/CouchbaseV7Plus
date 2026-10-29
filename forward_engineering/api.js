@@ -12,10 +12,8 @@ const clusterHelper = require('../shared/helpers/clusterHelper');
 const logHelper = require('../shared/helpers/logHelper');
 const {
 	COUCHBASE_APPLY_TO_INSTANCE,
-	CONTAINER_DATA_NOT_FOUND,
 	CONNECTING,
 	THERE_IS_AN_ISSUE_WHILE_CONNECTING_TO_THE_INSTANCE,
-	ERROR_HAS_BEEN_THROWN_WHILE_CONNECTING_TO_BUCKET,
 	ERROR_HAS_BEEN_THROWN_WHILE_CREATING_BUCKET_IN_COUCHBASE_INSTANCE,
 	ERROR_HAS_BEEN_THROWN_WHILE_APPLYING_SCRIPT_TO_COUCHBASE_INSTANCE,
 	CREATING_A_BUCKET,
@@ -24,9 +22,11 @@ const {
 	getCheckBucketExistsMessage,
 	getCreatingBucketMessage,
 	getSuccessfullyCreatedBucketMessage,
+	getKeyspaceWithoutBucketMessage,
 } = require('../shared/enums/dynamicMessages');
 const { HTTP_ERROR_CODES } = require('../shared/enums/httpCodes');
-const { applyScript, logApplyScriptAttempt } = require('./services/applyToInstanceService');
+const { ERROR_SIMPLE_TYPE } = require('../shared/constants');
+const { applyScript, getKeyspaceWithoutBucket, logApplyScriptAttempt } = require('./services/applyToInstanceService');
 const { hasDropStatements } = require('./services/alterScriptBuilder');
 const { generateContainerScript } = require('./generateContainerScript');
 const { generateScript } = require('./generateScript');
@@ -38,6 +38,33 @@ const { generateScript } = require('./generateScript');
  */
 const isDropInStatements = (connectionInfo, _logger, callback) => {
 	callback(null, hasDropStatements({ connectionInfo }));
+};
+
+/**
+ * @param {{ bucketName: string, cluster: object, logger: Logger }} params
+ * @returns {Promise<Error | undefined>}
+ */
+const ensureBucketExists = async ({ bucketName, cluster, logger }) => {
+	logger.progress(getCheckBucketExistsMessage(bucketName));
+
+	const buckets = await clusterHelper.getAllBuckets({ cluster });
+	if (buckets.some(bucket => bucket.name === bucketName)) {
+		return;
+	}
+
+	try {
+		logger.info(getCreatingBucketMessage(bucketName));
+		logger.progress(CREATING_A_BUCKET);
+		await clusterHelper.createNewBucket({ bucketName, cluster });
+		logger.info(getSuccessfullyCreatedBucketMessage(bucketName));
+	} catch (err) {
+		logger.error(err);
+
+		if (err.context?.response_code !== HTTP_ERROR_CODES.badRequest) {
+			logger.progress(ERROR_HAS_BEEN_THROWN_WHILE_CREATING_BUCKET_IN_COUCHBASE_INSTANCE);
+			return err;
+		}
+	}
 };
 
 /**
@@ -54,6 +81,16 @@ const applyToInstance = async (connectionInfo, appLogger, callback, app) => {
 	});
 
 	logger.info(COUCHBASE_APPLY_TO_INSTANCE);
+
+	const keyspaceWithoutBucket = getKeyspaceWithoutBucket({ script: connectionInfo.script });
+	if (keyspaceWithoutBucket) {
+		const err = new Error(getKeyspaceWithoutBucketMessage(keyspaceWithoutBucket));
+		err.type = ERROR_SIMPLE_TYPE;
+		logger.error(err);
+		logger.progress(ERROR_HAS_BEEN_THROWN_WHILE_APPLYING_SCRIPT_TO_COUCHBASE_INSTANCE);
+		return callback(logHelper.createError(err));
+	}
+
 	logger.progress(CONNECTING);
 
 	let cluster;
@@ -65,36 +102,15 @@ const applyToInstance = async (connectionInfo, appLogger, callback, app) => {
 		return callback(logHelper.createError(err));
 	}
 
-	const containerData = first(connectionInfo.containerData);
-
-	if (!containerData) {
-		const err = new Error(CONTAINER_DATA_NOT_FOUND);
-		logger.error(err);
-		logger.progress(ERROR_HAS_BEEN_THROWN_WHILE_CONNECTING_TO_BUCKET);
-		return callback(err);
-	}
-
-	const bucketName = containerData?.bucket;
+	// An alter script from a Delta Model comes without container data,
+	// but each of its statements already names its bucket.
+	const bucketName = first(connectionInfo.containerData)?.bucket;
 	const scriptWithSamples = connectionInfo.script;
 
-	logger.progress(getCheckBucketExistsMessage(bucketName));
-
-	const buckets = await clusterHelper.getAllBuckets({ cluster });
-	const bucketExists = buckets.find(bucket => bucket.name === bucketName);
-	if (!bucketExists) {
-		try {
-			logger.info(getCreatingBucketMessage(bucketName));
-			logger.progress(CREATING_A_BUCKET);
-			await clusterHelper.createNewBucket({ bucketName, cluster });
-			logger.info(getSuccessfullyCreatedBucketMessage(bucketName));
-		} catch (err) {
-			if (err.context?.response_code !== HTTP_ERROR_CODES.badRequest) {
-				logger.error(err);
-				logger.progress(ERROR_HAS_BEEN_THROWN_WHILE_CREATING_BUCKET_IN_COUCHBASE_INSTANCE);
-				return callback(logHelper.createError(err));
-			}
-
-			logger.error(err);
+	if (bucketName) {
+		const bucketError = await ensureBucketExists({ bucketName, cluster, logger });
+		if (bucketError) {
+			return callback(logHelper.createError(bucketError));
 		}
 	}
 
