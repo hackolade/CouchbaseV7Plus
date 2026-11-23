@@ -5,19 +5,18 @@ const { INDEX_TYPE } = require('../../../shared/enums/indexType');
 const { DEFAULT_PRIMARY_INDEX_NAME } = require('../../../shared/constants');
 
 /**
+ * One script per index, so a custom script hook can sit between CREATE COLLECTION and these statements.
  *
  * @param {{ namespace: string, bucketName: string, scopeName: string, collectionName: string, indexes: object[], properties: object[] }} collection
  * @returns {string[]}
  */
-const getIndexesScript = ({ namespace, bucketName, scopeName, collectionName, indexes, properties = {} }) => {
+const getIndexStatements = ({ namespace, bucketName, scopeName, collectionName, indexes, properties = {} }) => {
 	const collectionIndexes = indexes ?? [];
 	const keyIdToName = getIndexKeyIdToKeyNameMap(properties);
-	const indexesKeysWithCorrespondingPropertiesNames = collectionIndexes.map(index =>
-		injectKeysNamesIntoIndexKeys({ index, keyIdToName }),
-	);
-	const statements = indexesKeysWithCorrespondingPropertiesNames.map(index => {
+
+	return collectionIndexes.map(index => {
 		const indexData = {
-			...index,
+			...injectKeysNamesIntoIndexKeys({ index, keyIdToName }),
 			namespace,
 			bucketName,
 			scopeName,
@@ -27,12 +26,18 @@ const getIndexesScript = ({ namespace, bucketName, scopeName, collectionName, in
 
 		return indexData.isActivated ? indexStatement : commentStatement(indexStatement);
 	});
+};
 
-	return joinStatements({
-		statements,
+/**
+ *
+ * @param {{ namespace: string, bucketName: string, scopeName: string, collectionName: string, indexes: object[], properties: object[] }} collection
+ * @returns {string}
+ */
+const getIndexesScript = collection =>
+	joinStatements({
+		statements: getIndexStatements(collection),
 		separator: '\n\n',
 	});
-};
 
 /**
  *
@@ -365,6 +370,7 @@ const getAlterIndexScript = ({
 
 module.exports = {
 	getIndexesScript,
+	getIndexStatements,
 	getIndexScript,
 	getDropIndexScript,
 	getAlterIndexScript,

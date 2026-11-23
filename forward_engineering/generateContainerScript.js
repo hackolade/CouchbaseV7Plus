@@ -26,11 +26,12 @@ const generateContainerScript = async (connectionInfo, appLogger, callback, _app
 		const scriptBuilder = new ForwardEngineeringScriptBuilder();
 
 		const { jsonData, collections, options } = connectionInfo;
-		const { origin, additionalOptions } = options;
+		const { origin, additionalOptions, keepDtos } = options;
 		const rawScope = get(connectionInfo.containerData, '[0]', {});
 		const scope = {
 			...rawScope,
 			bucketName: rawScope?.bucket ?? '',
+			id: connectionInfo.id,
 		};
 
 		const getCollectionData = ({ schema, scope }) => ({
@@ -47,18 +48,23 @@ const generateContainerScript = async (connectionInfo, appLogger, callback, _app
 
 		if (!includeSamples(additionalOptions)) {
 			const { script } = scriptBuilder.buildScriptSeparateFromInsertScripts();
-			return callback(null, script);
+			return callback(null, keepDtos ? scriptBuilder.buildStatements() : script);
 		}
 
 		scriptBuilder.addContainerInsertScripts({ collections: collectionsData, jsonData });
 
 		if (origin !== 'ui') {
-			return callback(null, scriptBuilder.buildScriptConcatenatedWithInsertScripts('\n\n'));
+			return callback(
+				null,
+				keepDtos
+					? scriptBuilder.buildStatementsWithInsertScripts()
+					: scriptBuilder.buildScriptConcatenatedWithInsertScripts('\n\n'),
+			);
 		}
 
 		const { script, insertScripts } = scriptBuilder.buildScriptSeparateFromInsertScripts();
 		callback(null, [
-			{ title: 'Couchbase script', script },
+			{ title: 'Couchbase script', script: keepDtos ? scriptBuilder.buildStatements() : script },
 			{
 				title: 'Sample data',
 				script: insertScripts,
