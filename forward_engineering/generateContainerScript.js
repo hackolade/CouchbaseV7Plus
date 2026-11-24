@@ -26,7 +26,7 @@ const generateContainerScript = async (connectionInfo, appLogger, callback, _app
 		const scriptBuilder = new ForwardEngineeringScriptBuilder();
 
 		const { jsonData, collections, options } = connectionInfo;
-		const { origin, additionalOptions, keepDtos } = options;
+		const { origin, additionalOptions, returnScriptStatements } = options;
 		const rawScope = get(connectionInfo.containerData, '[0]', {});
 		const scope = {
 			...rawScope,
@@ -48,7 +48,7 @@ const generateContainerScript = async (connectionInfo, appLogger, callback, _app
 
 		if (!includeSamples(additionalOptions)) {
 			const { script } = scriptBuilder.buildScriptSeparateFromInsertScripts();
-			return callback(null, keepDtos ? scriptBuilder.buildStatements() : script);
+			return callback(null, returnScriptStatements ? scriptBuilder.buildStatements() : script);
 		}
 
 		scriptBuilder.addContainerInsertScripts({ collections: collectionsData, jsonData });
@@ -56,7 +56,7 @@ const generateContainerScript = async (connectionInfo, appLogger, callback, _app
 		if (origin !== 'ui') {
 			return callback(
 				null,
-				keepDtos
+				returnScriptStatements
 					? scriptBuilder.buildStatementsWithInsertScripts()
 					: scriptBuilder.buildScriptConcatenatedWithInsertScripts('\n\n'),
 			);
@@ -64,7 +64,7 @@ const generateContainerScript = async (connectionInfo, appLogger, callback, _app
 
 		const { script, insertScripts } = scriptBuilder.buildScriptSeparateFromInsertScripts();
 		callback(null, [
-			{ title: 'Couchbase script', script: keepDtos ? scriptBuilder.buildStatements() : script },
+			{ title: 'Couchbase script', script: returnScriptStatements ? scriptBuilder.buildStatements() : script },
 			{
 				title: 'Sample data',
 				script: insertScripts,
