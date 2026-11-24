@@ -1,5 +1,5 @@
 const { getScopeScript, getDropScopeScript } = require('../statements/scopesStatements');
-const { AlterScriptDto } = require('./AlterScriptDto');
+const { AlterScriptDto, getEntityId } = require('./AlterScriptDto');
 const { getDeltaItems } = require('./deltaSchemaHelper');
 
 /**
@@ -106,6 +106,7 @@ const getCreateScopeDto = ({ container, nameType = 'new' } = {}) => {
 		isDropScript: false,
 		modelLevel: 'scope',
 		scriptPurpose: 'add',
+		entityId: getEntityId({ entity: container }),
 	});
 };
 
@@ -127,6 +128,7 @@ const getDropScopeDto = ({ container, nameType = 'old' } = {}) => {
 		isDropScript: true,
 		modelLevel: 'scope',
 		scriptPurpose: 'deletion',
+		entityId: getEntityId({ entity: container }),
 	});
 };
 

@@ -8,7 +8,7 @@ const {
 	isReplicaCountSet,
 } = require('../statements/indexesStatements');
 const { commentStatement } = require('./commentHelper');
-const { AlterScriptDto } = require('./AlterScriptDto');
+const { AlterScriptDto, getEntityId } = require('./AlterScriptDto');
 const { getDeltaItems, normalizeProperties } = require('./deltaSchemaHelper');
 const {
 	getCollectionContext,
@@ -185,6 +185,7 @@ const getCreateIndexDto = ({ entity, collectionName, index } = {}) => {
 		isDropScript: false,
 		modelLevel: 'index',
 		scriptPurpose: 'add',
+		entityId: getEntityId({ entity }),
 	});
 };
 
@@ -207,6 +208,7 @@ const getDropIndexDto = ({ entity, collectionName, index } = {}) => {
 		isDropScript: true,
 		modelLevel: 'index',
 		scriptPurpose: 'deletion',
+		entityId: getEntityId({ entity }),
 	});
 };
 
@@ -239,6 +241,7 @@ const getAlterIndexDto = ({ entity, collectionName, index, action, nodes, num_re
 		isDropScript: false,
 		modelLevel: 'index',
 		scriptPurpose: 'modify',
+		entityId: getEntityId({ entity }),
 	});
 };
 

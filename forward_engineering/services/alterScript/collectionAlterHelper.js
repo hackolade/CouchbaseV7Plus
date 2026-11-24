@@ -1,5 +1,5 @@
 const { getCollectionScript, getDropCollectionScript } = require('../statements/collectionsStatements');
-const { AlterScriptDto } = require('./AlterScriptDto');
+const { AlterScriptDto, getEntityId } = require('./AlterScriptDto');
 const { getDeltaItems } = require('./deltaSchemaHelper');
 
 /**
@@ -62,7 +62,13 @@ const getCreateCollectionDto = ({ entity, collectionName } = {}) => {
 		collectionName,
 	});
 
-	return AlterScriptDto.getInstance({ script, isDropScript: false, modelLevel: 'collection', scriptPurpose: 'add' });
+	return AlterScriptDto.getInstance({
+		script,
+		isDropScript: false,
+		modelLevel: 'collection',
+		scriptPurpose: 'add',
+		entityId: getEntityId({ entity }),
+	});
 };
 
 /**
@@ -82,6 +88,7 @@ const getDropCollectionDto = ({ entity, collectionName } = {}) => {
 		isDropScript: true,
 		modelLevel: 'collection',
 		scriptPurpose: 'deletion',
+		entityId: getEntityId({ entity }),
 	});
 };
 
