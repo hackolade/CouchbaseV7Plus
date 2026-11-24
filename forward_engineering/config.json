@@ -43,5 +43,23 @@
 	},
 	"splitView": {
 		"byAdditionalOptions": ["INCLUDE_SAMPLES"]
-	}
+	},
+	"customScriptVariables": [
+		{
+			"label": "Bucket name",
+			"variable": "bucketName",
+			"source": "container",
+			"property": "bucket"
+		},
+		{
+			"label": "Scope name",
+			"variable": "scopeName",
+			"source": "container"
+		},
+		{
+			"label": "Collection name",
+			"variable": "collectionName",
+			"source": "entity"
+		}
+	]
 }

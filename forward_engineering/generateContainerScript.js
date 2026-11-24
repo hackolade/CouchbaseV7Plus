@@ -31,7 +31,7 @@ const generateContainerScript = async (connectionInfo, appLogger, callback, _app
 		const scope = {
 			...rawScope,
 			bucketName: rawScope?.bucket ?? '',
-			id: connectionInfo.id,
+			id: connectionInfo.id || rawScope.id,
 		};
 
 		const getCollectionData = ({ schema, scope }) => ({
