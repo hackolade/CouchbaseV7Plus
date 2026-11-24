@@ -1,8 +1,7 @@
 const { wrapWithBackticks } = require('./services/statements/commonStatements');
 
 /**
- * Used by Hackolade Studio to resolve names in custom script hooks
- * and to comment out hooks of deactivated objects.
+ * Used by Studio to resolve names in custom script hooks
  */
 module.exports = () => ({
 	prepareName(name) {
