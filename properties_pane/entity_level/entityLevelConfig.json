@@ -148,6 +148,36 @@ making sure that you maintain a proper JSON format.
 				"step": 1
 			},
 			{
+				"propertyName": "Custom scripts",
+				"propertyType": "block",
+				"propertyKeyword": "customScripts",
+				"propertyTooltip": "Custom N1QL statements inserted as is before or after the CREATE COLLECTION statement of this collection. If sample data is part of the generated script, a custom script may invalidate the sample data insertion, depending on its content.",
+				"structure": [
+					{
+						"propertyName": "Before CREATE COLLECTION",
+						"propertyKeyword": "beforeCreateEntity",
+						"propertyType": "details",
+						"markdown": false,
+						"template": "codeEditor",
+						"templateOptions": {
+							"editorDialect": "sql",
+							"customScriptVariables": true
+						}
+					},
+					{
+						"propertyName": "After CREATE COLLECTION",
+						"propertyKeyword": "afterCreateEntity",
+						"propertyType": "details",
+						"markdown": false,
+						"template": "codeEditor",
+						"templateOptions": {
+							"editorDialect": "sql",
+							"customScriptVariables": true
+						}
+					}
+				]
+			},
+			{
 				"propertyName": "Comments",
 				"propertyKeyword": "comments",
 				"propertyTooltip": "comments",

@@ -26,7 +26,7 @@ const generateScript = async (connectionInfo, appLogger, callback, _app) => {
 		const scriptBuilder = new ForwardEngineeringScriptBuilder();
 
 		const { jsonData, jsonSchema, containerData, options } = connectionInfo;
-		const { additionalOptions } = options;
+		const { additionalOptions, returnScriptStatements } = options;
 		const scope = get(containerData, '[0]', {});
 		const rawCollectionData = JSON.parse(jsonSchema);
 		const collectionData = {
@@ -40,7 +40,7 @@ const generateScript = async (connectionInfo, appLogger, callback, _app) => {
 		scriptBuilder.addCollectionScripts(collectionData);
 		if (!includeSamples(additionalOptions)) {
 			const { script } = scriptBuilder.buildScriptSeparateFromInsertScripts();
-			return callback(null, script);
+			return callback(null, returnScriptStatements ? scriptBuilder.buildStatements() : script);
 		}
 
 		scriptBuilder.addCollectionInsertScripts({
@@ -50,7 +50,7 @@ const generateScript = async (connectionInfo, appLogger, callback, _app) => {
 
 		const { script, insertScripts } = scriptBuilder.buildScriptSeparateFromInsertScripts();
 		callback(null, [
-			{ title: 'Couchbase script', script },
+			{ title: 'Couchbase script', script: returnScriptStatements ? scriptBuilder.buildStatements() : script },
 			{
 				title: 'Sample data',
 				script: insertScripts,

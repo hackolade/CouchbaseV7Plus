@@ -96,12 +96,16 @@ const getAlterScriptDtos = ({ connectionInfo } = {}) => {
 
 /**
  * @param {{ connectionInfo: object }} params
- * @returns {string}
+ * @returns {string | object[]}
  */
 const buildAlterScript = ({ connectionInfo } = {}) => {
 	const alterScriptDtos = getAlterScriptDtos({ connectionInfo });
 	const applyDropStatements = shouldApplyDropStatements({ connectionInfo });
 	const scriptDtos = getCommentedDropScriptDtos({ alterScriptDtos, applyDropStatements });
+
+	if (connectionInfo?.options?.keepDtos && connectionInfo?.options?.returnScriptStatements) {
+		return scriptDtos.filter(Boolean);
+	}
 
 	return joinAlterScriptDtos({ alterScriptDtos: scriptDtos });
 };

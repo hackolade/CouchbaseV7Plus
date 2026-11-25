@@ -250,6 +250,80 @@ making sure that you maintain a proper JSON format.
 				}
 			},
 			{
+				"propertyName": "Custom scripts",
+				"propertyType": "block",
+				"propertyKeyword": "customScripts",
+				"propertyTooltip": "Custom N1QL statements inserted as is around the generated statements of the whole model. If sample data is part of the generated script, a custom script may invalidate the sample data insertion, depending on its content.",
+				"structure": [
+					{
+						"propertyName": "Before all statements",
+						"propertyKeyword": "headerScript",
+						"propertyType": "details",
+						"markdown": false,
+						"template": "codeEditor",
+						"templateOptions": {
+							"editorDialect": "sql",
+							"customScriptVariables": true
+						}
+					},
+					{
+						"propertyName": "After all statements",
+						"propertyKeyword": "footerScript",
+						"propertyType": "details",
+						"markdown": false,
+						"template": "codeEditor",
+						"templateOptions": {
+							"editorDialect": "sql",
+							"customScriptVariables": true
+						}
+					},
+					{
+						"propertyName": "Before each CREATE SCOPE",
+						"propertyKeyword": "beforeCreateContainer",
+						"propertyType": "details",
+						"markdown": false,
+						"template": "codeEditor",
+						"templateOptions": {
+							"editorDialect": "sql",
+							"customScriptVariables": true
+						}
+					},
+					{
+						"propertyName": "After each CREATE SCOPE",
+						"propertyKeyword": "afterCreateContainer",
+						"propertyType": "details",
+						"markdown": false,
+						"template": "codeEditor",
+						"templateOptions": {
+							"editorDialect": "sql",
+							"customScriptVariables": true
+						}
+					},
+					{
+						"propertyName": "Before each CREATE COLLECTION",
+						"propertyKeyword": "beforeCreateEntity",
+						"propertyType": "details",
+						"markdown": false,
+						"template": "codeEditor",
+						"templateOptions": {
+							"editorDialect": "sql",
+							"customScriptVariables": true
+						}
+					},
+					{
+						"propertyName": "After each CREATE COLLECTION",
+						"propertyKeyword": "afterCreateEntity",
+						"propertyType": "details",
+						"markdown": false,
+						"template": "codeEditor",
+						"templateOptions": {
+							"editorDialect": "sql",
+							"customScriptVariables": true
+						}
+					}
+				]
+			},
+			{
 				"propertyName": "Comments",
 				"propertyKeyword": "comments",
 				"propertyTooltip": "comments",
