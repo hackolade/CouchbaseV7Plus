@@ -103,7 +103,7 @@ const buildAlterScript = ({ connectionInfo } = {}) => {
 	const applyDropStatements = shouldApplyDropStatements({ connectionInfo });
 	const scriptDtos = getCommentedDropScriptDtos({ alterScriptDtos, applyDropStatements });
 
-	if (connectionInfo?.options?.keepDtos) {
+	if (connectionInfo?.options?.keepDtos && connectionInfo?.options?.returnScriptStatements) {
 		return scriptDtos.filter(Boolean);
 	}
 
