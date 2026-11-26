@@ -9,6 +9,7 @@
 		"WRONG_CONNECTION": "Can not connect to the Couchbase instance"
 	},
 	"excludeDocKind": ["id"],
+	"extensions": ["n1ql"],
 	"scenario": "getDatabases",
 	"helpUrl": "https://hackolade.com/help/ConnecttoaCouchbaseinstance.html"
 }
